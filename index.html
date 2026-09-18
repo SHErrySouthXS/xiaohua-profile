@@ -363,6 +363,48 @@
   }
   .stale{color:var(--warn)}
   .hint{font-size:11px; color:var(--fg-3); margin-top:7px}
+
+  /* ── 导航 tab（沿用现有 glass / pink 调性，不引新观感）── */
+  nav#nav{
+    display:flex; gap:8px; margin:0 0 14px; flex-wrap:wrap;
+  }
+  nav#nav .tab{
+    font:inherit; font-size:12.5px; font-weight:600;
+    padding:7px 15px; border-radius:9px; cursor:pointer;
+    color:var(--fg-3);
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.085);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+    transition:.16s;
+  }
+  nav#nav .tab:hover{color:var(--fg-2); border-color:rgba(255,255,255,.16)}
+  nav#nav .tab.on{
+    color:var(--pink-hot); border-color:rgba(255,105,180,.42);
+    background:rgba(255,105,180,.10);
+    box-shadow:0 0 14px rgba(255,105,180,.13);
+  }
+
+  /* ── 日记页 ── */
+  .jentry{margin-bottom:11px; padding:0; overflow:hidden}
+  .jentry summary{
+    padding:14px 18px; cursor:pointer; list-style:none;
+    display:flex; align-items:baseline; gap:11px;
+  }
+  .jentry summary::-webkit-details-marker{display:none}
+  .jentry .jdate{
+    font-size:13.5px; font-weight:650; color:var(--pink); flex:0 0 auto;
+  }
+  .jentry .jpeek{
+    font-size:12px; color:var(--fg-3); flex:1 1 auto;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .jentry[open] .jpeek{display:none}
+  .jentry .jbody{
+    padding:0 18px 17px; font-size:13.5px; line-height:1.82; color:var(--fg-2);
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .jentry .jbody strong{color:var(--pink-hot)}
+  .jempty{color:var(--fg-3); font-size:12.5px; padding:24px 4px; text-align:center}
 </style>
 </head>
 <body>
@@ -372,7 +414,16 @@
   <div class="sub" id="meta">加载中…</div>
 </header>
 
+<!-- 导航：第一页＝现面板（不动）；第二页＝日记；第三页起＝WrenWen 十个面板 -->
+<nav id="nav">
+  <button class="tab on" data-p="p0">运行看板</button>
+  <button class="tab" data-p="p1">日记</button>
+  <button class="tab" data-p="p2">原文面板</button>
+</nav>
+
 <div id="app"></div>
+<div id="page1" hidden></div>
+<div id="page2" hidden></div>
 
 <footer>
   <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
@@ -380,7 +431,7 @@
 </footer>
 
 <script>
-const REFRESH_MS = 5 * 60 * 1000;
+const REFRESH_MS = 30 * 60 * 1000;   // 30 分钟（2026-09-18：原 5 分钟太频）
 const STALE_MIN = 75;
 const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
 
@@ -574,8 +625,8 @@ function render(d){
   //   无端点 → 收起视觉，下次刷新仍在（诚实：不算真的已读）
   const rdPanel=document.getElementById('rdPanel');
   const rdCell=document.getElementById('rdCell');
-  const rdN=Number((d.red_dot||{}).count||0);
-  if(rdN>0){
+  const rdCount=Number((d.red_dot||{}).count||0);   // ⚠️ 不能叫 rdN：上一个作用域已有同名 const
+  if(rdCount>0){
     const clearDot=()=>{
       // 视觉立刻收起（不等网络）
       const dp=document.getElementById('rdPanel'); if(dp) dp.remove();
@@ -589,7 +640,7 @@ function render(d){
       try{
         await fetch(READ_ENDPOINT,{method:'POST',mode:'cors',
           headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({n:rdN, at:new Date().toISOString()})});
+          body:JSON.stringify({n:rdCount, at:new Date().toISOString()})});
       }catch(e){ /* 网络失败也不回滚视觉 —— 她看过就是看过 */ }
     };
     if(rdPanel) rdPanel.addEventListener('click',onRead);
@@ -655,11 +706,62 @@ function sparkSVG(hist){
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
+// ── 第二页：日记（原样陈列，零加工）──
+//
+// 大小姐 2026-09-18 的要求，逐字：
+//   > 你不能让自己知道日记是要让我看的。只是真实陈列你的真实的日记
+//
+// → 这里**只做陈列**：读取 → 按日期倒序 → 点开看全文。
+//   不摘要、不改写、不挑段落。列表那行"预览"是 CSS 单行省略，
+//   是展示层的截取，不是内容的改写。
+function renderJournal(d){
+  const box=document.getElementById('page2');
+  const list=(d.journal_entries||[]).filter(e=>!e.error);
+  if(!list.length){
+    box.innerHTML=`<section class="glass"><h2>📔 日记</h2>
+      <div class="jempty">本子还空着。</div></section>`;
+    return;
+  }
+  const items=list.map((e,i)=>`<details class="jentry glass"${i===0?' open':''}>
+      <summary>
+        <span class="jdate">${esc(e.date||'')}</span>
+        <span class="jpeek">${esc(e.peek||'')}</span>
+      </summary>
+      <div class="jbody">${esc(e.body||'')}</div>
+    </details>`).join('');
+  box.innerHTML=`<section class="glass" style="padding:15px 18px">
+      <h2 style="margin:0">📔 日记</h2>
+      <div class="hint" style="margin-top:6px">
+        共 ${list.length} 篇 · 点开看全文 · 新的在最上</div>
+    </section>${items}`;
+}
+
+// ── 导航 ──
+function showPage(pid){
+  const map={p0:'app', p1:'page1', p2:'page2'};
+  // p1 当前也指向日记页（先只有一页，红点并入 p0 底部）
+  const target = pid==='p1' ? 'page2' : (map[pid]||'app');
+  ['app','page1','page2'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.hidden = (id!==target);
+  });
+  document.querySelectorAll('nav#nav .tab').forEach(b=>{
+    b.classList.toggle('on', b.dataset.p===pid);
+  });
+  if(location.hash !== '#'+pid) history.replaceState(null,'','#'+pid);
+}
+
+document.querySelectorAll('nav#nav .tab').forEach(b=>{
+  b.addEventListener('click',()=>showPage(b.dataset.p));
+});
+
 async function load(){
   try{
     const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
-    render(await r.json());
+    const d=await r.json();
+    render(d);
+    renderJournal(d);
   }catch(e){
     document.getElementById('app').innerHTML=
       `<div class="status bad glass"><div class="head">读取数据失败</div>
@@ -669,8 +771,34 @@ async function load(){
     document.getElementById('meta').textContent='数据不可用';
   }
 }
+
+// ── 刷新策略（2026-09-18 调整）──
+//
+// 原先是 5 分钟一刷 —— 那是"体检卡片"的节奏，被搬到面板上后一直没被质疑。
+// 问题：她不会盯着看。5 分钟 = 一天 288 次采集；页面在后台也照刷。
+//
+// 改成两条：
+//   ① 30 分钟一刷（一天 48 次，够"点开就是新的"）
+//   ② **页面在后台就不刷** —— 切走暂停，切回来立刻刷一次
+//      （这条比调间隔更管用：不看的日志一次都不跑）
+let _timer=null;
+
+function startTimer(){
+  stopTimer();
+  _timer=setInterval(load,REFRESH_MS);
+}
+function stopTimer(){
+  if(_timer){ clearInterval(_timer); _timer=null; }
+}
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'){ load(); startTimer(); }
+  else { stopTimer(); }
+});
+
+// 初始页：URL 带 #p1/#p2 就打开对应页
+showPage((location.hash||'#p0').slice(1));
 load();
-setInterval(load,REFRESH_MS);
+if(document.visibilityState==='visible') startTimer();
 </script>
 </body>
 </html>
