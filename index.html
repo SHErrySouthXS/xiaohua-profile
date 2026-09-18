@@ -471,8 +471,14 @@
   /* 空日子：压到最弱，但**不消失** —— 空白也是这一段日子的一部分 */
   .calx.empty{background:transparent; border-color:rgba(255,255,255,.045)}
   .calx.empty .n{opacity:.4}
-  .calx.t0{background:rgba(255,159,197,.10); border-color:rgba(255,159,197,.18)}
   .calx.t1{background:rgba(255,159,197,.22); border-color:rgba(255,159,197,.32)}
+  .calx.t2{background:rgba(255,159,197,.42); border-color:rgba(255,159,197,.55)}
+  .calx.t3{background:rgba(255,159,197,.68); border-color:rgba(255,182,211,.8)}
+  /* ⚠️ t0 必须显式定义 —— 它是 calTier() 的正经返回值（权重=1 的那一档）。
+     第一版漏了它，结果权重刚好为 1 的那天落回 .calx 的默认底色，
+     看着跟"空日子"一样淡 —— 明明有记录却像什么都没有。
+     （本地面板验证脚本抓出来的：档位分布里 t0 有 1 个。） */
+  .calx.t0{background:rgba(255,159,197,.13); border-color:rgba(255,159,197,.22)}
   .calx.t2{background:rgba(255,159,197,.42); border-color:rgba(255,159,197,.55)}
   .calx.t3{background:rgba(255,159,197,.68); border-color:rgba(255,182,211,.8)}
   .calx.t3 .n,.calx.t2 .n{color:#2a2731; opacity:.75}
@@ -1340,7 +1346,10 @@ function renderPanels(d){
   // ── 3.5 日历总览（Archive 第一项，2026-09-18 落地）──
   //   紧跟在 Archive 后面 —— 它就是 Archive 展开的那一块，
   //   归档那一行只记数（"28/35 天有痕迹"），真正的日子在这儿。
-  h+=calendarPanel(P.calendar);
+  //   ⚠️ 这里必须**用 sec() 包**：calendarPanel() 只出内容，
+  //      它拿不到 sec（那是本函数的局部变量），外壳由这儿加。
+  h+=sec('📅 日历总览','这些日子都留下了什么（35 天）',
+         calendarPanel(P.calendar));
 
   // ── 4. Memory ──
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
@@ -1592,10 +1601,8 @@ function renderPanels(d){
 //  ③ **点格子看那天到底留下了什么**。
 //     光有深浅只是个装饰；点开是若干条**可核对**的东西
 //     （哪几条话、哪几件活、哪篇日记）。数得出来才敢信。
-const CAL_LABELS = {wake:'我醒过', spoke:'我主动开口', her:'她的话',
-                    diary:'写日记', silent:'默默干的活', note:'给自己留了便签',
-                    project:'线索推进'};
-
+// 日历总览 —— 只出**内容**，外壳（<section>）由调用点包，见 renderPanels。
+// （calWeight/calTier 同理：算的是"这一天有多满"，不碰 DOM。）
 function calWeight(d){
   return (d.wake?1:0)+(d.spoke?1:0)+(d.her?1:0)+(d.diary?1:0)
         +(d.silent?1:0)+(d.note?1:0)+(d.project?1:0);
@@ -1624,14 +1631,18 @@ function calendarPanel(C){
     const w=calWeight(c), tier=calTier(w);
     const cls=['calx', w===0?'empty':'t'+tier, c.date===todayStr?'today':''].join(' ');
     const day=String(parseInt(c.date.slice(8),10));
-    // 格子里只写一个数（那天最重的那件），写不下就不写
+    // 格子里只写一个数（那天最多的一项），写不下就不写。
+    // ⚠️ 数字**必须带前缀**（如 "·90"）：
+    //    光放裸数字，读起来像日期 —— "9 号那格写 2、15 号写 35"，
+    //    人眼会自动把它当"日"。加个点就分得清了：
+    //    左上角是日子，右下角是件数，两件事不打架。
     const mine=[['her',c.her],['wake',c.wake],['silent',c.silent],
                 ['diary',c.diary],['project',c.project]];
     const top=mine.filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])[0];
     h+=`<div class="${cls}" data-date="${c.date}" title="${c.date}"
           onclick="calPick('${c.date}')">
           <span class="n">${day}</span>
-          ${top?`<span class="m">${top[1]}</span>`:''}
+          ${top?`<span class="m">·${top[1]}</span>`:''}
         </div>`;
   });
   h+=`</div>`;
@@ -1664,7 +1675,24 @@ function calendarPanel(C){
       不算我的回应（那是"聊了多久"，不是"她来过"）。</span>
   </div>`;
 
-  return sec('📅 日历总览','这些日子都留下了什么（35 天）', h);
+  // ★★ 2026-09-18 晚 修 ★★
+  //   原先这里直接 return sec('📅 日历总览', ...) —— 线上必崩。
+  //
+  //   原因：sec() 是 renderPanels() **内部的**局部函数（第 1255 行），
+  //         而 calendarPanel() 定义在函数外面（第 1605 行），根本够不着它。
+  //         浏览器报的很准：
+  //           ReferenceError: sec is not defined
+  //             at calendarPanel (index.html:1667)
+  //             at renderPanels (index.html:1343)
+  //
+  //   改法：calendarPanel 只管出**内容**，外壳（<section class="glass">）
+  //         由调用点包 —— 谁手上有 sec，谁负责包。
+  //         ⚠️ 别再把它挪回函数内部去"图省事"：
+  //            那是把渲染和取数揉在一起，改一次要动两处。
+  //
+  //   （这条是本地面板验证脚本 verify_render.py 抓出来的 ——
+  //     光看快照看不出来，必须让浏览器真跑一遍。）
+  return h;
 }
 
 function calPick(date){
