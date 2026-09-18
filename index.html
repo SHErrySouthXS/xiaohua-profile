@@ -251,32 +251,39 @@
   }
 
   /* ── 「今天」里的 Markdown 渲染 ── */
+  .today h2{margin-bottom:8px}          /* 标题别贴正文 */
   .today .tsrc{
     font-size:10px; font-weight:400; color:var(--fg-4);
     letter-spacing:0; text-transform:none;
   }
   .today .md p{
     font-size:14.5px; line-height:2.05; color:#fbf3f6;
-    letter-spacing:.012em; margin-bottom:14px;
+    letter-spacing:.012em; margin:0 0 16px;
     text-shadow:0 1px 12px rgba(0,0,0,.55);
   }
   .today .md p:last-child{margin-bottom:0}
+  /* 小标题：上方留白 > 下方，才不会被误认成上一段的结尾 */
   .today .md h4, .today .md h5, .today .md h6{
-    font-size:13px; font-weight:650; color:var(--pink);
-    letter-spacing:.05em; margin:18px 0 10px;
+    font-size:13.5px; font-weight:650; color:var(--pink);
+    letter-spacing:.06em; margin:24px 0 12px;
     text-shadow:0 0 12px var(--pink-glow);
   }
+  .today .md h4:first-child, .today .md h5:first-child{margin-top:0}
+  /* 引用块：上下对称留白，别挤着上一段 */
   .today .md blockquote{
-    margin:14px 0; padding:10px 14px;
+    margin:20px 0; padding:12px 15px;
     border-left:2px solid var(--pink);
-    background:rgba(255,159,197,.07);
+    background:rgba(255,159,197,.08);
     border-radius:0 8px 8px 0;
     font-size:13.5px; line-height:1.95; color:var(--fg-2);
   }
+  .today .md blockquote p{margin:0; font-size:13.5px; color:var(--fg-2)}
   .today .md blockquote strong{color:var(--pink-hot)}
+  /* 分隔线：加深可见度（原来太淡看不出来） */
   .today .md hr{
-    border:none; height:1px; margin:16px 0;
-    background:linear-gradient(90deg, transparent, rgba(255,159,197,.4), transparent);
+    border:none; height:1px; margin:22px 0;
+    background:linear-gradient(90deg,
+      transparent, rgba(255,159,197,.55), transparent);
   }
   .today .md strong{color:#fff; font-weight:650}
   .today .md code{
