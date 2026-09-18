@@ -9,27 +9,22 @@
   *{box-sizing:border-box;margin:0;padding:0}
 
   /* ══════════════════════════════════════════════════════════════
-     深色磨砂玻璃 · 海滩图压暗打底
+     深色底 · 粉色指标色（大小姐指定的那版）
      ──────────────────────────────────────────────────────────────
-     配色 = 最早那版深色底（指标色在深底上最亮最好看）
-     底   = 粉海滩图压暗到 ~32% 亮度（保留质感与粉调，给玻璃可磨的东西）
-
-     ⚠️ 玻璃磨砂感成立的前提：背后要有明暗层次。
-        纯黑底 + 光斑做不出磨砂（没有可采样细节）——
-        压暗的海滩图正好解决这一点：云层/海面/浪花仍有层次，
-        blur 之后变成柔和的暗粉雾，玻璃才是真的"磨砂"。
+     · 背景：纯深色，无图（海滩图已撤）
+     · 指标色：粉色 —— 条状图粉渐变 + 雷达图粉填充/描边
+     · 文字：白（深底上最清晰）
      ══════════════════════════════════════════════════════════════ */
 
   :root{
-    /* ── 指标色：回到最早那版（深底上的亮色）── */
-    --accent:#7aa2f7;          /* 条状图亮蓝紫 */
-    --accent-deep:#3b6fd4;     /* 条状图渐变起点 */
-    --accent-hi:#ffc857;       /* 高值金黄高亮 */
-    --accent-hi-deep:#d4a53b;
+    /* ── 指标色：粉 ── */
+    --pink:#f4b6c2;
+    --pink-hot:#ffb6c1;
+    --pink-deep:#d98fa4;
 
-    /* ── 文字三级（深底白字）── */
+    /* ── 文字三级 ── */
     --fg:#ffffff;
-    --fg-2:#ece4e8;
+    --fg-2:#f2eaee;
     --fg-3:#bdb0b7;
     --fg-4:#8f838a;
 
@@ -39,19 +34,16 @@
     --bad:#ff5c7a;
 
     /* ── 玻璃层 ── */
+    --bg-base:#0b0f14;
     --glass-brd:rgba(255,255,255,.14);
-    --glass-brd-top:rgba(255,255,255,.34);
+    --glass-brd-top:rgba(255,255,255,.32);
 
     --r-lg:22px;
-    --r-md:16px;
   }
 
   html,body{height:100%}
   body{
-    /* 压暗的海滩图固定打底 —— 卡片滚过时玻璃持续"磨"同一片质感 */
-    background:
-      url("bg.jpg") center top / cover no-repeat fixed,
-      #0b0f14;
+    background:var(--bg-base);
     color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     padding:20px 14px 48px; max-width:780px; margin:0 auto;
@@ -59,33 +51,20 @@
     position:relative; min-height:100%;
     overflow-x:hidden;
   }
-  /* 压暗层：只做"托住文字"的最低限度，不能把图的层次烤平
-     ⚠️ 第一版 .34/.16/.20/.46 太重 → 海滩质感全被吃掉（云层/海面看不出来）。
-     现在整体减半，只在顶部（标题压字）和底部（页脚压字）稍厚一点。 */
-  body::before{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background:linear-gradient(180deg,
-      rgba(6,8,12,.22) 0%,
-      rgba(6,8,12,.06) 26%,
-      rgba(6,8,12,.08) 62%,
-      rgba(6,8,12,.26) 100%);
-  }
   header, #app, footer{position:relative; z-index:2}
 
   header{margin-bottom:16px; padding:0 4px}
   h1{
     font-size:18px; font-weight:650; letter-spacing:.01em; line-height:1.42;
-    text-shadow:0 2px 14px rgba(0,0,0,.75), 0 1px 3px rgba(0,0,0,.6);
+    text-shadow:0 1px 12px rgba(0,0,0,.6);
   }
   .sub{
     color:var(--fg-3); font-size:12px; margin-top:7px; line-height:1.65;
-    text-shadow:0 1px 8px rgba(0,0,0,.8);
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
   }
   .sub b{color:var(--fg-2); font-weight:600}
 
-  /* ── 磨砂玻璃基类 ──
-     填充调低（.10→.065），让背后压暗的海滩图能透出来；
-     blur 略降（26→22px），保留一点图的纹理痕迹而不是糊成一片均匀色。 */
+  /* ── 磨砂玻璃 ── */
   .glass{
     background:linear-gradient(168deg,
       rgba(255,255,255,.075), rgba(255,255,255,.028) 46%, rgba(255,255,255,.055));
@@ -110,7 +89,7 @@
   }
   .status .head{
     font-size:16.5px; font-weight:650; letter-spacing:.01em;
-    text-shadow:0 2px 12px rgba(0,0,0,.7);
+    text-shadow:0 1px 10px rgba(0,0,0,.65);
   }
   .status.ok   .head::before{content:"● "; color:var(--ok); font-size:13px}
   .status.warn .head::before{content:"● "; color:var(--warn); font-size:13px}
@@ -132,20 +111,20 @@
   .cell{padding:14px; min-width:0}
   .cell .k{
     font-size:11.5px; color:var(--fg-3); margin-bottom:8px; letter-spacing:.04em;
-    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
   .cell .v{
     font-size:14.5px; font-weight:650; word-break:break-word; line-height:1.35;
-    text-shadow:0 2px 12px rgba(0,0,0,.7);
+    text-shadow:0 1px 10px rgba(0,0,0,.6);
   }
   .cell .v.sm{
     font-size:11px; font-weight:500; color:var(--fg-3); margin-top:5px; line-height:1.5;
-    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
   .cell.ok   .v{color:var(--ok)}
   .cell.warn .v{color:var(--warn)}
   .cell.bad  .v{color:var(--bad)}
-  .cell.accent .v{color:var(--accent)}
+  .cell.accent .v{color:var(--pink)}
 
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
@@ -156,32 +135,32 @@
   h2{
     font-size:11.5px; font-weight:650; color:var(--fg-3);
     letter-spacing:.09em; margin-bottom:14px; text-transform:uppercase;
-    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
 
-  /* ── 📝 今天 ── */
+  /* ── 📝 今天：粉调玻璃 ── */
   .today{
     background:linear-gradient(160deg,
-      rgba(122,162,247,.13), rgba(122,162,247,.05) 55%, rgba(255,255,255,.06));
-    border-color:rgba(122,162,247,.24);
-    border-top-color:rgba(160,190,255,.4);
+      rgba(255,182,193,.13), rgba(217,143,164,.05) 55%, rgba(255,255,255,.06));
+    border-color:rgba(255,182,193,.24);
+    border-top-color:rgba(255,200,210,.4);
   }
-  .today h2{color:var(--accent)}
+  .today h2{color:var(--pink)}
   .today p{
-    font-size:14.5px; line-height:2.05; color:#e2ecf7; letter-spacing:.012em;
-    text-shadow:0 2px 12px rgba(0,0,0,.65);
+    font-size:14.5px; line-height:2.05; color:#fbf3f6; letter-spacing:.012em;
+    text-shadow:0 1px 12px rgba(0,0,0,.55);
   }
 
   /* ── 雷达图 ── */
   .radar-wrap{display:flex; justify-content:center; padding:2px 0 4px}
   svg.radar{width:100%; max-width:390px; height:auto; overflow:visible}
 
-  /* ── 驱动条（回到最早那版：蓝紫渐变 + 金黄高亮）── */
+  /* ── 驱动条（粉色）── */
   .bars{display:flex; flex-direction:column; gap:10px}
   .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:10px}
   .bar-row .nm{
     font-size:11.5px; color:var(--fg-2); text-align:right;
-    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
   .bar-track{
     height:7px; border-radius:99px; overflow:hidden;
@@ -190,18 +169,18 @@
   }
   .bar-fill{
     height:100%; border-radius:99px;
-    background:linear-gradient(90deg, var(--accent-deep), var(--accent));
+    background:linear-gradient(90deg, rgba(217,143,164,.62), var(--pink));
     transition:width .5s ease;
   }
   .bar-row.top .bar-fill{
-    background:linear-gradient(90deg, var(--accent-hi-deep), var(--accent-hi));
-    box-shadow:0 0 16px rgba(255,200,87,.5);
+    background:linear-gradient(90deg, var(--pink-deep), var(--pink-hot));
+    box-shadow:0 0 18px rgba(255,182,193,.5), 0 0 8px rgba(255,255,255,.45);
   }
   .bar-row .vl{
     font-size:11.5px; color:var(--fg-3);
-    font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.7);
+    font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
-  .bar-row.top .vl{color:var(--accent-hi); font-weight:650}
+  .bar-row.top .vl{color:var(--pink); font-weight:650}
 
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
@@ -214,11 +193,11 @@
   .item .ic{font-size:12px; line-height:1.65; text-align:center}
   .item .nm{
     font-size:13.5px; font-weight:600; margin-bottom:4px;
-    text-shadow:0 1px 8px rgba(0,0,0,.7);
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
   }
   .item .ev{
     font-size:11.5px; color:var(--fg-3); line-height:1.6; word-break:break-word;
-    text-shadow:0 1px 6px rgba(0,0,0,.7);
+    text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
 
   /* ── 折叠 ── */
@@ -237,7 +216,7 @@
     padding:15px 18px; cursor:pointer; font-size:12.5px; font-weight:650;
     color:var(--fg-2); list-style:none;
     display:flex; justify-content:space-between; align-items:center;
-    text-shadow:0 1px 8px rgba(0,0,0,.7);
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
   }
   details summary::-webkit-details-marker{display:none}
   details summary::after{content:"▾"; color:var(--fg-3); font-size:11px; transition:transform .22s}
@@ -249,7 +228,7 @@
   footer{
     color:var(--fg-4); font-size:11px; text-align:center;
     margin-top:24px; line-height:1.95;
-    text-shadow:0 1px 8px rgba(0,0,0,.8);
+    text-shadow:0 1px 8px rgba(0,0,0,.6);
   }
   .stale{color:var(--warn)}
   .hint{font-size:11px; color:var(--fg-3); margin-top:7px}
@@ -386,8 +365,8 @@ function render(d){
       <div class="item" style="padding:0;border:none"><div class="ic">${mark}</div>
       <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
-        letter-spacing:2px;color:var(--accent);word-break:break-all;
-        text-shadow:0 0 12px rgba(122,162,247,.5)">${esc(bar)}</div>
+        letter-spacing:2px;color:var(--pink);word-break:break-all;
+        text-shadow:0 0 14px rgba(255,182,193,.5)">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
@@ -443,14 +422,14 @@ function radarSVG(dims,vals){
   }
   dims.forEach((_,i)=>{const [x,y]=pt(i,R);
     g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;});
-  // 雷达填充/描边 = 回到最早那版的亮蓝
+  // 雷达填充/描边：粉
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(122,162,247,.22)" stroke="#7aa2f7" stroke-width="2"
-    style="filter:drop-shadow(0 0 10px rgba(122,162,247,.55))"/>`;
+    fill="rgba(255,182,193,.20)" stroke="#f4b6c2" stroke-width="2"
+    style="filter:drop-shadow(0 0 10px rgba(255,182,193,.55))"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
-    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#7aa2f7"
-      style="filter:drop-shadow(0 0 6px rgba(122,162,247,.85))"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#ffb6c1"
+      style="filter:drop-shadow(0 0 6px rgba(255,182,193,.85))"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
@@ -474,10 +453,11 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(61,220,151,.30)"/>
-      <stop offset="100%" stop-color="rgba(61,220,151,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(255,182,193,.32)"/>
+      <stop offset="100%" stop-color="rgba(255,182,193,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#3ddc97" stroke-width="1.8"/></svg>
+    <path d="${line}" fill="none" stroke="#f4b6c2" stroke-width="1.8"
+      style="filter:drop-shadow(0 0 7px rgba(255,182,193,.55))"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
