@@ -75,8 +75,12 @@
           `radial-gradient(...) fixed, color` 里的逗号会被当成"新的一层"，
           整条声明解析失败 → 背景变 none（实测 body_bg="none"）。
           正确做法：渐变与 attachment 分开声明。 */
+    /* ⚠️ 踩坑二：`radial-gradient(circle 120% at ...)` 是**语法错误** ——
+       `circle` 后面只能跟单个长度（如 `circle 80vw`），**百分比只适用于 ellipse**。
+       写错了整条声明被丢弃 → bg_image 变 none（实测确认）。
+       这里用 ellipse + 百分比（最稳）。 */
     background-color:var(--bg-edge);
-    background-image:radial-gradient(circle 120% at 50% 0%,
+    background-image:radial-gradient(ellipse 140% 90% at 50% 0%,
       var(--bg-center) 0%, var(--bg-mid) 55%, var(--bg-edge) 100%);
     background-attachment:fixed;
     background-repeat:no-repeat;
