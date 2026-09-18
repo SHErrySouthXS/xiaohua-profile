@@ -1,68 +1,109 @@
 {
- "generated_at": "2026-09-18 15:00:56",
- "generated_at_iso": "2026-09-18T15:00:56",
+ "generated_at": "2026-09-18 15:05:12",
+ "generated_at_iso": "2026-09-18T15:05:12",
+ "at": "2026-09-18 15:05",
+ "head": "全部正常",
+ "color": "green",
+ "total": 15,
+ "bad": 0,
+ "warn": 0,
+ "ok_count": 15,
+ "probe_error": null,
  "rows": [
+  {
+   "name": "体检脚本自身",
+   "state": "ok",
+   "evidence": "载入 heartbeat.py 成功（81 符号）"
+  },
   {
    "name": "心跳存活",
    "state": "ok",
-   "evidence": "最后心跳 09-18 14:59（2 分钟前）"
+   "evidence": "最后一行 09-18 14:59（6 分钟前）｜2026-09-18 14:59:01 | heartbeat 启动"
   },
   {
    "name": "gateway 服务",
    "state": "ok",
-   "evidence": "systemd active"
+   "evidence": "systemd 状态 active"
+  },
+  {
+   "name": "心跳挂载",
+   "state": "ok",
+   "evidence": "MainPID 502470｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
   },
   {
    "name": "微信锚点",
    "state": "ok",
-   "evidence": "09-18 08:23（6.6h 前）"
+   "evidence": "09-18 08:23（6.7h 前）← 节奏只看这个"
+  },
+  {
+   "name": "飞书通道",
+   "state": "ok",
+   "evidence": "09-18 15:02（不算锚，不影响节奏）"
   },
   {
    "name": "节拍倒计时",
    "state": "ok",
-   "evidence": "她 6.6h 前还在，已过倒计时 2.1h"
+   "evidence": "她 6.7h 前还在、我 0.7h 前醒过…倒计时剩 133 分钟"
   },
   {
    "name": "欲望判定",
    "state": "ok",
-   "evidence": "solo｜好奇 0.95"
+   "evidence": "solo｜好奇 0.95｜理由：好奇 0.95，先做自己的事"
   },
   {
-   "name": "九维驱动",
+   "name": "人格纪律",
    "state": "ok",
-   "evidence": "9 维｜最高 0.95"
-  },
-  {
-   "name": "唤醒账本",
-   "state": "ok",
-   "evidence": "共 17 条｜近 24h 17 条（开口 1 次）"
+   "evidence": "1759 字｜只用「你」"
   },
   {
    "name": "唤醒模型",
    "state": "ok",
-   "evidence": "mimo-v2.5-pro｜全项目唯一生成模型"
+   "evidence": "**mimo-v2.5-pro** ← companion 实际用的（provider xiaomi，代码里硬编码直连，不走 profile 默认）"
   },
   {
-   "name": "作息校准",
+   "name": "profile 默认",
    "state": "ok",
-   "evidence": "{\"days\": 0, \"covered\": 0, \"ticks\": 0, \"target\": 14, \"ready\":"
+   "evidence": "主 deepseek-flash（deepseek）｜备 mimo-v2.5-pro ｜companion **不受它影响**，仅作对照"
+  },
+  {
+   "name": "模型铁律",
+   "state": "ok",
+   "evidence": "对话/开口/判定 全部 mimo-v2.5-pro｜✅ 全项目唯一生成模型"
+  },
+  {
+   "name": "qwen 残留",
+   "state": "ok",
+   "evidence": "8 处 auxiliary 仍指向 qwen（approval, curator, mcp…）｜**辅助层，不参与生成**，主链路无影响"
+  },
+  {
+   "name": "唤醒账本",
+   "state": "ok",
+   "evidence": "共 17 条｜近 24h 17 条（开口 1 次）｜token 2254"
+  },
+  {
+   "name": "投递模块",
+   "state": "ok",
+   "evidence": "可用入口：DAILY_SEND_LIMIT, EP_SEND_MESSAGE, HEARTBEAT_SEND_BUDGET"
   }
  ],
- "notes": [],
- "probe_error": null,
  "anchor": {
-  "at": "2026-09-18 08:23",
-  "hours_ago": 6.62
+  "value": "14:08",
+  "sub": "24.9h 前 · 微信"
  },
- "rhythm": {
-  "due": true,
-  "why": "她 6.6h 前还在，已过倒计时 2.1h"
+ "countdown": "133 分钟",
+ "ledger": {
+  "value": "17 条",
+  "sub": "开口 1 · token 2254"
  },
+ "journal": {
+  "value": "—",
+  "sub": "今天还没写"
+ },
+ "summary": "今天最占地方的是「去查去问」这一条。你已经静了 6.7h。我这边倒计时还挂着——算闯进去吗？想了想，不算。到点之前，等着也是我的事。这中间主动开口过 1 次，没有一次是为了响一声。体检全绿。没什么要你处理的。",
  "verdict": {
-  "choice": "solo",
   "intent": "好奇",
   "strength": 0.95,
-  "reason": "好奇 0.95，先做自己的事"
+  "choice": null
  },
  "dimensions": [
   "依恋",
@@ -86,19 +127,7 @@
   0.1,
   0.1
  ],
- "top_drives": [],
- "ledger": {
-  "entries": 17,
-  "total_tokens": 2254,
-  "last24h": 17,
-  "spoke24h": 1
- },
- "model": {
-  "wake": "mimo-v2.5-pro",
-  "ok": true,
-  "fallback": "mimo-v2.5-pro"
- },
- "rhythm_progress": {
+ "rhythm": {
   "days": 0,
   "covered": 0,
   "ticks": 0,
@@ -133,11 +162,6 @@
   "first_day": null,
   "last_day": null
  },
- "head": "全部正常",
- "color": "ok",
- "total": 9,
- "bad": 0,
- "warn": 0,
  "history": [
   {
    "t": "09-18 14:52",
@@ -205,6 +229,38 @@
   },
   {
    "t": "09-18 15:00",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.3,
+    0.2,
+    0.95,
+    0.2,
+    0.2,
+    0.2,
+    0.1,
+    0.1,
+    0.1
+   ]
+  },
+  {
+   "t": "09-18 15:04",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.3,
+    0.2,
+    0.95,
+    0.2,
+    0.2,
+    0.2,
+    0.1,
+    0.1,
+    0.1
+   ]
+  },
+  {
+   "t": "09-18 15:05",
    "bad": 0,
    "warn": 0,
    "drives": [
