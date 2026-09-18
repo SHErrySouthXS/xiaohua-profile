@@ -401,9 +401,31 @@
   .jentry[open] .jpeek{display:none}
   .jentry .jbody{
     padding:0 18px 17px; font-size:13.5px; line-height:1.82; color:var(--fg-2);
-    white-space:pre-wrap; word-break:break-word;
+    word-break:break-word;
   }
-  .jentry .jbody strong{color:var(--pink-hot)}
+  .jentry .jbody p{margin:0 0 11px}
+  .jentry .jbody p:last-child{margin-bottom:0}
+  .jentry .jbody strong{color:var(--pink-hot); font-weight:650}
+  .jentry .jbody code{
+    font-family:ui-monospace,monospace; font-size:11.5px;
+    color:var(--pink); background:rgba(255,255,255,.07);
+    padding:1px 5px; border-radius:4px;
+  }
+  /* 小标题（原日记里的 ## 一句 这类） */
+  .jentry .jbody .jh{
+    font-size:12px; font-weight:650; color:var(--pink);
+    letter-spacing:.06em; margin:16px 0 8px;
+  }
+  /* 引用（原日记里的 > 记一句给自己的） */
+  .jentry .jbody blockquote{
+    margin:0 0 11px; padding:2px 0 2px 12px;
+    border-left:2px solid rgba(255,105,180,.42);
+    color:var(--fg-3); font-size:13px;
+  }
+  .jentry .jbody hr{
+    border:0; border-top:1px solid rgba(255,255,255,.10);
+    margin:14px 0;
+  }
   .jempty{color:var(--fg-3); font-size:12.5px; padding:24px 4px; text-align:center}
 </style>
 </head>
@@ -714,6 +736,44 @@ function sparkSVG(hist){
 // → 这里**只做陈列**：读取 → 按日期倒序 → 点开看全文。
 //   不摘要、不改写、不挑段落。列表那行"预览"是 CSS 单行省略，
 //   是展示层的截取，不是内容的改写。
+// ── 日记正文的轻量渲染 ──
+//
+// ⚠️ 只把 markdown 的**记号**变成样式，一个字的文本都不动。
+//    （原文里写的 **加粗** / ## 小标题 / > 引用 是他真实写的记号，
+//      字面显示是"没如实呈现"，不是"诚实"。）
+function jmd(s){
+  const raw = String(s==null?'':s);
+  const lines = raw.split('\n');
+  let out = [], buf = [];
+  const flush = () => {
+    if(buf.length){ out.push('<p>'+buf.join('<br>')+'</p>'); buf=[]; }
+  };
+  for(const ln of lines){
+    const t = ln.trim();
+    if(!t){ flush(); continue; }
+    if(t === '---'){ flush(); out.push('<hr>'); continue; }
+    let mm;
+    if(mm = t.match(/^(#{1,4})\s+(.*)$/)){
+      flush();
+      out.push('<div class="jh">'+inline(mm[2])+'</div>');
+      continue;
+    }
+    if(mm = t.match(/^&gt;\s?(.*)$/) || t.match(/^>\s?(.*)$/)){
+      flush();
+      out.push('<blockquote>'+inline(mm[1])+'</blockquote>');
+      continue;
+    }
+    buf.push(inline(t));
+  }
+  flush();
+  return out.join('');
+}
+function inline(s){
+  return esc(s)
+    .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>');
+}
+
 function renderJournal(d){
   const box=document.getElementById('page2');
   const list=(d.journal_entries||[]).filter(e=>!e.error);
@@ -727,7 +787,7 @@ function renderJournal(d){
         <span class="jdate">${esc(e.date||'')}</span>
         <span class="jpeek">${esc(e.peek||'')}</span>
       </summary>
-      <div class="jbody">${esc(e.body||'')}</div>
+      <div class="jbody">${jmd(e.body||'')}</div>
     </details>`).join('');
   box.innerHTML=`<section class="glass" style="padding:15px 18px">
       <h2 style="margin:0">📔 日记</h2>
