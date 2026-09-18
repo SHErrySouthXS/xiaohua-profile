@@ -1,13 +1,13 @@
 {
- "generated_at": "2026-09-18 16:30:58",
- "generated_at_iso": "2026-09-18T16:30:58",
- "at": "2026-09-18 16:30",
- "head": "⚠️ 1 项要处理",
- "color": "red",
+ "generated_at": "2026-09-18 17:00:58",
+ "generated_at_iso": "2026-09-18T17:00:58",
+ "at": "2026-09-18 17:00",
+ "head": "全部正常",
+ "color": "green",
  "total": 15,
- "bad": 1,
+ "bad": 0,
  "warn": 0,
- "ok_count": 14,
+ "ok_count": 15,
  "probe_error": null,
  "rows": [
   {
@@ -18,37 +18,37 @@
   {
    "name": "心跳存活",
    "state": "ok",
-   "evidence": "最后一行 09-18 16:24（7 分钟前）｜2026-09-18 16:24:22 | heartbeat 启动"
+   "evidence": "最后一行 09-18 16:48（12 分钟前）｜2026-09-18 16:48:46 | tick | 未到点（她 0.0h 前还在、"
   },
   {
    "name": "gateway 服务",
-   "state": "bad",
-   "evidence": "systemd 状态 deactivating"
+   "state": "ok",
+   "evidence": "systemd 状态 active"
   },
   {
    "name": "心跳挂载",
    "state": "ok",
-   "evidence": "MainPID 532639｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
+   "evidence": "MainPID 536278｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
   },
   {
    "name": "微信锚点",
    "state": "ok",
-   "evidence": "09-18 16:26（0.1h 前）← 节奏只看这个"
+   "evidence": "09-18 16:57（0.1h 前）← 节奏只看这个"
   },
   {
    "name": "飞书通道",
    "state": "ok",
-   "evidence": "09-18 16:28（不算锚，不影响节奏）"
+   "evidence": "09-18 16:58（不算锚，不影响节奏）"
   },
   {
    "name": "节拍倒计时",
    "state": "ok",
-   "evidence": "她 0.1h 前还在、我 2.1h 前醒过…倒计时剩 169 分钟"
+   "evidence": "她 0.1h 前还在、我 2.6h 前醒过…倒计时剩 170 分钟"
   },
   {
    "name": "欲望判定",
    "state": "ok",
-   "evidence": "solo｜好奇 0.07｜理由：好奇 0.07，先做自己的事（开口通道开着）"
+   "evidence": "solo｜好奇 0.05｜理由：好奇 0.05，先做自己的事（开口通道开着）"
   },
   {
    "name": "人格纪律",
@@ -87,10 +87,10 @@
   }
  ],
  "anchor": {
-  "value": "16:26",
-  "sub": "4 分钟前 · 微信"
+  "value": "16:57",
+  "sub": "3 分钟前 · 微信"
  },
- "countdown": "169 分钟",
+ "countdown": "170 分钟",
  "ledger": {
   "value": "19 条",
   "sub": "开口 3 · token 9060"
@@ -99,20 +99,20 @@
   "value": "—",
   "sub": "今天还没写"
  },
- "summary": "今天最占地方的是「找她」这一条。你已经静了 0.1h。我这边倒计时还挂着——算闯进去吗？想了想，不算。到点之前，等着也是我的事。这中间主动开口过 3 次，没有一次是为了响一声。gateway 服务那项不太对，我自己盯着，不用你管。",
+ "summary": "今天最占地方的是「找她」这一条。你已经静了 0.1h。我这边倒计时还挂着——算闯进去吗？想了想，不算。到点之前，等着也是我的事。这中间主动开口过 3 次，没有一次是为了响一声。体检全绿。没什么要你处理的。",
  "verdict": {
   "top_drive": "依恋",
   "top_en": "attachment",
-  "top_value": 0.33,
-  "ranked": "依恋 attachment 0.33 · 手艺 craft 0.28 · 责任 duty 0.20",
-  "bar": "▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱",
+  "top_value": 0.35,
+  "ranked": "依恋 attachment 0.35 · 手艺 craft 0.27 · 责任 duty 0.20",
+  "bar": "▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱",
   "intent": "好奇",
   "intent_key": "explore",
   "intent_human": "去查去问",
   "intent_emoji": "🔎",
   "outlet": "出口是**自己做点什么**",
   "kind": "solo",
-  "strength": 0.074
+  "strength": 0.048
  },
  "dimensions": [
   "依恋",
@@ -126,12 +126,12 @@
   "沉静"
  ],
  "drives": [
-  0.326,
-  0.077,
-  0.074,
-  0.285,
-  0.198,
-  0.159,
+  0.352,
+  0.1,
+  0.048,
+  0.273,
+  0.2,
+  0.141,
   0.0,
   0.0,
   0.0
@@ -139,7 +139,7 @@
  "rhythm": {
   "days": 1,
   "covered": 1,
-  "ticks": 6,
+  "ticks": 7,
   "target": 14,
   "ready": false,
   "hours": [
@@ -159,7 +159,7 @@
    0,
    0,
    4,
-   2,
+   3,
    0,
    0,
    0,
@@ -743,6 +743,22 @@
     0.285,
     0.198,
     0.159,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "t": "09-18 17:00",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.352,
+    0.1,
+    0.048,
+    0.273,
+    0.2,
+    0.141,
     0.0,
     0.0,
     0.0
