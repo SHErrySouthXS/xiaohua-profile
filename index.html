@@ -3,49 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#e8cdd3">
+<meta name="theme-color" content="#0b0f14">
 <title>男友 Profile：小华</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
 
   /* ══════════════════════════════════════════════════════════════
-     粉 · 浅色磨砂玻璃
+     深色磨砂玻璃 · 海滩图压暗打底
      ──────────────────────────────────────────────────────────────
-     ⚠️ 方向校正记录（2026-09-18，大小姐给的粉海滩图纠正）：
-        前几版做的是「深黑底 + 粉霓虹光晕 + 白字」——错了。
-        大小姐要的是「粉色海滩图做背景 + 浅色磨砂玻璃 + 深色文字」。
+     配色 = 最早那版深色底（指标色在深底上最亮最好看）
+     底   = 粉海滩图压暗到 ~32% 亮度（保留质感与粉调，给玻璃可磨的东西）
 
-     为什么浅底深字是**正确**的（不是审美偏好，是可读性）：
-        磨砂玻璃会把背景模糊 + 叠白，合成色约 #E8CDD3（藕粉，偏亮）。
-        白字压在偏亮的浅玻璃上 → 发灰发虚 → 正好违背"文字要清晰可见"。
-        深色字压在浅粉玻璃上 → 对比度最高 → 清爽利落。
-
-     磨砂效果成立的前提（关键，别再犯）：
-        玻璃背后**必须有丰富明暗层次**的图，blur 才有东西可磨。
-        纯黑底上放光斑是做不出磨砂的 —— 没有可采样的细节。
+     ⚠️ 玻璃磨砂感成立的前提：背后要有明暗层次。
+        纯黑底 + 光斑做不出磨砂（没有可采样细节）——
+        压暗的海滩图正好解决这一点：云层/海面/浪花仍有层次，
+        blur 之后变成柔和的暗粉雾，玻璃才是真的"磨砂"。
      ══════════════════════════════════════════════════════════════ */
 
   :root{
-    /* 深色文字三级（压浅粉玻璃） */
-    --ink:#3a2f35;        /* 主文字：深咖紫 */
-    --ink-2:#5a4a52;      /* 次级 */
-    --ink-3:#7d6a72;      /* 辅助 */
-    --ink-4:#9a8790;      /* 最弱 */
+    /* ── 指标色：回到最早那版（深底上的亮色）── */
+    --accent:#7aa2f7;          /* 条状图亮蓝紫 */
+    --accent-deep:#3b6fd4;     /* 条状图渐变起点 */
+    --accent-hi:#ffc857;       /* 高值金黄高亮 */
+    --accent-hi-deep:#d4a53b;
 
-    /* 粉色强调（深一档，才能压住浅底） */
-    --rose:#c2566f;       /* 主强调 */
-    --rose-deep:#a8415c;
-    --rose-soft:#e8a8b8;
+    /* ── 文字三级（深底白字）── */
+    --fg:#ffffff;
+    --fg-2:#ece4e8;
+    --fg-3:#bdb0b7;
+    --fg-4:#8f838a;
 
-    /* 磨砂玻璃：偏白半透明 */
-    --glass:rgba(255,255,255,.42);
-    --glass-2:rgba(255,255,255,.52);
-    --glass-brd:rgba(255,255,255,.62);
-    --glass-brd-b:rgba(255,255,255,.34);
+    /* ── 状态色 ── */
+    --ok:#3ddc97;
+    --warn:#ffc857;
+    --bad:#ff5c7a;
 
-    --ok:#2f8f6b;
-    --warn:#b07d1f;
-    --bad:#c2354f;
+    /* ── 玻璃层 ── */
+    --glass-brd:rgba(255,255,255,.14);
+    --glass-brd-top:rgba(255,255,255,.34);
 
     --r-lg:22px;
     --r-md:16px;
@@ -53,60 +48,54 @@
 
   html,body{height:100%}
   body{
-    /* 背景图：固定，不随滚动 —— 卡片滚过时玻璃持续"磨"同一片色彩 */
+    /* 压暗的海滩图固定打底 —— 卡片滚过时玻璃持续"磨"同一片质感 */
     background:
       url("bg.jpg") center top / cover no-repeat fixed,
-      #e8cdd3;
-    color:var(--ink);
+      #0b0f14;
+    color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     padding:20px 14px 48px; max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
     overflow-x:hidden;
   }
-  /* 极淡的白色柔光，让文字区更稳（不改变整体粉调） */
+  /* 极淡压暗层：让文字区更稳，同时保留图的层次不被烤平 */
   body::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
     background:linear-gradient(180deg,
-      rgba(255,255,255,.12) 0%,
-      rgba(255,255,255,.03) 30%,
-      rgba(255,255,255,.06) 70%,
-      rgba(255,255,255,.16) 100%);
+      rgba(6,8,12,.34) 0%,
+      rgba(6,8,12,.16) 26%,
+      rgba(6,8,12,.20) 62%,
+      rgba(6,8,12,.46) 100%);
   }
   header, #app, footer{position:relative; z-index:2}
 
   header{margin-bottom:16px; padding:0 4px}
-
-  /* 标题区：自带一层玻璃，保证在任何背景段都清晰 */
-  .hero{
-    padding:16px 18px; margin-bottom:13px;
-    background:rgba(255,255,255,.40);
-    backdrop-filter:blur(26px) saturate(1.5);
-    -webkit-backdrop-filter:blur(26px) saturate(1.5);
-    border:1px solid var(--glass-brd);
-    border-top-color:rgba(255,255,255,.75);
-    border-radius:var(--r-lg);
-    box-shadow:0 6px 26px rgba(120,80,95,.16),
-               0 1px 0 rgba(255,255,255,.7) inset;
+  h1{
+    font-size:18px; font-weight:650; letter-spacing:.01em; line-height:1.42;
+    text-shadow:0 2px 14px rgba(0,0,0,.75), 0 1px 3px rgba(0,0,0,.6);
   }
-  h1{font-size:18px; font-weight:650; letter-spacing:.01em; line-height:1.42; color:var(--ink)}
-  .sub{color:var(--ink-3); font-size:12px; margin-top:7px; line-height:1.65}
-  .sub b{color:var(--ink-2); font-weight:600}
+  .sub{
+    color:var(--fg-3); font-size:12px; margin-top:7px; line-height:1.65;
+    text-shadow:0 1px 8px rgba(0,0,0,.8);
+  }
+  .sub b{color:var(--fg-2); font-weight:600}
 
   /* ── 磨砂玻璃基类 ── */
   .glass{
     background:linear-gradient(168deg,
-      rgba(255,255,255,.50), rgba(255,255,255,.34) 46%, rgba(255,255,255,.44));
-    backdrop-filter:blur(30px) saturate(1.6);
-    -webkit-backdrop-filter:blur(30px) saturate(1.6);
+      rgba(255,255,255,.10), rgba(255,255,255,.045) 46%, rgba(255,255,255,.075));
+    backdrop-filter:blur(26px) saturate(1.6);
+    -webkit-backdrop-filter:blur(26px) saturate(1.6);
     border:1px solid var(--glass-brd);
-    border-top-color:rgba(255,255,255,.78);
-    border-bottom-color:var(--glass-brd-b);
+    border-top-color:var(--glass-brd-top);       /* 上边亮 = 玻璃厚度 */
+    border-left-color:rgba(255,255,255,.22);
     border-radius:var(--r-lg);
     box-shadow:
-      0 8px 28px rgba(120,80,95,.15),
-      0 1px 0 rgba(255,255,255,.75) inset,
-      0 -1px 0 rgba(160,120,135,.12) inset;
+      0 8px 30px rgba(0,0,0,.46),
+      0 0 0 1px rgba(255,255,255,.045) inset,
+      0 1.5px 0 rgba(255,255,255,.14) inset,
+      0 -1.5px 0 rgba(0,0,0,.2) inset;
   }
 
   /* ── 状态条 ── */
@@ -115,16 +104,20 @@
     display:flex; align-items:center; justify-content:space-between;
     gap:12px; flex-wrap:wrap;
   }
-  .status .head{font-size:16.5px; font-weight:650; letter-spacing:.01em; color:var(--ink)}
+  .status .head{
+    font-size:16.5px; font-weight:650; letter-spacing:.01em;
+    text-shadow:0 2px 12px rgba(0,0,0,.7);
+  }
   .status.ok   .head::before{content:"● "; color:var(--ok); font-size:13px}
   .status.warn .head::before{content:"● "; color:var(--warn); font-size:13px}
   .status.bad  .head::before{content:"● "; color:var(--bad); font-size:13px}
-  .status.bad{box-shadow:0 8px 28px rgba(194,53,79,.2), 0 1px 0 rgba(255,255,255,.75) inset}
+  .status.bad{box-shadow:0 8px 30px rgba(0,0,0,.46), 0 0 40px rgba(255,92,122,.16),
+              0 1.5px 0 rgba(255,255,255,.14) inset}
 
   .badge{
-    font-size:11px; color:var(--ink-3);
-    background:rgba(255,255,255,.45);
-    border:1px solid rgba(255,255,255,.6);
+    font-size:11px; color:var(--fg-3);
+    background:rgba(255,255,255,.07);
+    border:1px solid rgba(255,255,255,.12);
     padding:4px 11px; border-radius:999px; white-space:nowrap;
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   }
@@ -133,13 +126,22 @@
   .row3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:11px}
   .row4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:13px}
   .cell{padding:14px; min-width:0}
-  .cell .k{font-size:11.5px; color:var(--ink-3); margin-bottom:8px; letter-spacing:.04em}
-  .cell .v{font-size:14.5px; font-weight:650; word-break:break-word; line-height:1.35; color:var(--ink)}
-  .cell .v.sm{font-size:11px; font-weight:500; color:var(--ink-3); margin-top:5px; line-height:1.5}
+  .cell .k{
+    font-size:11.5px; color:var(--fg-3); margin-bottom:8px; letter-spacing:.04em;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
+  .cell .v{
+    font-size:14.5px; font-weight:650; word-break:break-word; line-height:1.35;
+    text-shadow:0 2px 12px rgba(0,0,0,.7);
+  }
+  .cell .v.sm{
+    font-size:11px; font-weight:500; color:var(--fg-3); margin-top:5px; line-height:1.5;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
   .cell.ok   .v{color:var(--ok)}
   .cell.warn .v{color:var(--warn)}
   .cell.bad  .v{color:var(--bad)}
-  .cell.accent .v{color:var(--rose)}
+  .cell.accent .v{color:var(--accent)}
 
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
@@ -147,91 +149,113 @@
   }
 
   section{padding:17px 18px; margin-bottom:13px}
-  h2{font-size:11.5px; font-weight:650; color:var(--ink-3);
-    letter-spacing:.09em; margin-bottom:14px; text-transform:uppercase}
+  h2{
+    font-size:11.5px; font-weight:650; color:var(--fg-3);
+    letter-spacing:.09em; margin-bottom:14px; text-transform:uppercase;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
 
-  /* ── 📝 今天：粉调玻璃 ── */
+  /* ── 📝 今天 ── */
   .today{
     background:linear-gradient(160deg,
-      rgba(255,255,255,.46), rgba(255,225,233,.38) 60%, rgba(255,255,255,.42));
-    border-color:rgba(255,255,255,.68);
+      rgba(122,162,247,.13), rgba(122,162,247,.05) 55%, rgba(255,255,255,.06));
+    border-color:rgba(122,162,247,.24);
+    border-top-color:rgba(160,190,255,.4);
   }
-  .today h2{color:var(--rose)}
-  .today p{font-size:14.5px; line-height:2.05; color:var(--ink); letter-spacing:.012em}
+  .today h2{color:var(--accent)}
+  .today p{
+    font-size:14.5px; line-height:2.05; color:#e2ecf7; letter-spacing:.012em;
+    text-shadow:0 2px 12px rgba(0,0,0,.65);
+  }
 
   /* ── 雷达图 ── */
   .radar-wrap{display:flex; justify-content:center; padding:2px 0 4px}
   svg.radar{width:100%; max-width:390px; height:auto; overflow:visible}
 
-  /* ── 驱动条 ── */
+  /* ── 驱动条（回到最早那版：蓝紫渐变 + 金黄高亮）── */
   .bars{display:flex; flex-direction:column; gap:10px}
   .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:10px}
-  .bar-row .nm{font-size:11.5px; color:var(--ink-2); text-align:right}
+  .bar-row .nm{
+    font-size:11.5px; color:var(--fg-2); text-align:right;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
   .bar-track{
     height:7px; border-radius:99px; overflow:hidden;
-    background:rgba(255,255,255,.5);
-    box-shadow:0 1px 2px rgba(120,80,95,.12) inset;
+    background:rgba(255,255,255,.08);
+    box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 -1px 0 rgba(0,0,0,.22) inset;
   }
   .bar-fill{
     height:100%; border-radius:99px;
-    background:linear-gradient(90deg, rgba(232,168,184,.85), var(--rose-soft));
+    background:linear-gradient(90deg, var(--accent-deep), var(--accent));
     transition:width .5s ease;
   }
   .bar-row.top .bar-fill{
-    background:linear-gradient(90deg, var(--rose), var(--rose-deep));
-    box-shadow:0 0 10px rgba(194,86,111,.45);
+    background:linear-gradient(90deg, var(--accent-hi-deep), var(--accent-hi));
+    box-shadow:0 0 16px rgba(255,200,87,.5);
   }
-  .bar-row .vl{font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
-  .bar-row.top .vl{color:var(--rose); font-weight:650}
+  .bar-row .vl{
+    font-size:11.5px; color:var(--fg-3);
+    font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
+  .bar-row.top .vl{color:var(--accent-hi); font-weight:650}
 
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
-  .item{display:grid; grid-template-columns:18px 1fr; gap:11px;
+  .item{
+    display:grid; grid-template-columns:18px 1fr; gap:11px;
     padding:11px 0; align-items:start;
-    border-bottom:1px solid rgba(160,120,135,.14)}
+    border-bottom:1px solid rgba(255,255,255,.08);
+  }
   .item:last-child{border-bottom:none}
   .item .ic{font-size:12px; line-height:1.65; text-align:center}
-  .item .nm{font-size:13.5px; font-weight:600; margin-bottom:4px; color:var(--ink)}
-  .item .ev{font-size:11.5px; color:var(--ink-3); line-height:1.6; word-break:break-word}
+  .item .nm{
+    font-size:13.5px; font-weight:600; margin-bottom:4px;
+    text-shadow:0 1px 8px rgba(0,0,0,.7);
+  }
+  .item .ev{
+    font-size:11.5px; color:var(--fg-3); line-height:1.6; word-break:break-word;
+    text-shadow:0 1px 6px rgba(0,0,0,.7);
+  }
 
   /* ── 折叠 ── */
   details{
     margin-bottom:13px; overflow:hidden;
     background:linear-gradient(168deg,
-      rgba(255,255,255,.50), rgba(255,255,255,.34) 46%, rgba(255,255,255,.44));
-    backdrop-filter:blur(30px) saturate(1.6);
-    -webkit-backdrop-filter:blur(30px) saturate(1.6);
+      rgba(255,255,255,.10), rgba(255,255,255,.045) 46%, rgba(255,255,255,.075));
+    backdrop-filter:blur(26px) saturate(1.6);
+    -webkit-backdrop-filter:blur(26px) saturate(1.6);
     border:1px solid var(--glass-brd);
-    border-top-color:rgba(255,255,255,.78);
+    border-top-color:var(--glass-brd-top);
     border-radius:var(--r-lg);
-    box-shadow:0 8px 28px rgba(120,80,95,.15), 0 1px 0 rgba(255,255,255,.75) inset;
+    box-shadow:0 8px 30px rgba(0,0,0,.46), 0 1.5px 0 rgba(255,255,255,.14) inset;
   }
   details summary{
     padding:15px 18px; cursor:pointer; font-size:12.5px; font-weight:650;
-    color:var(--ink-2); list-style:none;
+    color:var(--fg-2); list-style:none;
     display:flex; justify-content:space-between; align-items:center;
+    text-shadow:0 1px 8px rgba(0,0,0,.7);
   }
   details summary::-webkit-details-marker{display:none}
-  details summary::after{content:"▾"; color:var(--ink-3); font-size:11px; transition:transform .22s}
+  details summary::after{content:"▾"; color:var(--fg-3); font-size:11px; transition:transform .22s}
   details[open] summary::after{transform:rotate(180deg)}
   details .inner{padding:0 18px 16px}
 
   .spark{width:100%; height:42px; display:block}
 
-  footer{color:var(--ink-4); font-size:11px; text-align:center;
+  footer{
+    color:var(--fg-4); font-size:11px; text-align:center;
     margin-top:24px; line-height:1.95;
-    text-shadow:0 1px 2px rgba(255,255,255,.5)}
-  .stale{color:var(--bad); font-weight:600}
-  .hint{font-size:11px; color:var(--ink-3); margin-top:7px}
+    text-shadow:0 1px 8px rgba(0,0,0,.8);
+  }
+  .stale{color:var(--warn)}
+  .hint{font-size:11px; color:var(--fg-3); margin-top:7px}
 </style>
 </head>
 <body>
 
 <header>
-  <div class="hero">
-    <h1 id="title">男友 Profile：小华</h1>
-    <div class="sub" id="meta">加载中…</div>
-  </div>
+  <h1 id="title">男友 Profile：小华</h1>
+  <div class="sub" id="meta">加载中…</div>
 </header>
 
 <div id="app"></div>
@@ -358,7 +382,8 @@ function render(d){
       <div class="item" style="padding:0;border:none"><div class="ic">${mark}</div>
       <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
-        letter-spacing:2px;color:var(--rose);word-break:break-all">${esc(bar)}</div>
+        letter-spacing:2px;color:var(--accent);word-break:break-all;
+        text-shadow:0 0 12px rgba(122,162,247,.5)">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
@@ -410,22 +435,26 @@ function radarSVG(dims,vals){
   for(let ring=1;ring<=4;ring++){
     const rr=R*ring/4;
     g+=`<polygon points="${dims.map((_,i)=>pt(i,rr).join(',')).join(' ')}"
-      fill="none" stroke="rgba(120,80,95,.22)" stroke-width="1"/>`;
+      fill="none" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;
   }
   dims.forEach((_,i)=>{const [x,y]=pt(i,R);
-    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(120,80,95,.22)" stroke-width="1"/>`;});
+    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;});
+  // 雷达填充/描边 = 回到最早那版的亮蓝
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(194,86,111,.20)" stroke="#c2566f" stroke-width="2"/>`;
+    fill="rgba(122,162,247,.22)" stroke="#7aa2f7" stroke-width="2"
+    style="filter:drop-shadow(0 0 10px rgba(122,162,247,.55))"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
-    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#c2566f"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#7aa2f7"
+      style="filter:drop-shadow(0 0 6px rgba(122,162,247,.85))"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
     const anchor=Math.abs(x-C)<6?'middle':(x>C?'start':'end');
     const dy=y<C-6?-2:(y>C+6?9:4);
-    g+=`<text x="${x}" y="${y+dy}" fill="#5a4a52" font-size="10.5" font-weight="500"
-      text-anchor="${anchor}" font-family="inherit">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
+    g+=`<text x="${x}" y="${y+dy}" fill="#bdb0b7" font-size="10.5" font-weight="500"
+      text-anchor="${anchor}" font-family="inherit"
+      style="text-shadow:0 1px 6px rgba(0,0,0,.9)">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
   });
   return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
 }
@@ -441,10 +470,10 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(194,86,111,.30)"/>
-      <stop offset="100%" stop-color="rgba(194,86,111,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(61,220,151,.30)"/>
+      <stop offset="100%" stop-color="rgba(61,220,151,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#c2566f" stroke-width="1.8"/></svg>
+    <path d="${line}" fill="none" stroke="#3ddc97" stroke-width="1.8"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
