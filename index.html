@@ -162,36 +162,63 @@
     text-shadow:0 1px 12px rgba(0,0,0,.55);
   }
 
-  /* ── 雷达图 ── */
-  .radar-wrap{display:flex; justify-content:center; padding:2px 0 4px}
-  svg.radar{width:100%; max-width:390px; height:auto; overflow:visible}
+  /* ── 雷达图（含环境漫射：让粉光"照亮"面板而不是孤立贴图）── */
+  .radar-wrap{
+    display:flex; justify-content:center; padding:2px 0 4px;
+    position:relative;
+  }
+  .radar-wrap::before{
+    content:""; position:absolute; inset:-6% -2%;
+    background:radial-gradient(circle 42% at 50% 48%, rgba(255,158,197,.13), transparent 72%);
+    pointer-events:none;
+  }
+  svg.radar{width:100%; max-width:390px; height:auto; overflow:visible; position:relative}
 
-  /* ── 驱动条（粉色）── */
-  .bars{display:flex; flex-direction:column; gap:10px}
+  /* ── 驱动条（霓虹粉 + 发光）──
+     ⚠️ 踩坑（2026-09-18）：原来把发光写在 .bar-fill 上，但父级 .bar-track
+        有 overflow:hidden（为了裁条的圆角）→ **发光被整个裁掉，一点不透**。
+        实测确认：track_overflow=hidden + fill box-shadow 16px 全被吃掉。
+     改法：把发光挪到轨道本身（.bar-track 有 box-shadow 不会被自己裁），
+          并用伪元素做条端的高光核 —— 这样光能溢出到卡片上。 */
+  .bars{display:flex; flex-direction:column; gap:12px}
   .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:10px}
   .bar-row .nm{
     font-size:11.5px; color:var(--fg-2); text-align:right;
     text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
   .bar-track{
-    height:7px; border-radius:99px; overflow:hidden;
+    position:relative;
+    height:7px; border-radius:99px;
     background:rgba(255,255,255,.08);
     box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 -1px 0 rgba(0,0,0,.22) inset;
+  }
+  /* 内层裁圆角（只裁填充本身，不放发光） */
+  .bar-inner{
+    position:absolute; inset:0; border-radius:99px; overflow:hidden;
   }
   .bar-fill{
     height:100%; border-radius:99px;
     background:linear-gradient(90deg, var(--pink-deep), var(--pink));
-    /* 发光做足：参考图那种粉的"亮"是靠辉光撑的，不是靠色值本身 */
-    box-shadow:0 0 8px rgba(255,158,197,.7),
-               0 0 16px rgba(255,158,197,.45),
-               0 0 2px rgba(255,209,227,.9);
     transition:width .5s ease;
   }
-  .bar-row.top .bar-fill{
-    background:linear-gradient(90deg, var(--pink), var(--pink-hot));
-    box-shadow:0 0 10px rgba(255,209,227,.85),
-               0 0 22px rgba(255,158,197,.65),
-               0 0 40px rgba(255,158,197,.35);
+  /* 条端光核：白热一点，模拟霓虹灯管的过曝 */
+  .bar-fill::after{
+    content:""; position:absolute; top:0; bottom:0;
+    width:8px; margin-left:-7px;
+    background:linear-gradient(90deg, transparent, rgba(255,255,255,.85));
+    border-radius:99px;
+  }
+  /* 发光挂在外层轨道（不被裁），光溢出到卡片上 */
+  .bar-row[data-v] .bar-track{
+    box-shadow:0 0 10px rgba(255,158,197,.55),
+               0 0 22px rgba(255,158,197,.30),
+               0 1px 0 rgba(255,255,255,.06) inset;
+  }
+  .bar-row.top .bar-track{
+    box-shadow:0 0 12px rgba(255,209,227,.75),
+               0 0 26px rgba(255,158,197,.55),
+               0 0 48px rgba(255,158,197,.25),
+               0 1px 0 rgba(255,255,255,.06) inset;
   }
   .bar-row .vl{
     font-size:11.5px; color:var(--fg-3);
@@ -355,8 +382,12 @@ function render(d){
     h+=`<section class="glass"><h2>驱动强度</h2><div class="bars">${
       dims.map((n,i)=>{
         const x=Math.max(0,Math.min(1,vals[i]||0));
-        return `<div class="bar-row${x>=0.8?' top':''}"><div class="nm">${esc(n)}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(x*100).toFixed(1)}%"></div></div>
+        // data-v 用来标记"有值"——发光只挂在有值的条上（0 值不该发光）
+        const hasV = x > 0.001 ? ' data-v="1"' : '';
+        return `<div class="bar-row${x>=0.8?' top':''}"${hasV}><div class="nm">${esc(n)}</div>
+          <div class="bar-track"><div class="bar-inner">
+            <div class="bar-fill" style="width:${(x*100).toFixed(1)}%;position:relative"></div>
+          </div></div>
           <div class="vl">${x.toFixed(2)}</div></div>`;
       }).join('')}</div></section>`;
   }
