@@ -51,17 +51,19 @@
 
   /* ── 环境光：粉紫色雾光，给磨砂玻璃提供可折射的底色 ──
      ⚠️ 这一层是"磨砂感"的前提：玻璃要有东西可模糊。
-     第一版光晕太淡（alpha .13~.20 + blur 38px），在近黑底上几乎不可见，
-     结果卡片看着就是"暗色半透明面板"而非磨砂玻璃。
-     现在：光斑更亮更大、色相更明确，且允许溢出到卡片背后。 */
+     踩坑记录：第一版用 `body::before { filter: blur(54px) }` 做大范围雾光，
+     无头浏览器/部分移动端渲染时**大范围 fixed 元素的 filter 会被吞掉**，
+     实测背景仍是一片死黑 → 卡片"没东西可磨" → 看着像哑光面板。
+     改法：**不依赖 filter**，直接用多层 radial-gradient 做柔和雾光。
+     （gradient 本身边缘就是软的，不需要 blur；兼容性也更好） */
   body::before{
-    content:""; position:fixed; inset:-40%;
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
     background:
-      radial-gradient(ellipse 58% 46% at 15% 6%,   rgba(255,150,175,.42), transparent 60%),
-      radial-gradient(ellipse 52% 42% at 90% 18%,  rgba(230,120,160,.34), transparent 64%),
-      radial-gradient(ellipse 46% 34% at 72% 55%,  rgba(190,140,255,.22), transparent 68%),
-      radial-gradient(ellipse 76% 52% at 45% 106%, rgba(255,130,170,.34), transparent 68%);
-    filter:blur(54px); pointer-events:none; z-index:0;
+      radial-gradient(circle 62vw at 12% 4%,   rgba(255,140,175,.44) 0%, rgba(255,140,175,.13) 38%, transparent 72%),
+      radial-gradient(circle 58vw at 92% 16%,  rgba(235,110,155,.36) 0%, rgba(235,110,155,.10) 40%, transparent 74%),
+      radial-gradient(circle 52vw at 78% 58%,  rgba(186,132,255,.24) 0%, rgba(186,132,255,.07) 42%, transparent 76%),
+      radial-gradient(circle 78vw at 42% 104%, rgba(255,120,165,.36) 0%, rgba(255,120,165,.10) 40%, transparent 74%),
+      radial-gradient(circle 44vw at 4% 72%,   rgba(255,160,190,.22) 0%, transparent 74%);
   }
   /* 细腻噪点，避免大面积渐变出现色带 */
   body::after{
@@ -110,13 +112,17 @@
     font-size:16.5px; font-weight:650; letter-spacing:.01em;
     text-shadow:0 1px 10px rgba(0,0,0,.6);
   }
-  .status.ok   .head{color:var(--ok)}
+  /* 状态色只做"信号"，不做色块 —— 粉黑调性不被绿/黄稀释 */
+  .status.ok   .head{color:var(--fg)}
   .status.warn .head{color:var(--warn)}
   .status.bad  .head{color:var(--bad)}
-  .status.ok   {box-shadow:0 8px 32px rgba(0,0,0,.42), 0 0 34px rgba(143,217,182,.12),
-                 0 1px 0 rgba(255,255,255,.10) inset}
-  .status.bad  {box-shadow:0 8px 32px rgba(0,0,0,.42), 0 0 34px rgba(255,128,149,.16),
-                 0 1px 0 rgba(255,255,255,.10) inset}
+  .status.ok   .head::before{content:"● "; color:var(--ok); font-size:13px}
+  .status.warn .head::before{content:"● "; color:var(--warn); font-size:13px}
+  .status.bad  .head::before{content:"● "; color:var(--bad); font-size:13px}
+  .status.ok   {box-shadow:0 10px 36px rgba(0,0,0,.46), 0 0 0 1px rgba(255,255,255,.045) inset,
+                 0 1.5px 0 rgba(255,255,255,.16) inset}
+  .status.bad  {box-shadow:0 10px 36px rgba(0,0,0,.46), 0 0 40px rgba(255,128,149,.16),
+                 0 1.5px 0 rgba(255,255,255,.16) inset}
 
   .badge{
     font-size:11px; color:var(--fg-3);
@@ -131,7 +137,7 @@
   .row4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:13px}
   .cell{padding:14px 14px; min-width:0}
   .cell .k{
-    font-size:10.5px; color:var(--fg-3); margin-bottom:8px;
+    font-size:11.5px; color:var(--fg-3); margin-bottom:8px;
     letter-spacing:.05em; text-shadow:0 1px 6px rgba(0,0,0,.5);
   }
   .cell .v{
