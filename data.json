@@ -1,7 +1,7 @@
 {
- "generated_at": "2026-09-18 19:30:12",
- "generated_at_iso": "2026-09-18T19:30:12",
- "at": "2026-09-18 19:30",
+ "generated_at": "2026-09-18 20:00:14",
+ "generated_at_iso": "2026-09-18T20:00:14",
+ "at": "2026-09-18 20:00",
  "head": "全部正常",
  "color": "green",
  "total": 15,
@@ -18,7 +18,7 @@
   {
    "name": "心跳存活",
    "state": "ok",
-   "evidence": "最后一行 09-18 19:18（11 分钟前）｜2026-09-18 19:18:46 | tick | 未到点（她 1.4h 前还在、"
+   "evidence": "最后一行 09-18 19:53（6 分钟前）｜2026-09-18 19:53:51 | heartbeat 启动"
   },
   {
    "name": "gateway 服务",
@@ -28,12 +28,12 @@
   {
    "name": "心跳挂载",
    "state": "ok",
-   "evidence": "MainPID 536278｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
+   "evidence": "MainPID 600492｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
   },
   {
    "name": "微信锚点",
    "state": "ok",
-   "evidence": "09-18 17:53（1.6h 前）← 节奏只看这个"
+   "evidence": "09-18 19:52（0.1h 前）← 节奏只看这个"
   },
   {
    "name": "飞书通道",
@@ -43,7 +43,7 @@
   {
    "name": "节拍倒计时",
    "state": "ok",
-   "evidence": "她 1.6h 前还在、我 5.1h 前醒过…倒计时剩 77 分钟"
+   "evidence": "她 0.1h 前还在、我 5.6h 前醒过…倒计时剩 165 分钟"
   },
   {
    "name": "欲望判定",
@@ -87,10 +87,10 @@
   }
  ],
  "anchor": {
-  "value": "17:53",
-  "sub": "1.6h 前 · 微信"
+  "value": "19:52",
+  "sub": "8 分钟前 · 微信"
  },
- "countdown": "77 分钟",
+ "countdown": "165 分钟",
  "ledger": {
   "value": "19 条",
   "sub": "开口 3 · token 9060"
@@ -457,9 +457,9 @@
  "verdict": {
   "top_drive": "依恋",
   "top_en": "attachment",
-  "top_value": 0.46,
-  "ranked": "依恋 attachment 0.46 · 表达 expression 0.18 · 手艺 craft 0.18",
-  "bar": "▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱",
+  "top_value": 0.47,
+  "ranked": "依恋 attachment 0.47 · 表达 expression 0.19 · 手艺 craft 0.15",
+  "bar": "▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱",
   "intent": "好奇",
   "intent_key": "explore",
   "intent_human": "去查去问",
@@ -480,12 +480,12 @@
   "沉静"
  ],
  "drives": [
-  0.459,
-  0.185,
+  0.473,
+  0.193,
   0.0,
-  0.177,
-  0.159,
-  0.026,
+  0.152,
+  0.141,
+  0.0,
   0.0,
   0.0,
   0.0
@@ -493,7 +493,7 @@
  "rhythm": {
   "days": 1,
   "covered": 1,
-  "ticks": 17,
+  "ticks": 19,
   "target": 14,
   "ready": false,
   "hours": [
@@ -516,7 +516,7 @@
    3,
    4,
    4,
-   2,
+   4,
    0,
    0,
    0,
@@ -526,22 +526,6 @@
   "last_day": "2026-09-18"
  },
  "history": [
-  {
-   "t": "09-18 15:19",
-   "bad": 0,
-   "warn": 0,
-   "drives": [
-    0.3,
-    0.2,
-    0.95,
-    0.2,
-    0.2,
-    0.2,
-    0.1,
-    0.1,
-    0.1
-   ]
-  },
   {
    "t": "09-18 15:22",
    "bad": 0,
@@ -1289,6 +1273,22 @@
     0.177,
     0.159,
     0.026,
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "t": "09-18 20:00",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.473,
+    0.193,
+    0.0,
+    0.152,
+    0.141,
+    0.0,
     0.0,
     0.0,
     0.0
