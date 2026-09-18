@@ -1,13 +1,13 @@
 {
- "generated_at": "2026-09-18 22:15:30",
- "generated_at_iso": "2026-09-18T22:15:30",
- "at": "2026-09-18 22:15",
- "head": "⚠️ 1 项要处理",
- "color": "red",
+ "generated_at": "2026-09-18 22:30:20",
+ "generated_at_iso": "2026-09-18T22:30:20",
+ "at": "2026-09-18 22:30",
+ "head": "全部正常",
+ "color": "green",
  "total": 15,
- "bad": 1,
+ "bad": 0,
  "warn": 0,
- "ok_count": 14,
+ "ok_count": 15,
  "probe_error": null,
  "rows": [
   {
@@ -18,32 +18,32 @@
   {
    "name": "心跳存活",
    "state": "ok",
-   "evidence": "最后一行 09-18 22:00（15 分钟前）｜2026-09-18 22:00:59 | tick | 未到点（她 0.0h 前还在、"
+   "evidence": "最后一行 09-18 22:16（13 分钟前）｜2026-09-18 22:16:55 | heartbeat 启动"
   },
   {
    "name": "gateway 服务",
-   "state": "bad",
-   "evidence": "systemd 状态 deactivating"
+   "state": "ok",
+   "evidence": "systemd 状态 active"
   },
   {
    "name": "心跳挂载",
    "state": "ok",
-   "evidence": "MainPID 639474｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
+   "evidence": "MainPID 655217｜/home/ubuntu/.hermes/hermes-agent/venv/bin/python -m"
   },
   {
    "name": "微信锚点",
    "state": "ok",
-   "evidence": "09-18 22:09（0.1h 前）← 节奏只看这个"
+   "evidence": "09-18 22:09（0.3h 前）← 节奏只看这个"
   },
   {
    "name": "飞书通道",
    "state": "ok",
-   "evidence": "09-18 22:11（不算锚，不影响节奏）"
+   "evidence": "09-18 22:16（不算锚，不影响节奏）"
   },
   {
    "name": "节拍倒计时",
    "state": "ok",
-   "evidence": "她 0.1h 前还在、我 7.8h 前醒过…倒计时剩 167 分钟"
+   "evidence": "她 0.3h 前还在、我 8.1h 前醒过…倒计时剩 152 分钟"
   },
   {
    "name": "欲望判定",
@@ -88,9 +88,9 @@
  ],
  "anchor": {
   "value": "22:09",
-  "sub": "6 分钟前 · 微信"
+  "sub": "21 分钟前 · 微信"
  },
- "countdown": "167 分钟",
+ "countdown": "152 分钟",
  "ledger": {
   "value": "19 条",
   "sub": "开口 3 · token 9060"
@@ -1265,7 +1265,7 @@
   "top_drive": "依恋",
   "top_en": "attachment",
   "top_value": 0.5,
-  "ranked": "依恋 attachment 0.50 · 表达 expression 0.19 · 责任 duty 0.04",
+  "ranked": "依恋 attachment 0.50 · 表达 expression 0.18 · 责任 duty 0.03",
   "bar": "▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱",
   "intent": "好奇",
   "intent_key": "explore",
@@ -1287,13 +1287,13 @@
   "沉静"
  ],
  "drives": [
-  0.5,
-  0.189,
+  0.498,
+  0.185,
   0.0,
-  0.036,
-  0.039,
+  0.023,
+  0.026,
   0.0,
-  0.013,
+  0.026,
   0.0,
   0.0
  ],
@@ -1333,22 +1333,6 @@
   "last_day": "2026-09-18"
  },
  "history": [
-  {
-   "t": "09-18 16:06",
-   "bad": 0,
-   "warn": 0,
-   "drives": [
-    0.305,
-    0.057,
-    0.095,
-    0.292,
-    0.194,
-    0.171,
-    0.0,
-    0.0,
-    0.0
-   ]
-  },
   {
    "t": "09-18 16:08",
    "bad": 0,
@@ -2097,6 +2081,22 @@
     0.039,
     0.0,
     0.013,
+    0.0,
+    0.0
+   ]
+  },
+  {
+   "t": "09-18 22:30",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.498,
+    0.185,
+    0.0,
+    0.023,
+    0.026,
+    0.0,
+    0.026,
     0.0,
     0.0
    ]
