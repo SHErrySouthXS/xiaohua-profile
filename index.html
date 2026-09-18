@@ -250,6 +250,40 @@
     text-shadow:0 1px 12px rgba(0,0,0,.55);
   }
 
+  /* ── 「今天」里的 Markdown 渲染 ── */
+  .today .tsrc{
+    font-size:10px; font-weight:400; color:var(--fg-4);
+    letter-spacing:0; text-transform:none;
+  }
+  .today .md p{
+    font-size:14.5px; line-height:2.05; color:#fbf3f6;
+    letter-spacing:.012em; margin-bottom:14px;
+    text-shadow:0 1px 12px rgba(0,0,0,.55);
+  }
+  .today .md p:last-child{margin-bottom:0}
+  .today .md h4, .today .md h5, .today .md h6{
+    font-size:13px; font-weight:650; color:var(--pink);
+    letter-spacing:.05em; margin:18px 0 10px;
+    text-shadow:0 0 12px var(--pink-glow);
+  }
+  .today .md blockquote{
+    margin:14px 0; padding:10px 14px;
+    border-left:2px solid var(--pink);
+    background:rgba(255,159,197,.07);
+    border-radius:0 8px 8px 0;
+    font-size:13.5px; line-height:1.95; color:var(--fg-2);
+  }
+  .today .md blockquote strong{color:var(--pink-hot)}
+  .today .md hr{
+    border:none; height:1px; margin:16px 0;
+    background:linear-gradient(90deg, transparent, rgba(255,159,197,.4), transparent);
+  }
+  .today .md strong{color:#fff; font-weight:650}
+  .today .md code{
+    font-family:ui-monospace,monospace; font-size:12.5px;
+    background:rgba(255,255,255,.08); padding:1px 5px; border-radius:4px;
+  }
+
   /* ── 雷达图（含环境漫射：让粉光"照亮"面板而不是孤立贴图）── */
   .radar-wrap{
     display:flex; justify-content:center; padding:2px 0 4px;
@@ -468,6 +502,57 @@ function esc(s){
 }
 const G = c => `class="glass ${c||''}"`;
 
+// ── 轻量 Markdown 渲染（单文件看板，不引外部库）──
+// 只支持日记实际会用到的那几种：## 标题 / > 引用 / --- 分隔 / **加粗** / 段落
+// ⚠️ 安全：所有文本先 esc() 再加标记，避免把内容当 HTML 注入
+function renderMD(src){
+  const lines = String(src||'').split('\n');
+  const out = [];
+  let para = [];        // 正在攒的段落
+  let quote = [];       // 正在攒的引用
+
+  const flushPara = () => {
+    // ⚠️ 必须先 esc() 再 inlineMD() —— 顺序反了就是 XSS
+    if(para.length){ out.push(`<p>${inlineMD(esc(para.join('\n'))).replace(/\n/g,'<br>')}</p>`); para = []; }
+  };
+  const flushQuote = () => {
+    if(quote.length){ out.push(`<blockquote>${inlineMD(esc(quote.join('\n'))).replace(/\n/g,'<br>')}</blockquote>`); quote = []; }
+  };
+  const flushAll = () => { flushPara(); flushQuote(); };
+
+  for(const raw of lines){
+    const line = raw.trim();
+
+    if(!line){ flushAll(); continue; }                 // 空行 = 段落分隔
+    if(/^-{3,}$/.test(line)){ flushAll(); out.push('<hr>'); continue; }
+
+    let m;
+    if(m = line.match(/^(#{1,4})\s+(.*)$/)){           // 标题
+      flushAll();
+      const lv = Math.min(6, m[1].length + 2);          // ## → h4（block 内不抢主标题）
+      out.push(`<h${lv}>${inlineMD(esc(m[2]))}</h${lv}>`);
+      continue;
+    }
+    if(m = line.match(/^>\s?(.*)$/)){                  // 引用
+      flushPara();
+      quote.push(m[1]);
+      continue;
+    }
+    flushQuote();
+    para.push(line);
+  }
+  flushAll();
+  return out.join('');
+}
+
+// 行内标记：**加粗** / *斜体* / `代码`
+function inlineMD(s){
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+}
+
 function render(d){
   const title=document.getElementById('title');
   const meta=document.getElementById('meta');
@@ -558,8 +643,13 @@ function render(d){
   }
 
   if(d.summary){
-    h+=`<section class="glass today"><h2>📝 今天</h2>
-      <p>${esc(d.summary)}</p></section>`;
+    // 日记总结是 Markdown（`##` 小节 / `>` 引用 / `**加粗**` / `---` 分隔）
+    // → 需要渲染，否则整段挤成一坨纯文本。
+    const src = d.summary_source || {};
+    const isJournal = (src.kind === 'journal');
+    h+=`<section class="glass today">
+      <h2>📝 今天${isJournal?'':' <span class="tsrc">（模板兜底）</span>'}</h2>
+      <div class="md">${renderMD(d.summary)}</div></section>`;
   }
 
   const dims=d.dimensions||[],vals=d.drives||[];
