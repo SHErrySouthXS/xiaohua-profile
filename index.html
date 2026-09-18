@@ -168,7 +168,7 @@ function render(d){
       <div class="v">${esc(heartTitle)}</div>
       <div class="v sm">${esc(heartDetail)}</div></div>
     <div class="cell"><div class="k">欲望判定</div>
-      <div class="v">${esc(v.choice||'—')}</div>
+      <div class="v">${esc(v.kind||'—')}</div>
       <div class="v sm">${esc(v.intent||'')} ${v.strength!=null?v.strength.toFixed(2):''}</div></div>
     <div class="cell"><div class="k">判断状态</div>
       <div class="v">${esc(v.intent||'—')}</div>
@@ -211,11 +211,33 @@ function render(d){
       }).join('')}</div></section>`;
   }
 
-  // ── 🌙 作息校准 ──
-  if(d.rhythm){
-    const r = typeof d.rhythm === 'string' ? d.rhythm : JSON.stringify(d.rhythm);
+  // ── 🌙 作息校准（照 card_kit.rhythm_block 的做法：24 格热力条 + 三行）──
+  const rp = d.rhythm;
+  if(rp && typeof rp === 'object'){
+    const hours = rp.hours || [];
+    const peak = hours.length ? Math.max(...hours) : 0;
+    const ramp = "▁▂▃▄▅▆▇█";
+    let bar = "";
+    for(const c of hours){
+      if(!c) bar += "·";
+      else if(!peak) bar += "▁";
+      else bar += ramp[Math.min(7, Math.round(c / peak * 7))];
+    }
+    const days = rp.days || 0, target = rp.target || 14, ticks = rp.ticks || 0;
+    let mark, head, sub, cls;
+    if(rp.ready){ cls='ok'; mark='✅'; head='可以校准了'; sub='样本够了，随时能回放校准 peakHour'; }
+    else if(!ticks){ cls=''; mark='⬜'; head='还没开始攒'; sub='心跳每 tick 自动记一条，不用管'; }
+    else { cls='warn'; mark='⏳'; head=`还差 ${Math.max(0,target-days)} 天`; sub='校准前先攒够两个完整周，免得把一次加班当成规律'; }
+
     h += `<section><h2>🌙 作息校准</h2>
-      <div class="ev" style="font-size:12px;color:var(--dim2);line-height:1.7">${esc(r)}</div></section>`;
+      <div class="item" style="padding:0;border:none"><div class="ic">${mark}</div>
+      <div><div class="nm" style="${cls==='ok'?'color:var(--ok)':cls==='warn'?'color:var(--warn)':''}">${esc(head)}</div>
+      <div class="ev">${esc(sub)}</div></div></div>
+      <div style="margin-top:11px;font-family:ui-monospace,monospace;font-size:13px;
+        letter-spacing:1px;color:var(--accent);word-break:break-all">${esc(bar)}</div>
+      <div style="font-size:11px;color:var(--dim2);margin-top:6px">
+        0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
+    </section>`;
   }
 
   // ── ✅ Todo ──
