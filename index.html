@@ -23,11 +23,11 @@
     --glass-brd:rgba(255,255,255,.14);
     --glass-brd-top:rgba(255,255,255,.34);
 
-    /* 文字三级：保证"清晰可见" */
+    /* 文字三级：保证"清晰可见"（第一版太暗，整档提亮） */
     --fg:#ffffff;
-    --fg-2:#ece4e8;
-    --fg-3:#a99ea5;
-    --fg-4:#7d7379;
+    --fg-2:#f4eef1;
+    --fg-3:#c2b5bc;
+    --fg-4:#9c8f96;
 
     --ok:#8fd9b6;
     --warn:#ffcf8a;
@@ -49,19 +49,23 @@
     overflow-x:hidden;
   }
 
-  /* ── 环境光：粉紫色雾光，给磨砂玻璃提供可折射的底色 ── */
+  /* ── 环境光：粉紫色雾光，给磨砂玻璃提供可折射的底色 ──
+     ⚠️ 这一层是"磨砂感"的前提：玻璃要有东西可模糊。
+     第一版光晕太淡（alpha .13~.20 + blur 38px），在近黑底上几乎不可见，
+     结果卡片看着就是"暗色半透明面板"而非磨砂玻璃。
+     现在：光斑更亮更大、色相更明确，且允许溢出到卡片背后。 */
   body::before{
-    content:""; position:fixed; inset:-30%;
+    content:""; position:fixed; inset:-40%;
     background:
-      radial-gradient(ellipse 55% 45% at 18% 8%,  rgba(255,182,193,.20), transparent 62%),
-      radial-gradient(ellipse 50% 40% at 88% 22%, rgba(217,143,164,.16), transparent 66%),
-      radial-gradient(ellipse 70% 50% at 50% 108%,rgba(255,150,180,.13), transparent 70%),
-      radial-gradient(ellipse 40% 30% at 70% 62%, rgba(180,140,255,.07), transparent 70%);
-    filter:blur(38px); pointer-events:none; z-index:0;
+      radial-gradient(ellipse 58% 46% at 15% 6%,   rgba(255,150,175,.42), transparent 60%),
+      radial-gradient(ellipse 52% 42% at 90% 18%,  rgba(230,120,160,.34), transparent 64%),
+      radial-gradient(ellipse 46% 34% at 72% 55%,  rgba(190,140,255,.22), transparent 68%),
+      radial-gradient(ellipse 76% 52% at 45% 106%, rgba(255,130,170,.34), transparent 68%);
+    filter:blur(54px); pointer-events:none; z-index:0;
   }
   /* 细腻噪点，避免大面积渐变出现色带 */
   body::after{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.035;
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.05;
     background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
   }
   header, #app, footer{position:relative; z-index:2}
@@ -77,19 +81,23 @@
   }
   .sub b{color:var(--fg-2); font-weight:600}
 
-  /* ── 玻璃基类 ── */
+  /* ── 玻璃基类 ──
+     第一版玻璃太"薄"（fill .065 + 无内发光）→ 看着像哑光面板。
+     现在：fill 更实一点承托文字、边框高光更强、加内顶高光 + 底部暗边造厚度。 */
   .glass{
-    background:var(--glass);
-    backdrop-filter:blur(24px) saturate(1.5);
-    -webkit-backdrop-filter:blur(24px) saturate(1.5);
+    background:linear-gradient(165deg,
+      rgba(255,255,255,.105), rgba(255,255,255,.052) 42%, rgba(255,255,255,.075));
+    backdrop-filter:blur(28px) saturate(1.7);
+    -webkit-backdrop-filter:blur(28px) saturate(1.7);
     border:1px solid var(--glass-brd);
-    border-top-color:var(--glass-brd-top);      /* 上边更亮 = 玻璃厚度 */
-    border-left-color:rgba(255,255,255,.22);
+    border-top-color:rgba(255,255,255,.44);     /* 上边亮 = 玻璃厚度 */
+    border-left-color:rgba(255,255,255,.26);
     border-radius:var(--r-lg);
     box-shadow:
-      0 8px 32px rgba(0,0,0,.42),               /* 外阴影：悬浮 */
-      0 1px 0 rgba(255,255,255,.10) inset,      /* 顶部内高光 */
-      0 -1px 0 rgba(0,0,0,.16) inset;           /* 底部内暗边 */
+      0 10px 36px rgba(0,0,0,.46),              /* 外阴影：悬浮 */
+      0 0 0 1px rgba(255,255,255,.045) inset,   /* 细内圈 */
+      0 1.5px 0 rgba(255,255,255,.16) inset,    /* 顶部内高光 */
+      0 -1.5px 0 rgba(0,0,0,.22) inset;         /* 底部内暗边 */
   }
 
   /* ── 状态条 ── */
@@ -426,7 +434,13 @@ function render(d){
 
   // ── 历史 ──
   const hist = d.history || [];
-  if(hist.length>1) h += `<section class="glass"><h2>📉 历史（近 ${hist.length} 次）</h2>${sparkSVG(hist)}</section>`;
+  if(hist.length>1){
+    const allZero = hist.every(x=>(x.bad||0)===0);
+    h += `<section class="glass"><h2>📉 历史（近 ${hist.length} 次）</h2>${sparkSVG(hist)}
+      ${allZero?`<div class="hint" style="color:var(--ok);margin-top:8px">
+        ✅ 这 ${hist.length} 次采样全部 0 异常</div>`:''}
+    </section>`;
+  }
 
   app.innerHTML = h;
 
