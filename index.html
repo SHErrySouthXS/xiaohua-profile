@@ -452,6 +452,48 @@
     box-shadow:0 0 14px rgba(255,105,180,.13);
   }
 
+  /* ── 日历总览（Archive 第一项，2026-09-18 落地）──
+     一行一个单元格的月历；深浅＝那一天有多少痕迹。
+     ⚠️ 配色只用既定变量（--pink / 白字三级），不引入新色 ——
+        配色是大小姐定稿锁死的，改之前必须先问。 */
+  .calwrap{display:grid; grid-template-columns:repeat(7,1fr); gap:5px}
+  .calhead{font-size:10px; color:var(--fg-3); text-align:center;
+    padding-bottom:2px; letter-spacing:.06em}
+  .caltop{display:grid; grid-template-columns:repeat(7,1fr); gap:5px; margin-bottom:4px}
+  .calx{position:relative; aspect-ratio:1/1; border-radius:8px;
+    border:1px solid rgba(255,255,255,.07);
+    background:rgba(255,255,255,.03);
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size:10px; color:var(--fg-3); cursor:default}
+  .calx .n{font-size:9.5px; color:var(--fg-3); opacity:.75; line-height:1}
+  .calx .m{font-size:9px; color:var(--fg); line-height:1.25; margin-top:2px;
+    font-weight:600; letter-spacing:-.02em}
+  /* 空日子：压到最弱，但**不消失** —— 空白也是这一段日子的一部分 */
+  .calx.empty{background:transparent; border-color:rgba(255,255,255,.045)}
+  .calx.empty .n{opacity:.4}
+  .calx.t0{background:rgba(255,159,197,.10); border-color:rgba(255,159,197,.18)}
+  .calx.t1{background:rgba(255,159,197,.22); border-color:rgba(255,159,197,.32)}
+  .calx.t2{background:rgba(255,159,197,.42); border-color:rgba(255,159,197,.55)}
+  .calx.t3{background:rgba(255,159,197,.68); border-color:rgba(255,182,211,.8)}
+  .calx.t3 .n,.calx.t2 .n{color:#2a2731; opacity:.75}
+  .calx.t3 .m,.calx.t2 .m{color:#2a2731}
+  .calx.today{outline:1.5px solid var(--pink-hot); outline-offset:1px}
+  /* 点开某一天 */
+  .calx.sel{border-color:var(--pink-hot)}
+  .callegend{display:flex; align-items:center; gap:6px; margin-top:10px;
+    font-size:10px; color:var(--fg-3); flex-wrap:wrap}
+  .callegend i{display:inline-block; width:11px; height:11px; border-radius:3px;
+    border:1px solid rgba(255,255,255,.1)}
+  .calday{margin-top:11px; border-top:1px solid rgba(255,255,255,.09); padding-top:9px}
+  .calday .dh{font-size:11px; color:var(--fg-3); margin-bottom:6px}
+  .calday .dh b{color:var(--fg); font-size:12px}
+
+  /* ── 未完成清单（①.5，2026-09-18 落地）──
+     原文独立项。原先是"从工作台 log 抽出来的" —— log 是**我做过的**，
+     清单要的是**还没做的**。所以这版直接列项目自己的 next。 */
+  .pblock.nextwrk{border-left:2px solid rgba(255,159,197,.55);
+    padding-left:11px; margin-left:2px}
+
   /* ── 第三页：原文面板 ── */
   .prow{display:flex; justify-content:space-between; gap:10px; align-items:baseline;
     padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px}
