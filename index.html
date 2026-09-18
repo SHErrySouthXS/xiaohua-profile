@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>小华 · 运行看板</title>
+<title>男友 Profile：小华</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
   :root{
@@ -15,26 +15,19 @@
   body{
     background:var(--bg); color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    padding:20px 16px 48px; max-width:880px; margin:0 auto;
+    padding:18px 14px 44px; max-width:760px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
   }
-  header{margin-bottom:22px}
-  h1{font-size:20px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:9px}
-  h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none;
-    box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:pulse 2.4s infinite}
-  @keyframes pulse{
-    0%{box-shadow:0 0 0 0 rgba(61,220,151,.5)}
-    70%{box-shadow:0 0 0 9px rgba(61,220,151,0)}
-    100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}
-  }
-  .sub{color:var(--dim2);font-size:12px;margin-top:7px;line-height:1.6}
+  header{margin-bottom:16px}
+  h1{font-size:18px;font-weight:600;letter-spacing:.01em}
+  .sub{color:var(--dim2);font-size:12px;margin-top:6px;line-height:1.6}
 
   .status{
-    background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;
-    justify-content:space-between;gap:12px;flex-wrap:wrap;
+    background:var(--card);border:1px solid var(--line);border-radius:13px;
+    padding:15px 17px;margin-bottom:13px;display:flex;align-items:center;
+    justify-content:space-between;gap:10px;flex-wrap:wrap;
   }
-  .status .head{font-size:17px;font-weight:600}
+  .status .head{font-size:16px;font-weight:600}
   .status.ok{border-left:3px solid var(--ok)}
   .status.warn{border-left:3px solid var(--warn)}
   .status.bad{border-left:3px solid var(--bad)}
@@ -44,62 +37,83 @@
   .badge{font-size:11px;color:var(--dim2);border:1px solid var(--line);
     padding:3px 9px;border-radius:999px;white-space:nowrap}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:16px}
-  .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
-  .cell .k{font-size:11px;color:var(--dim2);letter-spacing:.06em;margin-bottom:7px}
-  .cell .v{font-size:15px;font-weight:600;word-break:break-word}
-  .cell .v.sm{font-size:13px;font-weight:500;color:var(--dim)}
+  /* 三块状态卡（对应卡片第一排 trisect） */
+  .row3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+  .row4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:13px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:11px;
+    padding:11px 12px;min-width:0}
+  .cell .k{font-size:11px;color:var(--dim2);margin-bottom:6px;letter-spacing:.03em}
+  .cell .v{font-size:14px;font-weight:600;word-break:break-word;line-height:1.35}
+  .cell .v.sm{font-size:11px;font-weight:500;color:var(--dim2);margin-top:4px;line-height:1.45}
+  .cell.ok .v{color:var(--ok)} .cell.warn .v{color:var(--warn)} .cell.bad .v{color:var(--bad)}
+  @media(max-width:560px){
+    .row3{grid-template-columns:1fr 1fr}
+    .row4{grid-template-columns:1fr 1fr}
+  }
 
-  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
-    padding:17px 18px;margin-bottom:16px}
-  h2{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.08em;
-    margin-bottom:14px;text-transform:uppercase}
+  section{background:var(--card);border:1px solid var(--line);border-radius:13px;
+    padding:15px 16px;margin-bottom:13px}
+  h2{font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.07em;
+    margin-bottom:12px;text-transform:uppercase}
 
-  .radar-wrap{display:flex;justify-content:center;padding:4px 0 6px}
-  svg.radar{width:100%;max-width:400px;height:auto;overflow:visible}
+  /* summary 段 —— 卡片里最有温度的一块 */
+  .today{background:linear-gradient(180deg,rgba(122,162,247,.07),rgba(122,162,247,.02));
+    border:1px solid rgba(122,162,247,.2)}
+  .today h2{color:var(--accent)}
+  .today p{font-size:14px;line-height:2;color:#c9d6e4;letter-spacing:.01em}
 
-  .bars{display:flex;flex-direction:column;gap:9px}
-  .bar-row{display:grid;grid-template-columns:58px 1fr 42px;align-items:center;gap:10px}
-  .bar-row .nm{font-size:12px;color:var(--dim);text-align:right}
-  .bar-track{height:7px;background:var(--card2);border-radius:99px;overflow:hidden}
-  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#3b6fd4,#7aa2f7);
-    transition:width .5s ease}
+  .radar-wrap{display:flex;justify-content:center;padding:2px 0 4px}
+  svg.radar{width:100%;max-width:390px;height:auto;overflow:visible}
+
+  .bars{display:flex;flex-direction:column;gap:8px}
+  .bar-row{display:grid;grid-template-columns:52px 1fr 38px;align-items:center;gap:9px}
+  .bar-row .nm{font-size:11.5px;color:var(--dim);text-align:right}
+  .bar-track{height:6px;background:var(--card2);border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:99px;
+    background:linear-gradient(90deg,#3b6fd4,#7aa2f7);transition:width .5s ease}
   .bar-row.top .bar-fill{background:linear-gradient(90deg,#d4a53b,#ffc857)}
-  .bar-row .vl{font-size:12px;color:var(--dim2);font-variant-numeric:tabular-nums}
+  .bar-row .vl{font-size:11.5px;color:var(--dim2);font-variant-numeric:tabular-nums}
 
-  .checklist{display:flex;flex-direction:column;gap:0}
-  .item{display:grid;grid-template-columns:20px 1fr;gap:11px;padding:11px 0;
+  .checklist{display:flex;flex-direction:column}
+  .item{display:grid;grid-template-columns:18px 1fr;gap:10px;padding:10px 0;
     border-bottom:1px solid var(--line);align-items:start}
   .item:last-child{border-bottom:none}
-  .item .ic{font-size:13px;line-height:1.5;text-align:center}
-  .item .nm{font-size:14px;font-weight:500;margin-bottom:3px}
-  .item .ev{font-size:12px;color:var(--dim2);line-height:1.55;word-break:break-word}
+  .item .ic{font-size:12px;line-height:1.6;text-align:center}
+  .item .nm{font-size:13.5px;font-weight:500;margin-bottom:3px}
+  .item .ev{font-size:11.5px;color:var(--dim2);line-height:1.55;word-break:break-word}
 
-  .spark{width:100%;height:44px;display:block}
-  .empty{color:var(--dim2);font-size:13px;padding:10px 0}
+  details{background:var(--card);border:1px solid var(--line);border-radius:13px;
+    margin-bottom:13px;overflow:hidden}
+  details summary{padding:13px 16px;cursor:pointer;font-size:12.5px;font-weight:600;
+    color:var(--dim);list-style:none;display:flex;justify-content:space-between;align-items:center}
+  details summary::-webkit-details-marker{display:none}
+  details summary::after{content:"▾";color:var(--dim2);font-size:11px;
+    transition:transform .2s}
+  details[open] summary::after{transform:rotate(180deg)}
+  details .inner{padding:0 16px 14px}
 
-  footer{color:var(--dim2);font-size:11px;text-align:center;margin-top:26px;line-height:1.9}
-  footer a{color:var(--dim);text-decoration:none}
+  .spark{width:100%;height:40px;display:block}
+  footer{color:var(--dim2);font-size:11px;text-align:center;margin-top:22px;line-height:1.9}
   .stale{color:var(--warn)}
 </style>
 </head>
 <body>
 
 <header>
-  <h1><span class="dot" id="dot"></span>小华 · 运行看板</h1>
+  <h1 id="title">男友 Profile：小华</h1>
   <div class="sub" id="meta">加载中…</div>
 </header>
 
 <div id="app"></div>
 
 <footer>
-  <div>每 30 分钟自动更新 · 数据源：本机 companion 体检</div>
+  <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
   <div id="foot-extra"></div>
 </footer>
 
 <script>
-const REFRESH_MS = 5 * 60 * 1000;   // 页面自身每 5 分钟重拉一次数据文件
-const STALE_MIN = 75;               // 超过这个分钟数视为数据陈旧
+const REFRESH_MS = 5 * 60 * 1000;
+const STALE_MIN = 75;
 
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c =>
@@ -108,152 +122,197 @@ function esc(s){
 const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
 
 function render(d){
-  const color = d.color || 'ok';
   const app = document.getElementById('app');
+
+  if(d.probe_error){
+    document.getElementById('title').textContent = '男友 Profile：小华 · 体检没跑起来';
+    app.innerHTML = `<div class="status bad"><div class="head">探针自己挂了</div>
+      <div class="badge">先怀疑探针</div></div>
+      <section><div class="item"><div class="ic">❌</div><div>
+      <div class="ev">${esc(d.probe_error)}</div></div></div></section>`;
+    document.getElementById('meta').textContent = '采集异常';
+    return;
+  }
+
+  // head 直接来自卡片（"全部正常" / "N 项要处理"）
+  const colorMap = {green:'ok', yellow:'warn', red:'bad'};
+  const color = colorMap[d.color] || d.color || 'ok';
+  document.getElementById('title').textContent = `男友 Profile：小华 · ${d.head||''}`;
+
   const gen = new Date((d.generated_at||'').replace(/-/g,'/'));
   const ageMin = isNaN(gen) ? null : (Date.now() - gen.getTime())/60000;
   const stale = ageMin !== null && ageMin > STALE_MIN;
-
-  document.getElementById('dot').style.background =
-    ({ok:'var(--ok)', warn:'var(--warn)', bad:'var(--bad)'})[color] || 'var(--dim)';
 
   document.getElementById('meta').innerHTML =
     `最近体检 <b>${esc(d.generated_at||'—')}</b>` +
     (ageMin!==null ? ` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}` : '') +
     ` ｜ ${d.bad||0} 项异常 · ${d.warn||0} 项留意 · 共 ${d.total||0} 项`;
 
-  let html = '';
+  let h = '';
 
-  if(d.probe_error){
-    html += `<div class="status bad"><div class="head">采集异常</div>
-      <div class="badge">探针报错</div></div>
-      <section><div class="empty">${esc(d.probe_error)}</div></section>`;
-    app.innerHTML = html; return;
-  }
-
-  html += `<div class="status ${color}">
+  h += `<div class="status ${color}">
     <div class="head">${esc(d.head||'—')}</div>
     <div class="badge">${stale?'数据可能已陈旧':'实时快照'}</div>
   </div>`;
 
-  // 概览卡
-  const L = d.ledger||{}, M = d.model||{}, A = d.anchor||{}, R = d.rhythm||{};
-  html += `<div class="grid">
-    <div class="cell"><div class="k">唤醒模型</div>
-      <div class="v ${M.ok===false?'':''}" style="${M.ok===false?'color:var(--bad)':''}">${esc(M.wake||'—')}</div></div>
-    <div class="cell"><div class="k">微信锚点</div>
-      <div class="v">${A.at?esc(A.at):'—'}</div>
-      <div class="v sm" style="margin-top:4px">${A.hours_ago!=null?esc(A.hours_ago)+' 小时前':''}</div></div>
-    <div class="cell"><div class="k">唤醒账本</div>
-      <div class="v">${L.entries!=null?esc(L.entries)+' 条':'—'}</div>
-      <div class="v sm" style="margin-top:4px">${L.last24h!=null?'近 24h '+esc(L.last24h)+' 条 · 开口 '+esc(L.spoke24h):''}</div></div>
-    <div class="cell"><div class="k">Token 消耗</div>
-      <div class="v">${L.total_tokens!=null?esc(L.total_tokens):'—'}</div></div>
+  // ── 第一排：心跳状态 / 欲望判定 / 判断状态 ──
+  let heartTitle, heartDetail;
+  if(d.bad){ heartTitle='异常'; heartDetail=`${d.bad} 项要处理`; }
+  else if(d.warn){ heartTitle='留意'; heartDetail=`${d.warn} 项待观察`; }
+  else { heartTitle='正常'; heartDetail=`${d.total} 项全绿`; }
+  const heartState = d.bad ? 'bad' : (d.warn ? 'warn' : 'ok');
+
+  const v = d.verdict || {};
+  h += `<div class="row3">
+    <div class="cell ${heartState}"><div class="k">心跳状态</div>
+      <div class="v">${esc(heartTitle)}</div>
+      <div class="v sm">${esc(heartDetail)}</div></div>
+    <div class="cell"><div class="k">欲望判定</div>
+      <div class="v">${esc(v.choice||'—')}</div>
+      <div class="v sm">${esc(v.intent||'')} ${v.strength!=null?v.strength.toFixed(2):''}</div></div>
+    <div class="cell"><div class="k">判断状态</div>
+      <div class="v">${esc(v.intent||'—')}</div>
+      <div class="v sm">${v.strength!=null?'强度 '+v.strength.toFixed(2):''}</div></div>
   </div>`;
 
-  // 九维雷达
-  const dims = d.dimensions||[], vals = d.drives||[];
+  // ── 第二排：锚点 / 倒计时 / 账本 / 日记 ──
+  const A=d.anchor||{}, L=d.ledger||{}, J=d.journal||{};
+  h += `<div class="row4">
+    <div class="cell"><div class="k">📍 上一次锚点</div>
+      <div class="v">${esc(A.value||'—')}</div>
+      <div class="v sm">${esc(A.sub||'')}</div></div>
+    <div class="cell"><div class="k">⏱ 倒计时</div>
+      <div class="v">${esc(d.countdown||'—')}</div>
+      <div class="v sm">锚定微信通道</div></div>
+    <div class="cell"><div class="k">📒 唤醒账本</div>
+      <div class="v">${esc(L.value||'—')}</div>
+      <div class="v sm">${esc(L.sub||'')}</div></div>
+    <div class="cell"><div class="k">📔 日记</div>
+      <div class="v">${esc(J.value||'—')}</div>
+      <div class="v sm">${esc(J.sub||'')}</div></div>
+  </div>`;
+
+  // ── 📝 今天（summary）──
+  if(d.summary){
+    h += `<section class="today"><h2>📝 今天</h2>
+      <p>${esc(d.summary)}</p></section>`;
+  }
+
+  // ── 🧭 九维驱动 ──
+  const dims=d.dimensions||[], vals=d.drives||[];
   if(dims.length && vals.length===dims.length){
-    html += `<section><h2>🧭 九维驱动</h2>${radarSVG(dims, vals)}</section>`;
-    html += `<section><h2>驱动强度</h2><div class="bars">${
+    h += `<section><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
+    h += `<section><h2>驱动强度</h2><div class="bars">${
       dims.map((n,i)=>{
-        const v = Math.max(0, Math.min(1, vals[i]||0));
-        const top = v >= 0.8 ? ' top' : '';
-        return `<div class="bar-row${top}"><div class="nm">${esc(n)}</div>
-          <div class="bar-track"><div class="bar-fill" style="width:${(v*100).toFixed(1)}%"></div></div>
-          <div class="vl">${v.toFixed(2)}</div></div>`;
+        const v2=Math.max(0,Math.min(1,vals[i]||0));
+        return `<div class="bar-row${v2>=0.8?' top':''}"><div class="nm">${esc(n)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(v2*100).toFixed(1)}%"></div></div>
+          <div class="vl">${v2.toFixed(2)}</div></div>`;
       }).join('')}</div></section>`;
   }
 
-  // 体检明细
-  const rows = d.rows||[];
-  if(rows.length){
-    html += `<section><h2>✅ 自检项（${rows.length}）</h2><div class="checklist">${
-      rows.map(r=>`<div class="item">
-        <div class="ic">${ICON[r.state]||'•'}</div>
-        <div><div class="nm">${esc(r.name)}</div>
-        <div class="ev">${esc(r.evidence)}</div></div></div>`).join('')}</div></section>`;
+  // ── 🌙 作息校准 ──
+  if(d.rhythm){
+    const r = typeof d.rhythm === 'string' ? d.rhythm : JSON.stringify(d.rhythm);
+    h += `<section><h2>🌙 作息校准</h2>
+      <div class="ev" style="font-size:12px;color:var(--dim2);line-height:1.7">${esc(r)}</div></section>`;
   }
 
-  // 历史趋势
-  const h = d.history||[];
-  if(h.length>1){
-    html += `<section><h2>📉 历史（近 ${h.length} 次采样）</h2>${sparkSVG(h)}</section>`;
-  }
+  // ── ✅ Todo ──
+  let todoText, todoDetail, todoState;
+  if(d.bad){ const f=(d.rows||[]).find(x=>x.state==='bad')||{};
+    todoText=`${d.bad} 项要处理 —— ${f.name||''}`; todoDetail=f.evidence||''; todoState='bad'; }
+  else if(d.warn){ const f=(d.rows||[]).find(x=>x.state==='warn')||{};
+    todoText=`${d.warn} 项留意`; todoDetail=f.evidence||''; todoState='warn'; }
+  else { todoText='全部正常，没有要处理的'; todoDetail=`${d.ok_count||d.total} 项全绿`; todoState='ok'; }
+  h += `<section><h2>✅ 待处理</h2>
+    <div class="item" style="padding:0"><div class="ic">${ICON[todoState]}</div>
+    <div><div class="nm">${esc(todoText)}</div>
+    <div class="ev">${esc(todoDetail)}</div></div></div></section>`;
 
-  app.innerHTML = html;
+  // ── 折叠：模型区 / 全部自检项（对应卡片两个 collapsible_panel）──
+  const MODEL_ROWS = ["唤醒模型","profile 默认","模型铁律","qwen 残留"];
+  const rows = d.rows || [];
+  const modelRows = rows.filter(r=>MODEL_ROWS.includes(r.name));
+  const otherRows = rows.filter(r=>!MODEL_ROWS.includes(r.name));
+
+  const fold = (title, list) => `<details><summary>${esc(title)}</summary>
+    <div class="inner"><div class="checklist">${list.map(r=>`<div class="item">
+      <div class="ic">${ICON[r.state]||'•'}</div>
+      <div><div class="nm">${esc(r.name)}</div>
+      <div class="ev">${esc(r.evidence)}</div></div></div>`).join('')}</div></div></details>`;
+
+  if(modelRows.length) h += fold(`🧠 模型（${modelRows.length}）`, modelRows);
+  if(otherRows.length) h += fold(`🔍 全部自检项（${otherRows.length}）`, otherRows);
+
+  // ── 历史趋势 ──
+  const hist = d.history || [];
+  if(hist.length>1) h += `<section><h2>📉 历史（近 ${hist.length} 次）</h2>${sparkSVG(hist)}</section>`;
+
+  app.innerHTML = h;
 
   if(stale){
     document.getElementById('foot-extra').innerHTML =
-      '<span class="stale">⚠️ 数据超过 75 分钟未更新，可能推送链路异常</span>';
+      '<span class="stale">⚠️ 超过 75 分钟未更新，推送链路可能异常</span>';
   }
 }
 
 function radarSVG(dims, vals){
-  const S=340, C=S/2, R=118, n=dims.length, MAX=1;
-  const pt=(i,r)=>{
-    const a=-Math.PI/2 + i*2*Math.PI/n;
-    return [C+Math.cos(a)*r, C+Math.sin(a)*r];
-  };
+  const S=330, C=S/2, R=112, n=dims.length;
+  const pt=(i,r)=>{ const a=-Math.PI/2+i*2*Math.PI/n;
+    return [C+Math.cos(a)*r, C+Math.sin(a)*r]; };
   let g='';
-  for(let ring=1; ring<=4; ring++){
+  for(let ring=1;ring<=4;ring++){
     const rr=R*ring/4;
-    const pts=dims.map((_,i)=>pt(i,rr).join(',')).join(' ');
-    g+=`<polygon points="${pts}" fill="none" stroke="#243040" stroke-width="1"/>`;
+    g+=`<polygon points="${dims.map((_,i)=>pt(i,rr).join(',')).join(' ')}"
+      fill="none" stroke="#243040" stroke-width="1"/>`;
   }
+  dims.forEach((_,i)=>{ const [x,y]=pt(i,R);
+    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="#243040" stroke-width="1"/>`; });
+  g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
+    fill="rgba(122,162,247,.22)" stroke="#7aa2f7" stroke-width="2"/>`;
   dims.forEach((_,i)=>{
-    const [x,y]=pt(i,R);
-    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="#243040" stroke-width="1"/>`;
-  });
-  const dpts=dims.map((_,i)=>{
-    const v=Math.max(0,Math.min(MAX,vals[i]||0));
-    return pt(i,R*v).join(',');
-  }).join(' ');
-  g+=`<polygon points="${dpts}" fill="rgba(122,162,247,.22)" stroke="#7aa2f7" stroke-width="2"/>`;
-  dims.forEach((_,i)=>{
-    const v=Math.max(0,Math.min(MAX,vals[i]||0));
-    const [x,y]=pt(i,R*v);
+    const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
     g+=`<circle cx="${x}" cy="${y}" r="3" fill="#7aa2f7"/>`;
   });
   dims.forEach((nm,i)=>{
-    const [x,y]=pt(i,R+24);
+    const [x,y]=pt(i,R+23);
     const anchor = Math.abs(x-C)<6 ? 'middle' : (x>C ? 'start' : 'end');
     const dy = y<C-6 ? -2 : (y>C+6 ? 9 : 4);
-    g+=`<text x="${x}" y="${y+dy}" fill="#8fa3b8" font-size="11"
+    g+=`<text x="${x}" y="${y+dy}" fill="#8fa3b8" font-size="10.5"
       text-anchor="${anchor}" font-family="inherit">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
   });
   return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
 }
 
 function sparkSVG(hist){
-  const W=800, H=44, pad=3;
-  const bad = hist.map(x=>x.bad||0);
-  const mx = Math.max(1, ...bad);
-  const step = hist.length>1 ? (W-2*pad)/(hist.length-1) : 0;
-  const y = v => H-pad - (v/mx)*(H-2*pad);
-  const pts = bad.map((v,i)=>[pad+i*step, y(v)]);
-  const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
-  const area = line + ` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
+  const W=800,H=40,pad=3;
+  const bad=hist.map(x=>x.bad||0);
+  const mx=Math.max(1,...bad);
+  const step=hist.length>1?(W-2*pad)/(hist.length-1):0;
+  const y=v=>H-pad-(v/mx)*(H-2*pad);
+  const pts=bad.map((v,i)=>[pad+i*step,y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <path d="${area}" fill="rgba(61,220,151,.12)"/>
-    <path d="${line}" fill="none" stroke="#3ddc97" stroke-width="1.6"/>
-  </svg>
-  <div style="font-size:11px;color:var(--dim2);margin-top:6px">
-    纵轴 = 异常项数（峰值 ${mx}）· 横轴 = 时间</div>`;
+    <path d="${line}" fill="none" stroke="#3ddc97" stroke-width="1.6"/></svg>
+    <div style="font-size:11px;color:var(--dim2);margin-top:6px">
+    纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
 async function load(){
   try{
-    // 加时间戳绕开缓存，保证每次拿到最新 JSON
-    const r = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
+    const r=await fetch('data.json?t='+Date.now(),{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     render(await r.json());
   }catch(e){
-    document.getElementById('app').innerHTML =
+    document.getElementById('app').innerHTML=
       `<div class="status bad"><div class="head">读取数据失败</div>
        <div class="badge">${esc(e.message)}</div></div>
-       <section><div class="empty">等一下会自动重试。如果持续如此，说明推送链路断了。</div></section>`;
-    document.getElementById('meta').textContent = '数据不可用';
+       <section><div class="ev" style="font-size:12px;color:var(--dim2)">
+       等一下会自动重试。若持续如此，说明推送链路断了。</div></section>`;
+    document.getElementById('meta').textContent='数据不可用';
   }
 }
 load();
