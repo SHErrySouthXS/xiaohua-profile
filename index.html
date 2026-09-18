@@ -59,14 +59,16 @@
     position:relative; min-height:100%;
     overflow-x:hidden;
   }
-  /* 极淡压暗层：让文字区更稳，同时保留图的层次不被烤平 */
+  /* 压暗层：只做"托住文字"的最低限度，不能把图的层次烤平
+     ⚠️ 第一版 .34/.16/.20/.46 太重 → 海滩质感全被吃掉（云层/海面看不出来）。
+     现在整体减半，只在顶部（标题压字）和底部（页脚压字）稍厚一点。 */
   body::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
     background:linear-gradient(180deg,
-      rgba(6,8,12,.34) 0%,
-      rgba(6,8,12,.16) 26%,
-      rgba(6,8,12,.20) 62%,
-      rgba(6,8,12,.46) 100%);
+      rgba(6,8,12,.22) 0%,
+      rgba(6,8,12,.06) 26%,
+      rgba(6,8,12,.08) 62%,
+      rgba(6,8,12,.26) 100%);
   }
   header, #app, footer{position:relative; z-index:2}
 
@@ -81,12 +83,14 @@
   }
   .sub b{color:var(--fg-2); font-weight:600}
 
-  /* ── 磨砂玻璃基类 ── */
+  /* ── 磨砂玻璃基类 ──
+     填充调低（.10→.065），让背后压暗的海滩图能透出来；
+     blur 略降（26→22px），保留一点图的纹理痕迹而不是糊成一片均匀色。 */
   .glass{
     background:linear-gradient(168deg,
-      rgba(255,255,255,.10), rgba(255,255,255,.045) 46%, rgba(255,255,255,.075));
-    backdrop-filter:blur(26px) saturate(1.6);
-    -webkit-backdrop-filter:blur(26px) saturate(1.6);
+      rgba(255,255,255,.075), rgba(255,255,255,.028) 46%, rgba(255,255,255,.055));
+    backdrop-filter:blur(22px) saturate(1.6);
+    -webkit-backdrop-filter:blur(22px) saturate(1.6);
     border:1px solid var(--glass-brd);
     border-top-color:var(--glass-brd-top);       /* 上边亮 = 玻璃厚度 */
     border-left-color:rgba(255,255,255,.22);
@@ -221,9 +225,9 @@
   details{
     margin-bottom:13px; overflow:hidden;
     background:linear-gradient(168deg,
-      rgba(255,255,255,.10), rgba(255,255,255,.045) 46%, rgba(255,255,255,.075));
-    backdrop-filter:blur(26px) saturate(1.6);
-    -webkit-backdrop-filter:blur(26px) saturate(1.6);
+      rgba(255,255,255,.075), rgba(255,255,255,.028) 46%, rgba(255,255,255,.055));
+    backdrop-filter:blur(22px) saturate(1.6);
+    -webkit-backdrop-filter:blur(22px) saturate(1.6);
     border:1px solid var(--glass-brd);
     border-top-color:var(--glass-brd-top);
     border-radius:var(--r-lg);
