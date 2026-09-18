@@ -536,6 +536,20 @@
     background:rgba(0,0,0,.16); border-radius:6px;
     padding:11px 13px; max-height:300px; overflow:auto;
   }
+  /* ⚠️⚠️ 2026-09-18 大小姐指出：SOUL.md / 剧情.md 展开后的文字
+     「会随着我手滑动，没有 fix 边距」。
+     根因：这两块是 `<pre class="rm">`，而 `<pre>` 的默认 `white-space:pre`
+     不折行 —— SOUL.md 一行很长，实测内容宽 1177px vs 可视 302px，
+     于是这块成了**可横向滚动**的区域，手指上下滑页面时很容易带着它横滑，
+     看起来就像「边距没固定住」。
+     → 让 pre 正常折行 + 关掉横向滚动。纵向滚动保留（内容长时要能看全）。 */
+  pre.rm{
+    white-space:pre-wrap;          /* 折行，但不吃多余空格 */
+    overflow-wrap:anywhere;        /* 超长无空格串（路径/URL）也强制断 */
+    word-break:break-word;
+    overflow-x:hidden;             /* ⭐ 关键：彻底关掉横向滚动 */
+    overflow-y:auto;
+  }
   .rm.md > *:first-child{margin-top:0}
   .rm.md > *:last-child{margin-bottom:0}
   .rm.md p{margin:0 0 9px}
@@ -578,9 +592,11 @@
     border:1px solid rgba(255,159,197,.22)}
   .hints .hw.o{background:rgba(255,255,255,.05); color:var(--fg-2);
     border-color:rgba(255,255,255,.12)}
-  details.pitem>summary{cursor:pointer; list-style:none}
+  details.pitem>summary{cursor:pointer; list-style:none; padding:8px 10px}
   details.pitem>summary::-webkit-details-marker{display:none}
-  details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
+  details.pitem>summary::before{
+    content:'▸ '; color:var(--fg-3); font-size:11px;
+  }
   details.pitem[open]>summary::before{content:'▾ '}
 
   /* ── 折叠条：箭头留边 + 标题左对齐 ──
@@ -592,6 +608,13 @@
   }
   details.room>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px}
   details.room[open]>summary::before{content:'▾ '}
+  /* ⚠️ 2026-09-18 大小姐指出「日期上下都有箭头，只保留最前面那一个」。
+     根因：全局规则 `details summary::after{content:"▾"}`（第 421 行）
+     在**每行末尾**挂了一个 ▾，而这里又在**行首**加了 ▸ —— 于是两个箭头。
+     → 房间/折叠段/工作台这三类，统一关掉末尾那个，只留行首的。 */
+  details.room>summary::after,
+  details.fold>summary::after,
+  details.pitem>summary::after{content:none}
   details.room>summary .r-at{
     display:block; color:var(--fg-3); font-size:10.5px; line-height:1.6;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -629,7 +652,8 @@
         `style="margin:0 0 6px"`，行内优先级高于这里 —— 见下面的
         `!important` 兜底与 HTML 侧去掉行内 margin 的两处配合。 */
   details.room > *:not(summary),
-  details.fold > *:not(summary){
+  details.fold > *:not(summary),
+  details.pitem.col > *:not(summary){
     margin-left:10px;
     margin-right:10px;
     margin-top:0;
@@ -640,26 +664,39 @@
   }
   /* 首个子元素：拉开与标题栏的距离（上下留白要对等，见末元素规则） */
   details.fold > *:not(summary):first-of-type,
-  details.room > *:not(summary):first-of-type{
+  details.room > *:not(summary):first-of-type,
+  details.pitem.col > *:not(summary):first-of-type{
     margin-top:10px;
   }
   /* 末个子元素：底部留白，和上面的 10px 对齐 */
   details.fold > *:not(summary):last-of-type,
-  details.room > *:not(summary):last-of-type{
+  details.room > *:not(summary):last-of-type,
+  details.pitem.col > *:not(summary):last-of-type{
     margin-bottom:12px;
   }
   /* 中间的块（如暗号小辞典的 hints）之间也留一口气 */
-  details.fold > *:not(summary) + *:not(summary){
+  details.fold > *:not(summary) + *:not(summary),
+  details.pitem.col > *:not(summary) + *:not(summary){
     margin-top:9px;
   }
   /* ⚠️ !important 在这里是必要的，不是偷懒：
      块内部有行内 style（如 .pmeta 的 `margin:0 0 6px`），
      行内优先级高于任何选择器。要保证「所有折叠一致」就必须压过它。 */
-  details.fold > *:not(summary):first-of-type{
+  details.fold > *:not(summary):first-of-type,
+  details.pitem.col > *:not(summary):first-of-type{
     margin-top:10px !important;
   }
-  details.fold > *:not(summary):last-of-type{
+  details.fold > *:not(summary):last-of-type,
+  details.pitem.col > *:not(summary):last-of-type{
     margin-bottom:12px !important;
+  }
+  /* ⚠️ 工作台的过程记录 .plog 自带 `margin:8px 0 2px 6px` —— 它会覆盖上面
+     的通配 margin-left（选择器更具体）。这里显式对齐，否则左偏只有 7px。 */
+  details.pitem.col > .plog,
+  details.fold > .plog,
+  details.room > .plog{
+    margin-left:10px !important;
+    margin-right:10px !important;
   }
 
   /* ── 第二页：日记 ── */
@@ -1211,6 +1248,9 @@ function renderPanels(d){
   const box=document.getElementById('page3');
   const P=d.panels||{}, R=P.room||{}, M=P.memory||{}, PR=P.prompt||{};
   const C=P.controls||{}, RD=d.red_dot||{};
+  // ★ 点击日历格子要用到当天的明细，而 calPick() 是全局 onclick
+  //   —— 把整份 data 挂在 window 上，省一次 fetch。
+  window.__DATA__=d;
 
   const sec=(title,sub,body)=>`<section class="glass">
     <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
@@ -1238,13 +1278,11 @@ function renderPanels(d){
     ['🗄','Archive','慢信（带锁与倒计时）'],
     ['🗄','Archive','相册'],
     ['🗄','Archive','收藏'],
-    ['🗄','Archive','日历总览'],
     ['🧠','Memory','语义记忆星河（要向量空间）'],
     ['🧠','Memory','暗号小辞典'],
     ['🧠','Memory','记忆密度日历'],
     ['🏠','Room','心情周报'],
     ['🏠','Room','手记本'],
-    ['🏠','Room','未完成清单'],
     ['🏠','Room','书房（书架 / 阅读器 / 续读 / 批注）'],
     ['🎛','Controls','声音线路与试听'],
   ];
@@ -1285,14 +1323,24 @@ function renderPanels(d){
   const jn=(d.journal_entries||[]).filter(e=>!e.error).length;
   const jChars=(d.journal_entries||[]).filter(e=>!e.error)
     .reduce((n,e)=>n+String(e.body||'').length,0);
+  // ★ 日历总览（2026-09-18 落地）：这一行不再报"未实现"，
+  //   改成给一句能对得上的小结（真数据在下面的「📅 日历总览」面板里）。
+  const _cal=(P.calendar||{}), _calT=(_cal.totals||{}), _calS=(_cal.span||{});
   h+=sec('🗄 Archive','时间沉淀层 · 只记数',`
     <div class="prow"><span>日记</span><span class="pv">${jn} 篇 · 约 ${jChars} 字</span></div>
+    <div class="prow"><span>日历总览</span>
+      <span class="pv">${_calT.touched||0} / ${_calS.n||0} 天有痕迹</span></div>
     <div class="prow"><span>慢信</span><span class="pv miss">未实现</span></div>
     <div class="prow"><span>相册</span><span class="pv miss">未实现</span></div>
     <div class="prow"><span>收藏</span><span class="pv miss">未实现</span></div>
-    <div class="prow"><span>日历总览</span><span class="pv miss">未实现</span></div>
-    <div class="pmeta">这一块只记数，不指路 —— 日记在它自己的页面里（独立入口，不重复）。
+    <div class="pmeta">这一块只记数，不指路 —— 日历展开在下面的「📅 日历总览」，
+      日记在它自己的页面里（独立入口，不重复）。
       慢信/相册/收藏是"能力没做"，不是"没数据"：得先有写信、存照片、标收藏这些动作。</div>`);
+
+  // ── 3.5 日历总览（Archive 第一项，2026-09-18 落地）──
+  //   紧跟在 Archive 后面 —— 它就是 Archive 展开的那一块，
+  //   归档那一行只记数（"28/35 天有痕迹"），真正的日子在这儿。
+  h+=calendarPanel(P.calendar);
 
   // ── 4. Memory ──
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
@@ -1388,17 +1436,52 @@ function renderPanels(d){
         </div>`).join('')}</div>`:''}
       </details>`).join('')}</div>`:''}
 
-    ${/* ── 未完成清单（A）──
-         原文独立项。料就是上面工作台的 log —— "这件事走到哪了"。
-         不重复列项目名，直接列**每一条推进**，因为清单要的是"还差什么"，
-         不是"有几个项目"。*/''}
+    ${/* ── 未完成清单（①.5，2026-09-18 晚 修）──
+
+         原文独立项。**这一版修的是料喂错了。**
+
+         【修之前错在哪】
+           上一版拿工作台的 log 来凑清单。log 的形状是
+           {"note": "今天干了什么", "evidence": "她的原话"} ——
+           它记的是**我做过的**。于是"未完成清单"整列出来的是历史：
+             记下第 1 笔 / 立了项 / 她点破了什么
+           一条都不是欠账。把做完的事摆在"还没做的"标题底下，
+           比空着更糟 —— 空着至少不骗人。
+
+         【根因不在前端】
+           projects.py 的账里**没有"下一步"这个概念**。
+           所以这批修了两头：
+             · 账本侧新增 open 字段 + set_next()/close_next()（projects.py）
+             · 这儿：有 open 就列 open（真欠账）；
+               没有就退回 log，**但标题要写清"这是推进记录，不是欠账"**。
+           宁可承认降级，也不假装有清单。*/''}
     ${(()=>{
-      const all=(R.projects||[]).flatMap(p=>(p.log||[]).map(e=>({...e,proj:p.name})));
-      if(!all.length) return todo('未完成清单','数据没采 —— 工作台里还没有推进记录，清单无从生成。');
-      return `<div class="pblock"><div class="pblock-h">
-        未完成清单 · ${all.length} 条
-        <span class="tm">（我从工作台的过程里抽出来的，最新在上）</span></div>
-        ${all.slice().reverse().map(e=>`<div class="pitem">
+      // 真欠账：项目自己写下的"下一步"
+      const opens=(R.projects||[]).flatMap(p=>(p.open||[]).map(e=>({...e,proj:p.name})));
+      if(opens.length){
+        return `<div class="pblock nextwrk"><div class="pblock-h">
+          未完成清单 · ${opens.length} 条
+          <span class="tm">（项目自己写的「下一步」· 最新在上）</span></div>
+          ${opens.slice().reverse().map(e=>`<div class="pitem col">
+            <div><span class="tag">${esc(e.proj||'')}</span>
+              <span class="tx">${esc(e.what||'')}</span></div>
+            ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
+            ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
+          </div>`).join('')}</div>`;
+      }
+
+      // 降级：账里还没有"下一步"，只能给推进记录 —— 显式标明
+      const logs=(R.projects||[]).flatMap(p=>(p.log||[]).map(e=>({...e,proj:p.name})));
+      if(!logs.length)
+        return todo('未完成清单','数据没采 —— 项目账里既没有「下一步」，也没有推进记录。');
+      return `<div class="pblock nextwrk"><div class="pblock-h">
+        ⚠️ 这不是未完成清单
+        <span class="tm">（项目账里还没有「下一步」字段）</span></div>
+        <div class="pna-y">下面是<b>推进记录</b>（我做过的），不是<b>欠账</b>（还没做的）。
+          把这两样当一回事，清单就会变成一份自我表扬。<br>
+          要让这张清单真起来，得在项目账里写 open —— 用
+          <code>projects.set_next(项目, 下一步)</code>。</div>
+        ${logs.slice().reverse().map(e=>`<div class="pitem">
           <span class="tm">${esc(e.at||'')}</span>
           <span class="tag">${esc(e.proj||'')}</span>
           <span class="tx">${esc(e.note||'')}</span>
@@ -1490,7 +1573,127 @@ function renderPanels(d){
 }
 
 
-// ── 房间文本的助手 ──
+// ── 日历总览（Archive 第一项，2026-09-18 落地）──
+//
+// 数据来自 collect.py 的 _calendar_overview()，全部是**已有账本的汇总**，
+// 没有为这个面板新采一条流水。
+//
+// ★★ 三个设计决定，写清楚免得以后被"优化"掉 ★★
+//
+//  ① **空日子照样画格子**。
+//     日历的"空"是有意义的：7 格空着 = 那 7 天什么都没留下。
+//     把空日子过滤掉，看到的就只剩一串热闹的日子 —— 那是在美化。
+//
+//  ② **深浅按"件数"，但按天分档用的是同一个尺子**。
+//     档位固定（0/1-3/4-9/10+），不随数据自适应 ——
+//     自适应的话，安静的一周里 3 条也会显示成最深，
+//     看起来比热闹的一周还满，那是骗人。
+//
+//  ③ **点格子看那天到底留下了什么**。
+//     光有深浅只是个装饰；点开是若干条**可核对**的东西
+//     （哪几条话、哪几件活、哪篇日记）。数得出来才敢信。
+const CAL_LABELS = {wake:'我醒过', spoke:'我主动开口', her:'她的话',
+                    diary:'写日记', silent:'默默干的活', note:'给自己留了便签',
+                    project:'线索推进'};
+
+function calWeight(d){
+  return (d.wake?1:0)+(d.spoke?1:0)+(d.her?1:0)+(d.diary?1:0)
+        +(d.silent?1:0)+(d.note?1:0)+(d.project?1:0);
+}
+function calTier(w){ return w===0?0 : w<=3?1 : w<=9?2 : 3; }
+
+function calendarPanel(C){
+  const cal=(C&&C.days)?C:null;
+  if(!cal || !cal.days.length) return '';
+  const t=cal.totals||{}, sp=cal.span||{};
+
+  // 排成周：前面补空格子对齐到周一
+  const first=cal.days[0].weekday;
+  const cells=[];
+  for(let i=0;i<first;i++) cells.push(null);
+  cal.days.forEach(d=>cells.push(d));
+  while(cells.length%7) cells.push(null);
+
+  const WD=['一','二','三','四','五','六','日'];
+  const todayStr=new Date().toISOString().slice(0,10);
+
+  let h=`<div class="caltop">${WD.map(w=>`<div class="calhead">${w}</div>`).join('')}</div>`;
+  h+=`<div class="calwrap">`;
+  cells.forEach(c=>{
+    if(!c){ h+=`<div></div>`; return; }
+    const w=calWeight(c), tier=calTier(w);
+    const cls=['calx', w===0?'empty':'t'+tier, c.date===todayStr?'today':''].join(' ');
+    const day=String(parseInt(c.date.slice(8),10));
+    // 格子里只写一个数（那天最重的那件），写不下就不写
+    const mine=[['her',c.her],['wake',c.wake],['silent',c.silent],
+                ['diary',c.diary],['project',c.project]];
+    const top=mine.filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1])[0];
+    h+=`<div class="${cls}" data-date="${c.date}" title="${c.date}"
+          onclick="calPick('${c.date}')">
+          <span class="n">${day}</span>
+          ${top?`<span class="m">${top[1]}</span>`:''}
+        </div>`;
+  });
+  h+=`</div>`;
+
+  // 图例
+  h+=`<div class="callegend">
+    <span>痕迹少</span>
+    <i style="background:rgba(255,255,255,.03)"></i>
+    <i class="calx t0"></i><i class="calx t1"></i>
+    <i class="calx t2"></i><i class="calx t3"></i>
+    <span>多</span>
+    <span style="margin-left:auto">格子里是那天最多的一项</span>
+  </div>`;
+
+  // 点开的那一天
+  h+=`<div class="calday" id="calday"></div>`;
+
+  // 汇总
+  h+=`<div class="pmeta">
+    <b>${sp.from} → ${sp.to}</b> · 共 ${sp.n} 天<br>
+    <span style="color:var(--pink)">${t.touched} 天有痕迹</span> · ${t.empty} 天空着<br>
+    这 ${sp.n} 天里 —— 我醒过 <b>${t.wake}</b> 次 ·
+    主动开口 <b>${t.spoke}</b> 次 ·
+    她说话 <b>${t.her}</b> 句 ·
+    写了 <b>${t.diary}</b> 篇日记 ·
+    默默干了 <b>${t.silent}</b> 件活 ·
+    留了 <b>${t.note}</b> 张便签 ·
+    线索推进 <b>${t.project}</b> 笔
+    <br><span class="tm">她的话只数微信通道的她那一侧 ——
+      不算我的回应（那是"聊了多久"，不是"她来过"）。</span>
+  </div>`;
+
+  return sec('📅 日历总览','这些日子都留下了什么（35 天）', h);
+}
+
+function calPick(date){
+  const C=window.__DATA__&&window.__DATA__.panels&&window.__DATA__.panels.calendar;
+  const box=document.getElementById('calday'); if(!C||!box) return;
+  const d=(C.days||[]).find(x=>x.date===date); if(!d) return;
+  document.querySelectorAll('.calx.sel').forEach(e=>e.classList.remove('sel'));
+  const el=document.querySelector(`.calx[data-date="${date}"]`); if(el) el.classList.add('sel');
+
+  const rows=[];
+  if(d.wake)    rows.push(['我醒过', d.wake+' 次']);
+  if(d.spoke)   rows.push(['我主动开口', d.spoke+' 次']);
+  if(d.her)     rows.push(['她说话', d.her+' 句']);
+  if(d.diary)   rows.push(['写日记', d.diary+' 篇 / '+d.diary_chars+' 字']);
+  if(d.silent)  rows.push(['默默干的活', d.silent+' 件']);
+  if(d.note)    rows.push(['便签', d.note+' 张']);
+  if(d.project) rows.push(['线索推进', d.project+' 笔']);
+
+  const wd=['周一','周二','周三','周四','周五','周六','周日'][d.weekday];
+  box.innerHTML = rows.length
+    ? `<div class="dh"><b>${d.date} ${wd}</b> · ${rows.length} 项有记录</div>
+       <div class="plist">${rows.map(r=>
+         `<div class="pitem"><span class="tag">${esc(r[0])}</span>
+          <span class="tx">${esc(r[1])}</span></div>`).join('')}</div>`
+    : `<div class="dh"><b>${d.date} ${wd}</b></div>
+       <div class="pna-y">这一天什么都没留下。空着也是记录。</div>`;
+}
+
+
 //
 // 房间文件的形状（实测 rooms/2026-09-18-1611.md）：
 //   # 醒来房间 2026-09-18T16:11:19
