@@ -13,8 +13,24 @@
         所以图标必须是实底 —— 这里用看板同款深灰紫 #2a2731。
      另外 iOS 会自动给图标加圆角，"预圆角"是没用的，交方形原图即可。 -->
 <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.json">
+
+<!-- ── iOS 全屏（"添加到主屏幕"后不显示 Safari 地址栏）──
+     ⚠️ 关键：**iOS 不认 manifest 的 display: standalone**，必须用这些 meta。
+        只写 manifest 的话，加出来还是带 Safari 工具栏的"书签"形态。
+     这是 iOS 的私有约定，Chrome/安卓走 manifest。 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<!-- 新版 iOS 的等价写法（两个都写，覆盖新旧系统） -->
+<meta name="mobile-web-app-capable" content="yes">
+<!-- 状态栏：black-translucent = 内容延伸到状态栏下面（真全屏观感）
+     配合 CSS 的 padding-top: env(safe-area-inset-top) 避免内容被刘海挡 -->
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<!-- 主屏上显示的名字（不写会取 <title>，太长会被截断） -->
+<meta name="apple-mobile-web-app-title" content="小华">
+<!-- 关掉 iOS 自动把数字识别成电话号码（体检数据里的时间戳会被误识别） -->
+<meta name="format-detection" content="telephone=no">
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
 
@@ -100,7 +116,11 @@
     background-size:cover;
     color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    padding:20px 14px 48px; max-width:780px; margin:0 auto;
+    /* 全屏（apple-mobile-web-app-capable）下内容会顶到状态栏/刘海底下，
+       用安全区 padding 顶开。非全屏时 env() 为 0，不影响普通浏览器。 */
+    padding:calc(20px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
+             calc(48px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
     overflow-x:hidden;
