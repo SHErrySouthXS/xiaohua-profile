@@ -196,6 +196,32 @@
     padding:1px 5px; border-radius:4px; letter-spacing:.02em;
   }
 
+  /* ── 7.2 入口红点 ──
+     原文：> 出口是入口红点：对应入口亮一颗点、翻开即消 */
+  .dot{
+    display:inline-block; width:7px; height:7px; border-radius:50%;
+    background:var(--pink-hot); margin-left:6px; vertical-align:middle;
+    box-shadow:0 0 7px var(--pink-glow), 0 0 2px var(--pink-hot);
+    animation:dotPulse 2.1s ease-in-out infinite;
+  }
+  @keyframes dotPulse{
+    0%,100%{opacity:1; transform:scale(1)}
+    50%{opacity:.45; transform:scale(.82)}
+  }
+  /* 「今天」块里的红点清单 */
+  .dotlist{margin-top:9px; display:flex; flex-direction:column; gap:7px}
+  .dotitem{
+    display:flex; gap:9px; align-items:flex-start;
+    font-size:12.5px; line-height:1.55;
+  }
+  .dotitem .tag{
+    flex:0 0 auto; font-size:10.5px; padding:1px 7px; border-radius:5px;
+    background:rgba(255,105,180,.16); color:var(--pink);
+    border:1px solid rgba(255,105,180,.28); white-space:nowrap;
+  }
+  .dotitem .tx{color:var(--fg-2)}
+  .dotitem .tm{color:var(--fg-3); font-size:11px; white-space:nowrap}
+
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
     .row4{grid-template-columns:1fr 1fr}
@@ -358,6 +384,11 @@ const REFRESH_MS = 5 * 60 * 1000;
 const STALE_MIN = 75;
 const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
 
+// ★ 7.2 红点「翻开即消」的回调端点。
+//   留空 = 只做视觉收起（刷新后红点会回来）。
+//   开了公网回调口之后填这里，就是原文说的真·翻开即消。
+const READ_ENDPOINT = '';
+
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -419,6 +450,10 @@ function render(d){
   </div>`;
 
   const A=d.anchor||{},L=d.ledger||{},J=d.journal||{};
+  // ★ 7.2 入口红点：夜里默默干的活（原文：不推送不角标，亮一颗点、翻开即消）
+  const RD=d.red_dot||{};
+  const rdN=Number(RD.count||0);
+  const dotHtml=rdN>0?`<span class="dot" title="有 ${rdN} 件你还没看的"></span>`:'';
   h+=`<div class="row4">
     <div ${G('cell')}><div class="k">📍 上一次锚点</div>
       <div class="v">${esc(A.value||'—')}</div>
@@ -429,10 +464,25 @@ function render(d){
     <div ${G('cell')}><div class="k">📒 唤醒账本</div>
       <div class="v">${esc(L.value||'—')}</div>
       <div class="v sm">${esc(L.sub||'')}</div></div>
-    <div ${G('cell')}><div class="k">📔 日记</div>
+    <div ${G('cell')} id="rdCell" style="cursor:${rdN>0?'pointer':'default'}">
+      <div class="k">📔 日记${dotHtml}</div>
       <div class="v">${esc(J.value||'—')}</div>
-      <div class="v sm">${esc(J.sub||'')}</div></div>
+      <div class="v sm" id="rdSub">${rdN>0?`另有 ${rdN} 件夜里做的，点开看看`:`${esc(J.sub||'')}`}</div></div>
   </div>`;
+
+  // ── 红点清单（翻开即消：点开这块，水位推进，红点消失）──
+  if(rdN>0 && (RD.items||[]).length){
+    const items=(RD.items||[]).map(it=>{
+      const tm=(it.at||'').slice(11,16);
+      return `<div class="dotitem">
+        <span class="tag">${esc(it.label||'')}</span>
+        <span class="tx">${esc(it.text||'')}</span>
+        <span class="tm">${esc(tm)}</span></div>`;
+    }).join('');
+    h+=`<section class="glass today" id="rdPanel" style="cursor:pointer">
+      <h2>🔴 夜里的活 · ${rdN} 件 <span style="font-size:11px;font-weight:400;color:var(--fg-3)">（看过就收起来）</span></h2>
+      <div class="dotlist">${items}</div></section>`;
+  }
 
   if(d.summary){
     h+=`<section class="glass today"><h2>📝 今天</h2>
@@ -514,6 +564,37 @@ function render(d){
   }
 
   app.innerHTML=h;
+
+  // ── 7.2 红点：「翻开即消」──
+  //
+  // 原文：> 出口是入口红点：对应入口亮一颗点、**翻开即消**
+  //
+  // 两种模式（页面里带 READ_ENDPOINT 就真消，没带就只做视觉收起）：
+  //   有端点 → POST 到本机回调，服务器把水位推到当前行数，下次刷新红点归零
+  //   无端点 → 收起视觉，下次刷新仍在（诚实：不算真的已读）
+  const rdPanel=document.getElementById('rdPanel');
+  const rdCell=document.getElementById('rdCell');
+  const rdN=Number((d.red_dot||{}).count||0);
+  if(rdN>0){
+    const clearDot=()=>{
+      // 视觉立刻收起（不等网络）
+      const dp=document.getElementById('rdPanel'); if(dp) dp.remove();
+      const dt=document.querySelector('#rdCell .dot'); if(dt) dt.remove();
+      const ds=document.getElementById('rdSub');
+      if(ds) ds.textContent='看过了';
+    };
+    const onRead=async()=>{
+      clearDot();
+      if(typeof READ_ENDPOINT!=='string'||!READ_ENDPOINT) return;
+      try{
+        await fetch(READ_ENDPOINT,{method:'POST',mode:'cors',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({n:rdN, at:new Date().toISOString()})});
+      }catch(e){ /* 网络失败也不回滚视觉 —— 她看过就是看过 */ }
+    };
+    if(rdPanel) rdPanel.addEventListener('click',onRead);
+    if(rdCell)  rdCell.addEventListener('click',onRead);
+  }
 
   if(stale){
     document.getElementById('foot-extra').innerHTML=
