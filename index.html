@@ -483,10 +483,41 @@
     border:1px solid var(--line); border-radius:5px; padding:0 6px; margin-bottom:5px}
   .pna-w{font-size:12px; color:var(--fg-2); line-height:1.6}
   .pna-y{font-size:11px; color:var(--fg-3); line-height:1.65; margin-top:3px}
-  .rm{white-space:pre-wrap; word-break:break-word; font-size:11px; line-height:1.65;
-    color:var(--fg-2); background:rgba(0,0,0,.16); border-radius:6px;
-    padding:10px 12px; margin:8px 0 0; max-height:280px; overflow:auto;
-    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* ── 醒来房间展开后的正文 ──
+     ⚠️ 2026-09-18 改了两处（都是大小姐指出）：
+       1. 原先这里是 `<pre class="rm">` + esc()，正文里的 ## / - 全裸着。
+          现在换成 renderMD() 渲染，markdown 正常出效果。
+       2. 展开后内容贴边、没有留白 —— 补 margin（见下面 .rm.md 的边距）。
+     字体从等宽改回正文体：渲染后是给人读的段落，不是日志转储。 */
+  .rm{
+    font-size:12px; line-height:1.75; color:var(--fg-2);
+    background:rgba(0,0,0,.16); border-radius:6px;
+    padding:11px 13px; max-height:300px; overflow:auto;
+  }
+  .rm.md > *:first-child{margin-top:0}
+  .rm.md > *:last-child{margin-bottom:0}
+  .rm.md p{margin:0 0 9px}
+  .rm.md h4, .rm.md h5, .rm.md h6{
+    margin:12px 0 7px; font-size:12.5px; color:var(--fg-1); font-weight:650;
+  }
+  .rm.md h4:first-child, .rm.md h5:first-child, .rm.md h6:first-child{margin-top:0}
+  .rm.md ul{margin:0 0 9px; padding-left:17px; list-style:none}
+  .rm.md li{position:relative; margin:3px 0; padding-left:2px; line-height:1.7}
+  .rm.md li::before{
+    content:'·'; position:absolute; left:-11px; color:var(--fg-3);
+  }
+  .rm.md li.li-in{margin-left:12px; color:var(--fg-3)}
+  .rm.md li.li-in::before{content:'–'}
+  .rm.md blockquote{
+    margin:9px 0; padding:2px 0 2px 11px;
+    border-left:2px solid rgba(255,159,197,.35); color:var(--fg-3);
+  }
+  .rm.md hr{border:0; border-top:1px solid var(--line); margin:11px 0}
+  .rm.md strong{color:#fff; font-weight:650}
+  .rm.md code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11px;
+    background:rgba(255,255,255,.07); border-radius:4px; padding:1px 4px;
+  }
   /* 工作台展开后的过程记录 —— 左侧一道细线，表示"这些都属于上面那件事" */
   .plog{margin:8px 0 2px 6px; padding-left:10px;
     border-left:2px solid var(--fg-3)}
@@ -513,11 +544,10 @@
   /* ── 醒来房间的折叠条 ──
      ⚠️ 2026-09-18 修：原先 summary 里「日期 + 日记尾巴摘要」挤成一行，
         在窄屏上日期被摘要压住、两段字黏在一起（大小姐截图指出）。
-        原因是 details.pitem.col 里 summary 没有自己的行约束，
-        .tx 的 flex:1 1 auto 把 .tm 一起吃了进去。
-        现在：日期独占一行（不换行），摘要在下一行整行铺开。 */
+     ⚠️ 2026-09-18 大小姐定：**标题只留时间**，摘要一律去掉 ——
+        每间房间长一样，不靠摘要区分（要看就点开）。所以 .r-peek 整个废弃。*/
   details.room>summary{
-    display:block; padding:2px 0;
+    display:block; padding:5px 0;
   }
   details.room>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px}
   details.room[open]>summary::before{content:'▾ '}
@@ -526,24 +556,42 @@
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  details.room>summary .r-peek{
-    display:block; margin-top:3px; font-size:12px; line-height:1.6;
-    color:var(--fg-2);
-  }
   /* ── 折叠段（Memory 的 thoughts / 线索等）──
      和醒来房间同一套：标题行是按钮，内容收在下面。 */
   details.fold>summary{
     display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
-    padding:6px 0; cursor:pointer; list-style:none;
+    padding:7px 0; cursor:pointer; list-style:none;
     border-top:1px solid var(--line);
   }
   details.fold:first-child>summary{border-top:0}
   details.fold>summary::-webkit-details-marker{display:none}
   details.fold>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px; flex:0 0 auto}
   details.fold[open]>summary::before{content:'▾ '}
-  details.fold[open]>summary{border-bottom:1px solid var(--line); margin-bottom:6px}
+  details.fold[open]>summary{border-bottom:1px solid var(--line); margin-bottom:2px}
   details.fold>summary .f-h{font-size:12px; color:var(--fg-1); font-weight:600}
   details.fold>summary .f-n{font-size:10.5px; color:var(--fg-3)}
+
+  /* ── 展开后的内容一律要留白 ──
+     ⚠️ 2026-09-18 大小姐指出：折叠打开后内容贴着边、视觉难受。
+        原因是原来只有 .rm 有自己的 margin，.plist / .said / .plist.tall
+        都是零边距，展开后直接顶在标题下、左右也贴着。
+        这里统一给「折叠容器内的第一层内容」补边距 —— 左右缩进一点点
+        （和 summary 的三角对齐成一条线），上下留一口气。 */
+  details.room>.rm,
+  details.fold>.plist,
+  details.fold>.said,
+  details.fold>.hints,
+  details.fold>.pmeta{
+    margin-left:15px;
+  }
+  details.fold>.plist,
+  details.fold>.said{
+    margin-top:9px; margin-bottom:11px;
+  }
+  details.fold>.hints{margin-top:8px; margin-bottom:4px}
+  details.fold>.plist.tall{margin-bottom:11px}
+  details.fold>.pmeta:last-child{margin-bottom:9px}
+  details.room>.rm{margin:9px 0 11px 15px}
 
   /* ── 第二页：日记 ── */
   .jentry{margin-bottom:11px; padding:0; overflow:hidden}
@@ -631,13 +679,19 @@ function esc(s){
 const G = c => `class="glass ${c||''}"`;
 
 // ── 轻量 Markdown 渲染（单文件看板，不引外部库）──
-// 只支持日记实际会用到的那几种：## 标题 / > 引用 / --- 分隔 / **加粗** / 段落
+// 支持：## 标题 / - 列表 / > 引用 / --- 分隔 / **加粗** / *斜体* / `代码` / 段落
 // ⚠️ 安全：所有文本先 esc() 再加标记，避免把内容当 HTML 注入
+//
+// ⚠️ 2026-09-18 补的列表支持：醒来房间的正文里大量用「- 」，
+//    原先没有列表分支，整串会被当普通段落糊成一大坨（大小姐指出
+//    「markdown 没渲染、还是 # * 这些格式」）。日记页没有列表，
+//    所以这个分支对第二页无影响。
 function renderMD(src){
   const lines = String(src||'').split('\n');
   const out = [];
   let para = [];        // 正在攒的段落
   let quote = [];       // 正在攒的引用
+  let list = [];        // 正在攒的列表项（{t, indent}）
 
   const flushPara = () => {
     // ⚠️ 必须先 esc() 再 inlineMD() —— 顺序反了就是 XSS
@@ -646,7 +700,14 @@ function renderMD(src){
   const flushQuote = () => {
     if(quote.length){ out.push(`<blockquote>${inlineMD(esc(quote.join('\n'))).replace(/\n/g,'<br>')}</blockquote>`); quote = []; }
   };
-  const flushAll = () => { flushPara(); flushQuote(); };
+  const flushList = () => {
+    if(!list.length) return;
+    out.push('<ul>' + list.map(it =>
+      `<li${it.indent?' class="li-in"':''}>${inlineMD(esc(it.t))}</li>`
+    ).join('') + '</ul>');
+    list = [];
+  };
+  const flushAll = () => { flushPara(); flushQuote(); flushList(); };
 
   for(const raw of lines){
     const line = raw.trim();
@@ -662,11 +723,26 @@ function renderMD(src){
       continue;
     }
     if(m = line.match(/^>\s?(.*)$/)){                  // 引用
-      flushPara();
+      flushPara(); flushList();
       quote.push(m[1]);
       continue;
     }
-    flushQuote();
+    // 列表：- xxx / * xxx / • xxx
+    // ⚠️ 房间文件里有「- - xxx」这种（生成时多打了一层），
+    //    剥掉重复的符号，否则列表项正文自己带一个「- 」很难看。
+    if(m = line.match(/^([-*•])\s+(.*)$/)){
+      flushPara(); flushQuote();
+      let t = m[2], nested = false;
+      const inner = t.match(/^([-*•])\s+(.*)$/);
+      if(inner){
+        // 前导空格说明这是子项（原始行首有缩进）
+        nested = /^\s+\S/.test(raw) || raw.indexOf(m[1]) > 0;
+        t = inner[2];
+      }
+      list.push({t, indent: nested});
+      continue;
+    }
+    flushQuote(); flushList();
     para.push(line);
   }
   flushAll();
@@ -1265,9 +1341,8 @@ function renderPanels(d){
         <span class="tm">（我醒来时手里那个房间 · 全量，不截断）</span></div>
       ${R.rooms.map(r=>`<details class="pitem col room"><summary>
         <span class="r-at">${esc(r.at||'')}</span>
-        ${roomHead(r.text||'')?`<span class="r-peek">${esc(roomHead(r.text))}</span>`:''}
         </summary>
-        <pre class="rm">${esc(roomBody(r.text||''))}</pre></details>`).join('')}</div>`:''}
+        <div class="rm md">${renderMD(roomBody(r.text||''))}</div></details>`).join('')}</div>`:''}
     ${/* ── 手记本（①）──
          每回合能在账里留一句 note，**下次醒来会读到**（ledger.py 的 notes()）。
          之前它散在账本里，没人看得见 —— 现在收成一本。*/''}
@@ -1346,7 +1421,7 @@ function renderPanels(d){
 }
 
 
-// ── 房间文本的两个助手 ──
+// ── 房间文本的助手 ──
 //
 // 房间文件的形状（实测 rooms/2026-09-18-1611.md）：
 //   # 醒来房间 2026-09-18T16:11:19
@@ -1355,8 +1430,10 @@ function renderPanels(d){
 //   ## 手头没做完的事
 //   ## 我以前留的便签
 //
-// 列表页上标题只用得上「日记尾巴」那一段 —— 它是这个房间和我昨天的连接，
-// 比时间戳有信息量。展开才看全文。
+// ⚠️ roomHead() 已废弃（2026-09-18 大小姐定）：
+//    醒来房间的折叠标题**只留时间**，一律不带摘要 —— 每间长得一样，
+//    不靠摘要区分，要看就点开。函数留着是为了万一想恢复摘要时有参照，
+//    当前**没有任何地方调用它**。别以为它还在生效。
 function roomHead(txt){
   const m=String(txt).match(/##\s*日记尾巴[^\n]*\n+([\s\S]*?)(?=\n##\s|$)/);
   if(!m) return '';
