@@ -541,13 +541,12 @@
   details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
   details.pitem[open]>summary::before{content:'▾ '}
 
-  /* ── 醒来房间的折叠条 ──
-     ⚠️ 2026-09-18 修：原先 summary 里「日期 + 日记尾巴摘要」挤成一行，
-        在窄屏上日期被摘要压住、两段字黏在一起（大小姐截图指出）。
-     ⚠️ 2026-09-18 大小姐定：**标题只留时间**，摘要一律去掉 ——
-        每间房间长一样，不靠摘要区分（要看就点开）。所以 .r-peek 整个废弃。*/
+  /* ── 折叠条：箭头留边 + 标题左对齐 ──
+     ⚠️ 2026-09-18 大小姐指出：三角箭头紧贴左边缘，没有 margin。
+        原先 summary 的 padding 是 `7px 0` / `5px 0` —— 左右都是 0，
+        所以 `▸` 直接顶在容器边上。现在统一给左右内边距。 */
   details.room>summary{
-    display:block; padding:5px 0;
+    display:block; padding:6px 10px;
   }
   details.room>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px}
   details.room[open]>summary::before{content:'▾ '}
@@ -556,42 +555,70 @@
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  /* ── 折叠段（Memory 的 thoughts / 线索等）──
+  /* ── 折叠段（Memory 的 thoughts / 线索 / 暗号小辞典）──
      和醒来房间同一套：标题行是按钮，内容收在下面。 */
   details.fold>summary{
     display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
-    padding:7px 0; cursor:pointer; list-style:none;
+    padding:8px 10px; cursor:pointer; list-style:none;
     border-top:1px solid var(--line);
+    justify-content:flex-start;      /* 标题左对齐，别居中 */
+    text-align:left;
   }
   details.fold:first-child>summary{border-top:0}
   details.fold>summary::-webkit-details-marker{display:none}
-  details.fold>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px; flex:0 0 auto}
+  details.fold>summary::before{
+    content:'▸ '; color:var(--fg-3); font-size:11px; flex:0 0 auto;
+  }
   details.fold[open]>summary::before{content:'▾ '}
-  details.fold[open]>summary{border-bottom:1px solid var(--line); margin-bottom:2px}
+  details.fold[open]>summary{border-bottom:1px solid var(--line)}
   details.fold>summary .f-h{font-size:12px; color:var(--fg-1); font-weight:600}
   details.fold>summary .f-n{font-size:10.5px; color:var(--fg-3)}
 
-  /* ── 展开后的内容一律要留白 ──
-     ⚠️ 2026-09-18 大小姐指出：折叠打开后内容贴着边、视觉难受。
-        原因是原来只有 .rm 有自己的 margin，.plist / .said / .plist.tall
-        都是零边距，展开后直接顶在标题下、左右也贴着。
-        这里统一给「折叠容器内的第一层内容」补边距 —— 左右缩进一点点
-        （和 summary 的三角对齐成一条线），上下留一口气。 */
-  details.room>.rm,
-  details.fold>.plist,
-  details.fold>.said,
-  details.fold>.hints,
-  details.fold>.pmeta{
-    margin-left:15px;
+  /* ── 展开后的内容：所有直接子元素统一边距 ──
+     ⚠️⚠️ 2026-09-18 大小姐指出「所有折叠的 title 以及里面的内容 margin
+        都是不对的，只有『信号』那个是对的」。
+     ⚠️ 上一版是**逐个类名点名的**（.plist / .said / .hints / .pmeta），
+        漏一个就贴边 —— 实测漏了 `.pitem.col`（线索的首个子元素，
+        内容左偏只有 1px、标题间距 2px）。**点名式写法天然会漏，
+        而且漏了不报错，只是难看。**
+     → 现在改成**通配直接子元素**：折叠里的第一层内容一律同样处理，
+        不管它是什么类名。新加块类型自动继承，不再需要补规则。
+     ⚠️ 但必须排除行内样式覆盖：暗号小辞典首个 .pmeta 带了
+        `style="margin:0 0 6px"`，行内优先级高于这里 —— 见下面的
+        `!important` 兜底与 HTML 侧去掉行内 margin 的两处配合。 */
+  details.room > *:not(summary),
+  details.fold > *:not(summary){
+    margin-left:10px;
+    margin-right:10px;
+    margin-top:0;
   }
-  details.fold>.plist,
-  details.fold>.said{
-    margin-top:9px; margin-bottom:11px;
+  details.room > *:not(summary){
+    margin-left:16px;
+    margin-right:16px;
   }
-  details.fold>.hints{margin-top:8px; margin-bottom:4px}
-  details.fold>.plist.tall{margin-bottom:11px}
-  details.fold>.pmeta:last-child{margin-bottom:9px}
-  details.room>.rm{margin:9px 0 11px 15px}
+  /* 首个子元素：拉开与标题栏的距离（上下留白要对等，见末元素规则） */
+  details.fold > *:not(summary):first-of-type,
+  details.room > *:not(summary):first-of-type{
+    margin-top:10px;
+  }
+  /* 末个子元素：底部留白，和上面的 10px 对齐 */
+  details.fold > *:not(summary):last-of-type,
+  details.room > *:not(summary):last-of-type{
+    margin-bottom:12px;
+  }
+  /* 中间的块（如暗号小辞典的 hints）之间也留一口气 */
+  details.fold > *:not(summary) + *:not(summary){
+    margin-top:9px;
+  }
+  /* ⚠️ !important 在这里是必要的，不是偷懒：
+     块内部有行内 style（如 .pmeta 的 `margin:0 0 6px`），
+     行内优先级高于任何选择器。要保证「所有折叠一致」就必须压过它。 */
+  details.fold > *:not(summary):first-of-type{
+    margin-top:10px !important;
+  }
+  details.fold > *:not(summary):last-of-type{
+    margin-bottom:12px !important;
+  }
 
   /* ── 第二页：日记 ── */
   .jentry{margin-bottom:11px; padding:0; overflow:hidden}
@@ -1267,7 +1294,7 @@ function renderPanels(d){
         <span class="f-h">暗号小辞典 · 她说过的话</span>
         <span class="f-n">${hw.entries.length} 条 / 共记下 ${M.her_said_total||0} 条</span>
       </summary>
-      <div class="pmeta" style="margin:0 0 6px">只认微信那条通道 —— 飞书是工作台，
+      <div class="pmeta">只认微信那条通道 —— 飞书是工作台，
         工作对话不进这里。下面的词表是我认她话的凭据：出现这几个字，那句就优先留下。</div>
       ${(rc.emotion_hints||[]).length?`<div class="hints">
         ${(rc.emotion_hints||[]).map(w=>`<span class="hw">${esc(w)}</span>`).join('')}
