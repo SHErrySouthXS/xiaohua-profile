@@ -1,0 +1,171 @@
+{
+ "generated_at": "2026-09-18 14:53:10",
+ "generated_at_iso": "2026-09-18T14:53:10",
+ "rows": [
+  {
+   "name": "心跳存活",
+   "state": "ok",
+   "evidence": "最后心跳 09-18 14:49（3 分钟前）"
+  },
+  {
+   "name": "gateway 服务",
+   "state": "ok",
+   "evidence": "systemd active"
+  },
+  {
+   "name": "微信锚点",
+   "state": "warn",
+   "evidence": "读不到微信发言"
+  },
+  {
+   "name": "节拍倒计时",
+   "state": "ok",
+   "evidence": "无锚点（从没记录过她的发言），已过倒计时 3.6h"
+  },
+  {
+   "name": "欲望判定",
+   "state": "ok",
+   "evidence": "solo｜好奇 0.95"
+  },
+  {
+   "name": "九维驱动",
+   "state": "ok",
+   "evidence": "9 维｜最高 0.95"
+  },
+  {
+   "name": "唤醒账本",
+   "state": "ok",
+   "evidence": "共 17 条｜近 24h 17 条（开口 1 次）"
+  },
+  {
+   "name": "唤醒模型",
+   "state": "ok",
+   "evidence": "mimo-v2.5-pro｜全项目唯一生成模型"
+  },
+  {
+   "name": "作息校准",
+   "state": "ok",
+   "evidence": "{\"days\": 1, \"covered\": 1, \"ticks\": 2, \"target\": 14, \"ready\":"
+  }
+ ],
+ "notes": [],
+ "probe_error": null,
+ "rhythm": {
+  "due": true,
+  "why": "无锚点（从没记录过她的发言），已过倒计时 3.6h"
+ },
+ "verdict": {
+  "choice": "solo",
+  "intent": "好奇",
+  "strength": 0.95,
+  "reason": "好奇 0.95，先做自己的事"
+ },
+ "dimensions": [
+  "依恋",
+  "表达",
+  "好奇",
+  "手艺",
+  "责任",
+  "漫游",
+  "疲劳",
+  "压力",
+  "沉静"
+ ],
+ "drives": [
+  0.3,
+  0.2,
+  0.95,
+  0.2,
+  0.2,
+  0.2,
+  0.1,
+  0.1,
+  0.1
+ ],
+ "top_drives": [],
+ "ledger": {
+  "entries": 17,
+  "total_tokens": 2254,
+  "last24h": 17,
+  "spoke24h": 1
+ },
+ "model": {
+  "wake": "mimo-v2.5-pro",
+  "ok": true,
+  "fallback": "mimo-v2.5-pro"
+ },
+ "rhythm_progress": {
+  "days": 1,
+  "covered": 1,
+  "ticks": 2,
+  "target": 14,
+  "ready": false,
+  "hours": [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  "first_day": "2026-09-18",
+  "last_day": "2026-09-18"
+ },
+ "head": "1 项留意",
+ "color": "warn",
+ "total": 9,
+ "bad": 0,
+ "warn": 1,
+ "history": [
+  {
+   "t": "09-18 14:52",
+   "bad": 0,
+   "warn": 0,
+   "drives": [
+    0.3,
+    0.2,
+    0.95,
+    0.2,
+    0.2,
+    0.2,
+    0.1,
+    0.1,
+    0.1
+   ]
+  },
+  {
+   "t": "09-18 14:53",
+   "bad": 0,
+   "warn": 1,
+   "drives": [
+    0.3,
+    0.2,
+    0.95,
+    0.2,
+    0.2,
+    0.2,
+    0.1,
+    0.1,
+    0.1
+   ]
+  }
+ ]
+}
