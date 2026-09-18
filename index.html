@@ -170,6 +170,22 @@
   .cell.bad  .v{color:var(--bad)}
   .cell.accent .v{color:var(--pink)}
 
+  /* 欲望判定的强度条（照卡片的 ▰▱ 形态） */
+  .bar-line{
+    margin-top:7px; font-family:ui-monospace,monospace;
+    font-size:11px; letter-spacing:1px; color:var(--pink);
+    word-break:break-all; line-height:1.5;
+  }
+  .bar-line .n{
+    letter-spacing:0; font-weight:650; color:var(--pink-hot);
+    text-shadow:0 0 8px var(--pink-glow);
+  }
+  .cell code{
+    font-family:ui-monospace,monospace; font-size:10.5px;
+    color:var(--pink); background:rgba(255,255,255,.07);
+    padding:1px 5px; border-radius:4px; letter-spacing:.02em;
+  }
+
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
     .row4{grid-template-columns:1fr 1fr}
@@ -382,12 +398,14 @@ function render(d){
     <div ${G('cell '+heartState)}><div class="k">心跳状态</div>
       <div class="v">${esc(heartTitle)}</div>
       <div class="v sm">${esc(heartDetail)}</div></div>
-    <div ${G('cell')}><div class="k">欲望判定</div>
-      <div class="v">${esc(v.kind||'—')}</div>
-      <div class="v sm">${esc(v.intent||'')} ${v.strength!=null?v.strength.toFixed(2):''}</div></div>
-    <div ${G('cell accent')}><div class="k">判断状态</div>
-      <div class="v">${esc(v.intent||'—')}</div>
-      <div class="v sm">${v.strength!=null?'强度 '+v.strength.toFixed(2):''}</div></div>
+    <div ${G('cell')}><div class="k">🤖 欲望判定</div>
+      <div class="v">${esc(v.top_drive||'—')} ${esc(v.top_en||'')}</div>
+      <div class="v sm">${esc(v.ranked||'')}</div>
+      <div class="bar-line">${esc(v.bar||'')} <span class="n">${v.top_value!=null?v.top_value.toFixed(2):''}</span></div></div>
+    <div ${G('cell accent')}><div class="k">🧭 判断状态</div>
+      <div class="v">${esc(v.intent_emoji||'')} ${esc(v.intent_human||'—')}</div>
+      <div class="v sm"><code>${esc(v.intent_key||'')}</code></div>
+      <div class="v sm">${esc((v.outlet||'').replace(/\*\*/g,''))}</div></div>
   </div>`;
 
   const A=d.anchor||{},L=d.ledger||{},J=d.journal||{};
