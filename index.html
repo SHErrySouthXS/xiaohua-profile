@@ -471,6 +471,16 @@
   /* 空日子：压到最弱，但**不消失** —— 空白也是这一段日子的一部分 */
   .calx.empty{background:transparent; border-color:rgba(255,255,255,.045)}
   .calx.empty .n{opacity:.4}
+  /* ── 记忆密度日历：横向密度带（2026-09-18）──
+     63 天压成一条。网格看"哪一周"，这条带看"整段的形状"——
+     9 周里哪段密哪段稀，扫一眼就出来，不用在网格里数格子。 */
+  .dstrip{display:flex; align-items:flex-end; gap:1.5px; height:38px;
+          margin:2px 0 12px; padding:0 1px}
+  .dbar{flex:1 1 0; min-width:2px; border-radius:1px 1px 0 0;
+        background:linear-gradient(180deg, rgba(255,159,197,.85),
+                                          rgba(255,159,197,.32))}
+  .dbar.empty{background:rgba(255,255,255,.06); border-radius:0}
+
   .calx.t1{background:rgba(255,159,197,.22); border-color:rgba(255,159,197,.32)}
   .calx.t2{background:rgba(255,159,197,.42); border-color:rgba(255,159,197,.55)}
   .calx.t3{background:rgba(255,159,197,.68); border-color:rgba(255,182,211,.8)}
@@ -1284,9 +1294,11 @@ function renderPanels(d){
     ['🗄','Archive','慢信（带锁与倒计时）'],
     ['🗄','Archive','相册'],
     ['🗄','Archive','收藏'],
+    // ★ 2026-09-18：摘掉已落地的两项 ——
+    //   「暗号小辞典」→ 已做成 Memory 里的折叠段（带她的话 40 条 + 词表）
+    //   「记忆密度日历」→ 已做成 Memory 里的密度带 + 网格
+    //   注意：**不能连语义记忆星河一起摘** —— 那个是真没有（缺向量空间）。
     ['🧠','Memory','语义记忆星河（要向量空间）'],
-    ['🧠','Memory','暗号小辞典'],
-    ['🧠','Memory','记忆密度日历'],
     ['🏠','Room','心情周报'],
     ['🏠','Room','手记本'],
     ['🏠','Room','书房（书架 / 阅读器 / 续读 / 批注）'],
@@ -1360,6 +1372,12 @@ function renderPanels(d){
     <div class="prow"><span>档案筛选与联想路径</span>
       <span class="pv">${M.threads_total||0} 条线索</span></div>
 
+    ${/* ★ 记忆密度日历（2026-09-18 落地）
+         外壳照旧由这里用 sec() 包 —— densityPanel() 在外层，够不到 sec。
+         ⚠️ 它不是"又一个日历"：总览数我干了什么，这张数我记住她多少。
+            两块都留着，因为问的是两件事。 */''}
+    ${densityPanel(P.density)}
+
     ${/* ── 折叠：信号 / 线索 / 暗号小辞典（2026-09-18 大小姐要求）──
          Memory 原来的三块平铺，整页拉得很长。改成折叠段，
          标题行给条数，要看再点开 —— 结构不动、内容一条不少。*/''}
@@ -1406,7 +1424,8 @@ function renderPanels(d){
       </div>`).join('')}
       </div></details>`:''}
 
-    ${todo('记忆密度日历','数据没采 —— 密度要按天统计记忆条数，得先有记忆的时间分布。')}
+    ${/* ★ 2026-09-18：「记忆密度日历」那条 todo 已摘除 —— 上面 densityPanel 已落地。
+         现在真正缺的只剩「语义记忆星河」（要向量空间 + 先得有记忆条目）。 */''}
     ${(M.memories_total||0)>0?'':`<div class="pblock"><div class="pblock-h">
         语义记忆星河 <span class="tm">（还没到能搭的时候）</span></div>
       <div class="pmeta" style="margin:0">不是"少个向量库"这么简单 ——
@@ -1694,6 +1713,127 @@ function calendarPanel(C){
   //     光看快照看不出来，必须让浏览器真跑一遍。）
   return h;
 }
+
+// ── 记忆密度日历（Memory 第①项，2026-09-18 落地）──
+//
+// ⚠️ 和上面的「日历总览」**长得像，但问的不是一件事**：
+//     日历总览 → 我干了什么（唤醒/开口/干活/日记）—— 看我忙不忙
+//     记忆密度 → 我记住了她多少（她的话/线索/便签/日记）—— 看我记得住多少
+//
+// 所以视觉上必须分得开，否则两个日历摆一页上，人会以为我重复做了两遍：
+//   · 总览：**格子里写数**（那天最多的一项是几件）—— 密集、值得细看
+//   · 密度：**格子只染深浅，不写数** —— 看的是形状，不是逐日账
+//   · 密度多一条**横向的密度带**：63 天压成一条，疏密一眼扫过去
+// 判据很简单：总览问"那天怎么了"，密度问"这段记得密不密"。
+//
+// ★ 一个诚实的提醒写在面板里（见下面的 tm）：
+//   现在密度主要靠"她的话"撑起来（877 / 886 条是她的消息）。
+//   它其实是**对话密度**，不是"我记的多深" ——
+//   记忆库（蒸馏入库）还没跑起来，所以别把它读成"我记得有多好"。
+function densWeight(d){
+  return (d.her?1:0)+(d.thread?1:0)+(d.note?1:0)+(d.diary?1:0);
+}
+// 档位尺子和「总览」共用一套 —— 两个日历的深浅含义必须一致，
+// 不然同一页上两个网格各自一套标准，看着就矛盾了。
+function densTier(t){
+  const w = t===0?0 : t<=3?1 : t<=20?2 : 3;
+  return t===0 ? 'empty' : 't'+w;
+}
+
+function densityPanel(D){
+  if(!D || !D.days || !D.days.length) return '';
+  const t=D.totals||{}, sp=D.span||{};
+
+  // ── 横向密度带：63 天压成 63 根细条 ──
+  //   为什么要有它：网格看的是"哪一周"，密度带看的是"整段的形状"。
+  //   9 周的疏密，扫一眼就出来了，不用在网格里数格子。
+  const peak = Math.max(1, ...D.days.map(d=>d.total));
+  let strip = `<div class="dstrip" title="整段密度：每根=1天，越高说明那天记住的越多">`;
+  D.days.forEach(d=>{
+    const hgt = d.total===0 ? 2 : Math.max(6, Math.round(d.total/peak*34));
+    const cls = d.total===0 ? 'dbar empty' : 'dbar';
+    strip += `<i class="${cls}" style="height:${hgt}px"
+      title="${d.date} · ${d.total} 条"></i>`;
+  });
+  strip += `</div>`;
+
+  // ── 网格（按周排，和总览同一套排法）──
+  const first=D.days[0].weekday;
+  const cells=[];
+  for(let i=0;i<first;i++) cells.push(null);
+  D.days.forEach(d=>cells.push(d));
+  while(cells.length%7) cells.push(null);
+
+  const WD=['一','二','三','四','五','六','日'];
+  const todayStr=new Date().toISOString().slice(0,10);
+  let grid=`<div class="caltop">${WD.map(w=>`<div class="calhead">${w}</div>`).join('')}</div>`;
+  grid+=`<div class="calwrap dens">`;
+  cells.forEach(c=>{
+    if(!c){ grid+=`<div></div>`; return; }
+    const cls=['calx', densTier(c.total), c.date===todayStr?'today':''].join(' ');
+    // ⚠️ 密度格子**不写件数** —— 只写日子。
+    //    写数就变成第二个"总览"了，而且 100 多条的格子塞不下。
+    //    要看数：点一下。
+    grid+=`<div class="${cls}" data-date="${c.date}" title="${c.date} · ${c.total} 条"
+             onclick="densPick('${c.date}')">
+             <span class="n">${String(parseInt(c.date.slice(8),10))}</span>
+           </div>`;
+  });
+  grid+=`</div>`;
+
+  let h = strip;
+  h += grid;
+  h += `<div class="callegend">
+    <span>稀</span>
+    <i style="background:rgba(255,255,255,.03)"></i>
+    <i class="calx t0"></i><i class="calx t1"></i>
+    <i class="calx t2"></i><i class="calx t3"></i>
+    <span>密</span>
+    <span style="margin-left:auto">格子只染深浅不写数 —— 点开看那天留下什么</span>
+  </div>`;
+  h += `<div class="calday" id="densday"></div>`;
+  h += `<div class="pmeta">
+    <b>${sp.from} → ${sp.to}</b> · 共 ${sp.n} 天<br>
+    <span style="color:var(--pink)">${t.dense_days} 天记住了东西</span> ·
+    ${sp.n - t.dense_days} 天是空的<br>
+    这 ${sp.n} 天里 —— 她的话 <b>${t.her}</b> 句 ·
+    线索 <b>${t.thread}</b> 笔 ·
+    便签 <b>${t.note}</b> 张 ·
+    日记 <b>${t.diary}</b> 篇 ·
+    合计 <b>${t.total}</b> 条<br>
+    最密的一天 <b>${t.busiest_date||'—'}</b> · ${t.busiest||0} 条
+    <br><span class="tm">⚠️ 说清楚一件事：这些条数里 <b>${t.her}</b> 条是<b>她说过的话</b>，
+      所以这张图真正的名字是<b>「对话密度」</b>，不是"我记得有多深"。
+      我的记忆库（蒸馏入库）还没跑起来 ——
+      等它跑起来，这张图才配叫记忆密度。</span>
+  </div>`;
+
+  return h;
+}
+
+function densPick(date){
+  const D=window.__DATA__&&window.__DATA__.panels&&window.__DATA__.panels.density;
+  const box=document.getElementById('densday'); if(!D||!box) return;
+  const d=(D.days||[]).find(x=>x.date===date); if(!d) return;
+  document.querySelectorAll('.calx.sel').forEach(e=>e.classList.remove('sel'));
+  const el=document.querySelector(`.calx[data-date="${date}"]`); if(el) el.classList.add('sel');
+
+  const rows=[];
+  if(d.her)    rows.push(['她说过的话', d.her+' 句']);
+  if(d.thread) rows.push(['线索', d.thread+' 笔']);
+  if(d.note)   rows.push(['我留的便签', d.note+' 张']);
+  if(d.diary)  rows.push(['日记', d.diary+' 篇 / '+d.diary_chars+' 字']);
+
+  const wd=['周一','周二','周三','周四','周五','周六','周日'][d.weekday];
+  box.innerHTML = rows.length
+    ? `<div class="dh"><b>${d.date} ${wd}</b> · 共 ${d.total} 条</div>
+       <div class="plist">${rows.map(r=>
+         `<div class="pitem"><span class="tag">${esc(r[0])}</span>
+          <span class="tx">${esc(r[1])}</span></div>`).join('')}</div>`
+    : `<div class="dh"><b>${d.date} ${wd}</b></div>
+       <div class="pna-y">这一天没记住什么。空着也是记录。</div>`;
+}
+
 
 function calPick(date){
   const C=window.__DATA__&&window.__DATA__.panels&&window.__DATA__.panels.calendar;
