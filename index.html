@@ -20,33 +20,36 @@
     /* ══════════════════════════════════════════════════════════════
        ⚠️ 指标色 —— 大小姐指定，**锁死，不要擅自改动**
        ──────────────────────────────────────────────────────────────
-       2026-09-18 定稿：主色 #FF9ECB（照大小姐给的雷达图参考）
+       2026-09-18 定稿：主色 #FF9FC5（照大小姐给的雷达图参考实测取色）
        演化过程（别再走弯路）：
          第一轮我做成 #ff9ec5 + 强霓虹发光 → 太炸，被要求回滚
-         回滚成藕粉 #ff9ecb → 确认偏灰
-         大小姐给出参考图 → 定 #FF9ECB（亮而不炸，带适度发光）
+         回滚成藕粉 #ff9fc5 → 确认偏灰
+         大小姐给出参考图 → 定 #FF9FC5（浅粉，不偏品红）
 
        **改配色前必须先问大小姐。** 不要凭"我觉得更好看"动手。
 
        配色全貌：
-         主色   #ff9ecb  数据条 / 雷达描边
-         高光   #ffd6ea  条端高光核 / 顶点圆点
+         主色   #ff9fc5  数据条 / 雷达描边
+         高光   #ffb6d3  条端高光核 / 顶点圆点
          渐变起 #e07bab  深一档
-         填充   rgba(255,158,203,.25) 雷达半透明填充
+         填充   rgba(255,159,197,.25) 雷达半透明填充
          网格   rgba(255,255,255,.12)  1px，5 圈
-         背景   深紫黑径向渐变（中心亮 #1a1626 → 边缘 #0b0812）
+         背景   深灰紫径向渐变（中心 #2a2731 → 边缘 #1e1b24）
        ══════════════════════════════════════════════════════════════ */
-    --pink:#ff9ecb;          /* 主色（大小姐指定） */
-    --pink-line:#ff9ecb;     /* 雷达描边 */
-    --pink-hot:#ffd6ea;      /* 高光 / 条端白核 / 顶点 */
+    --pink:#ff9fc5;          /* 主色（大小姐指定，照图取色） */
+    --pink-line:#ffa3c8;     /* 雷达描边（略浅） */
+    --pink-hot:#ffb6d3;      /* 高光 / 条端白核 */
     --pink-deep:#e07bab;     /* 渐变起点 */
-    --pink-glow:rgba(255,158,203,.45);
-    --pink-fill:rgba(255,158,203,.25);
+    --pink-glow:rgba(255,159,197,.42);
+    --pink-fill:rgba(255,159,197,.24);
 
-    /* ── 背景：深紫黑径向渐变（不是纯黑）── */
-    --bg-center:#1a1626;
-    --bg-mid:#14111d;
-    --bg-edge:#0b0812;
+    /* ── 背景：深灰紫（不是纯黑，也不是近黑）──
+       ⚠️ 取色依据：大小姐参考图实测 #25222C / #2A2731。
+          之前我用 #1a1626 太暗了（接近黑），正是她说的
+          "背景不是完全实的黑色"——她要的是**明显偏灰的深灰紫**。 */
+    --bg-center:#2a2731;
+    --bg-mid:#25222c;
+    --bg-edge:#1e1b24;
 
     /* ── 文字三级 ── */
     --fg:#ffffff;
@@ -182,11 +185,11 @@
   /* ── 📝 今天：粉调玻璃（带微光，呼应参考图的粉辉光）── */
   .today{
     background:linear-gradient(160deg,
-      rgba(255,158,203,.14), rgba(224,123,171,.05) 55%, rgba(255,255,255,.06));
-    border-color:rgba(255,158,203,.26);
+      rgba(255,159,197,.14), rgba(224,123,171,.05) 55%, rgba(255,255,255,.06));
+    border-color:rgba(255,159,197,.26);
     border-top-color:rgba(255,209,227,.45);
     box-shadow:0 8px 30px rgba(0,0,0,.46),
-               0 0 40px rgba(255,158,203,.10),
+               0 0 40px rgba(255,159,197,.10),
                0 1.5px 0 rgba(255,209,227,.2) inset;
   }
   .today h2{color:var(--pink)}
@@ -202,7 +205,7 @@
   }
   .radar-wrap::before{
     content:""; position:absolute; inset:-6% -2%;
-    background:radial-gradient(circle 42% at 50% 48%, rgba(255,158,203,.13), transparent 72%);
+    background:radial-gradient(circle 42% at 50% 48%, rgba(255,159,197,.13), transparent 72%);
     pointer-events:none;
   }
   svg.radar{width:100%; max-width:390px; height:auto; overflow:visible; position:relative}
@@ -243,13 +246,13 @@
   }
   /* 发光挂在轨道上（不被裁），照参考图取"适度"强度 */
   .bar-row[data-v] .bar-track{
-    box-shadow:0 0 8px rgba(255,158,203,.40),
-               0 0 18px rgba(255,158,203,.20),
+    box-shadow:0 0 8px rgba(255,159,197,.40),
+               0 0 18px rgba(255,159,197,.20),
                0 1px 0 rgba(255,255,255,.06) inset;
   }
   .bar-row.top .bar-track{
-    box-shadow:0 0 10px rgba(255,158,203,.60),
-               0 0 22px rgba(255,158,203,.35),
+    box-shadow:0 0 10px rgba(255,159,197,.60),
+               0 0 22px rgba(255,159,197,.35),
                0 1px 0 rgba(255,255,255,.06) inset;
   }
   .bar-row .vl{
@@ -446,7 +449,7 @@ function render(d){
       <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
         letter-spacing:2px;color:var(--pink);word-break:break-all;
-        text-shadow:0 0 16px rgba(255,158,203,.6)">${esc(bar)}</div>
+        text-shadow:0 0 16px rgba(255,159,197,.6)">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
@@ -505,13 +508,13 @@ function radarSVG(dims,vals){
     g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>`;});
   // 雷达填充/描边：粉 + 适度外发光（照参考图，别做成强霓虹）
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(255,158,203,.25)" stroke="#ff9ecb" stroke-width="2"
+    fill="rgba(255,159,197,.25)" stroke="#ffa3c8" stroke-width="2"
     stroke-linejoin="round"
-    style="filter:drop-shadow(0 0 7px rgba(255,158,203,.7))"/>`;
+    style="filter:drop-shadow(0 0 7px rgba(255,159,197,.7))"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
-    g+=`<circle cx="${x}" cy="${y}" r="3.4" fill="#ff9ecb"
-      style="filter:drop-shadow(0 0 6px rgba(255,158,203,.9))"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="3.4" fill="#ff8fb8"
+      style="filter:drop-shadow(0 0 6px rgba(255,159,197,.9))"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
@@ -535,11 +538,11 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,158,203,.34)"/>
-      <stop offset="100%" stop-color="rgba(255,158,203,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(255,159,197,.34)"/>
+      <stop offset="100%" stop-color="rgba(255,159,197,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#ff9ecb" stroke-width="1.8"
-      style="filter:drop-shadow(0 0 7px rgba(255,158,203,.6))"/></svg>
+    <path d="${line}" fill="none" stroke="#ffa3c8" stroke-width="1.8"
+      style="filter:drop-shadow(0 0 7px rgba(255,159,197,.6))"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
