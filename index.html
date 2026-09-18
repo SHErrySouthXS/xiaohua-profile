@@ -17,18 +17,28 @@
      ══════════════════════════════════════════════════════════════ */
 
   :root{
-    /* ── 指标色：粉 ──
-       取色依据（大小姐给的参考图 · 霓虹粉发光方块/发光半球）：
-         高光 #FFD9E8 / 中间调 #F7B8D3 / 边缘 #E58BB2
-       ⚠️ 参考图那种粉**看着柔和，实际靠"外发光"撑出亮度**——
-          直接把 #F7B8D3 搬到深底上会偏灰偏暗（踩过：用 #f4b6c2 太灰）。
-          所以深底上要提饱和 + 补发光：主色 #FF9EC5，高光 #FFD1E3。 */
-    --pink:#ff9ec5;          /* 数据条主色（提饱和，压深底才亮） */
-    --pink-line:#ffb3d9;     /* 雷达描边 */
-    --pink-hot:#ffd1e3;      /* 高光 / 高值强调 */
-    --pink-deep:#d96a9e;     /* 渐变起点 / 边缘 */
-    --pink-glow:rgba(255,158,197,.45);
-    --pink-fill:rgba(255,158,197,.22);
+    /* ══════════════════════════════════════════════════════════════
+       ⚠️ 指标色 —— 大小姐指定，**锁死，不要擅自改动**
+       ──────────────────────────────────────────────────────────────
+       2026-09-18 定：藕粉 #f4b6c2（低饱和、柔、不发光）
+
+       为什么单独写这条警告：
+         这个色值我中途擅自改过好几轮（→#ff9ec5 亮粉加发光），
+         大小姐明确要求「固定那个版本别自己调，要调先问我」。
+         改配色前**必须先问**，不要凭"我觉得更好看"动手。
+
+       配色全貌：
+         主色   #f4b6c2  藕粉（数据条 / 雷达描边）
+         高光   #ffd1e3  条端高光核
+         渐变起 #d98fa4  深一档藕粉
+         填充   rgba(244,182,194,.20) 雷达半透明填充
+       ══════════════════════════════════════════════════════════════ */
+    --pink:#f4b6c2;          /* 主色：藕粉（大小姐指定） */
+    --pink-line:#f4b6c2;     /* 雷达描边 */
+    --pink-hot:#ffd1e3;      /* 高光 / 条端白核 */
+    --pink-deep:#d98fa4;     /* 渐变起点 */
+    --pink-glow:rgba(244,182,194,.40);
+    --pink-fill:rgba(244,182,194,.20);
 
     /* ── 文字三级 ── */
     --fg:#ffffff;
@@ -149,11 +159,11 @@
   /* ── 📝 今天：粉调玻璃（带微光，呼应参考图的粉辉光）── */
   .today{
     background:linear-gradient(160deg,
-      rgba(255,158,197,.14), rgba(217,106,158,.05) 55%, rgba(255,255,255,.06));
-    border-color:rgba(255,158,197,.26);
+      rgba(244,182,194,.14), rgba(217,143,164,.05) 55%, rgba(255,255,255,.06));
+    border-color:rgba(244,182,194,.26);
     border-top-color:rgba(255,209,227,.45);
     box-shadow:0 8px 30px rgba(0,0,0,.46),
-               0 0 40px rgba(255,158,197,.10),
+               0 0 40px rgba(244,182,194,.10),
                0 1.5px 0 rgba(255,209,227,.2) inset;
   }
   .today h2{color:var(--pink)}
@@ -169,7 +179,7 @@
   }
   .radar-wrap::before{
     content:""; position:absolute; inset:-6% -2%;
-    background:radial-gradient(circle 42% at 50% 48%, rgba(255,158,197,.13), transparent 72%);
+    background:radial-gradient(circle 42% at 50% 48%, rgba(244,182,194,.13), transparent 72%);
     pointer-events:none;
   }
   svg.radar{width:100%; max-width:390px; height:auto; overflow:visible; position:relative}
@@ -210,14 +220,14 @@
   }
   /* 发光挂在外层轨道（不被裁），光溢出到卡片上 */
   .bar-row[data-v] .bar-track{
-    box-shadow:0 0 10px rgba(255,158,197,.55),
-               0 0 22px rgba(255,158,197,.30),
+    box-shadow:0 0 10px rgba(244,182,194,.55),
+               0 0 22px rgba(244,182,194,.30),
                0 1px 0 rgba(255,255,255,.06) inset;
   }
   .bar-row.top .bar-track{
     box-shadow:0 0 12px rgba(255,209,227,.75),
-               0 0 26px rgba(255,158,197,.55),
-               0 0 48px rgba(255,158,197,.25),
+               0 0 26px rgba(244,182,194,.55),
+               0 0 48px rgba(244,182,194,.25),
                0 1px 0 rgba(255,255,255,.06) inset;
   }
   .bar-row .vl{
@@ -414,7 +424,7 @@ function render(d){
       <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
         letter-spacing:2px;color:var(--pink);word-break:break-all;
-        text-shadow:0 0 16px rgba(255,158,197,.6)">${esc(bar)}</div>
+        text-shadow:0 0 16px rgba(244,182,194,.6)">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
@@ -472,13 +482,13 @@ function radarSVG(dims,vals){
     g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;});
   // 雷达填充/描边：霓虹粉 + 强外发光
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(255,158,197,.28)" stroke="#ffb3d9" stroke-width="2.5"
+    fill="rgba(244,182,194,.28)" stroke="#f4b6c2" stroke-width="2.5"
     stroke-linejoin="round"
-    style="filter:drop-shadow(0 0 8px rgba(255,158,197,.9)) drop-shadow(0 0 20px rgba(255,158,197,.5))"/>`;
+    style="filter:drop-shadow(0 0 8px rgba(244,182,194,.9)) drop-shadow(0 0 20px rgba(244,182,194,.5))"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
     g+=`<circle cx="${x}" cy="${y}" r="3.6" fill="#ffd1e3"
-      style="filter:drop-shadow(0 0 6px rgba(255,209,227,1)) drop-shadow(0 0 14px rgba(255,158,197,.8))"/>`;
+      style="filter:drop-shadow(0 0 6px rgba(255,209,227,1)) drop-shadow(0 0 14px rgba(244,182,194,.8))"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
@@ -502,11 +512,11 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,158,197,.34)"/>
-      <stop offset="100%" stop-color="rgba(255,158,197,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(244,182,194,.34)"/>
+      <stop offset="100%" stop-color="rgba(244,182,194,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#ffb3d9" stroke-width="1.8"
-      style="filter:drop-shadow(0 0 7px rgba(255,158,197,.6))"/></svg>
+    <path d="${line}" fill="none" stroke="#f4b6c2" stroke-width="1.8"
+      style="filter:drop-shadow(0 0 7px rgba(244,182,194,.6))"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
