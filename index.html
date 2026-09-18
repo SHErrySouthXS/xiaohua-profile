@@ -487,6 +487,10 @@
     color:var(--fg-2); background:rgba(0,0,0,.16); border-radius:6px;
     padding:10px 12px; margin:8px 0 0; max-height:280px; overflow:auto;
     font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  /* 工作台展开后的过程记录 —— 左侧一道细线，表示"这些都属于上面那件事" */
+  .plog{margin:8px 0 2px 6px; padding-left:10px;
+    border-left:2px solid var(--fg-3)}
+  .plog .pitem:last-child{border-bottom:0}
   details.pitem>summary{cursor:pointer; list-style:none}
   details.pitem>summary::-webkit-details-marker{display:none}
   details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
@@ -1134,20 +1138,48 @@ function renderPanels(d){
         <span class="tx">${w.spoke?`说了：${esc(w.text||'')}`:`<i>没开口（${esc(w.choice||'')}）</i>`}</span>
         <span class="tm">${w.tokens?w.tokens+' tk':''}</span>
       </div>`).join('')}</div>`:''}
-    ${(R.projects||[]).length?`<div class="pblock"><div class="pblock-h">工作台</div>
-      ${R.projects.map(p=>`<div class="pitem col">
-        <div><b>${esc(p.name||'')}</b> <span class="tag">${esc(p.status||'')}</span>
-          <span class="tm">${p.log_n||0} 条推进</span></div>
-        <div class="tx">${esc(p.scope||'')}</div>
-      </div>`).join('')}</div>`:''}
+    ${(R.projects||[]).length?`<div class="pblock"><div class="pblock-h">
+        工作台 · ${R.projects.length} 个在跑的
+        <span class="tm">（一件事一卷，卷里有过程）</span></div>
+      ${R.projects.map(p=>`<details class="pitem col"><summary>
+        <b>${esc(p.name||'')}</b> <span class="tag">${esc(p.status||'')}</span>
+        <span class="tm">${p.log_n||0} 条推进</span></summary>
+        <div class="tx" style="margin-top:6px">${esc(p.scope||'')}</div>
+        ${p.owner?`<div class="tm">归：${esc(p.owner)}</div>`:''}
+        ${(p.log||[]).length?`<div class="plog">${p.log.map(e=>`<div class="pitem col">
+          <div class="tm">${esc(e.at||'')}</div>
+          <div class="tx">${esc(e.note||'')}</div>
+          ${e.evidence?`<div class="tm">她说过：「${esc(e.evidence)}」</div>`:''}
+        </div>`).join('')}</div>`:''}
+      </details>`).join('')}</div>`:''}
+
+    ${/* ── 未完成清单（A）──
+         原文独立项。料就是上面工作台的 log —— "这件事走到哪了"。
+         不重复列项目名，直接列**每一条推进**，因为清单要的是"还差什么"，
+         不是"有几个项目"。*/''}
+    ${(()=>{
+      const all=(R.projects||[]).flatMap(p=>(p.log||[]).map(e=>({...e,proj:p.name})));
+      if(!all.length) return todo('未完成清单','数据没采 —— 工作台里还没有推进记录，清单无从生成。');
+      return `<div class="pblock"><div class="pblock-h">
+        未完成清单 · ${all.length} 条
+        <span class="tm">（我从工作台的过程里抽出来的，最新在上）</span></div>
+        ${all.slice().reverse().map(e=>`<div class="pitem">
+          <span class="tm">${esc(e.at||'')}</span>
+          <span class="tag">${esc(e.proj||'')}</span>
+          <span class="tx">${esc(e.note||'')}</span>
+        </div>`).join('')}</div>`;
+    })()}
+
     ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
-        醒来房间 · 最近 ${R.rooms.length} 间 <span class="tm">（我醒来时手里那个房间）</span></div>
+        醒来房间 · 全部 ${R.rooms_total||R.rooms.length} 间
+        <span class="tm">（我醒来时手里那个房间 · 全量，不截断）</span></div>
       ${R.rooms.map(r=>`<details class="pitem col"><summary>
-        <span class="tm">${esc(r.at||'')}</span></summary>
-        <pre class="rm">${esc(r.excerpt||'')}</pre></details>`).join('')}</div>`:''}
+        <span class="tm">${esc(r.at||'')}</span>
+        ${roomHead(r.text||'')?`<span class="tx">${esc(roomHead(r.text))}</span>`:''}
+        </summary>
+        <pre class="rm">${esc(roomBody(r.text||''))}</pre></details>`).join('')}</div>`:''}
     ${todo('心情周报','数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。')}
     ${todo('手记本','能力没做 —— 原文里 agent 随手记东西的本子，我们没有这个动作。')}
-    ${todo('未完成清单','能力没做 —— 与"工作台"分开的那份待办，我们没维护。')}
     ${todo('书房（书架/阅读器/续读/批注）','能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。')}`);
 
   // ── 6. Prompt ──
@@ -1210,6 +1242,29 @@ function renderPanels(d){
   box.innerHTML=h;
 }
 
+
+// ── 房间文本的两个助手 ──
+//
+// 房间文件的形状（实测 rooms/2026-09-18-1611.md）：
+//   # 醒来房间 2026-09-18T16:11:19
+//   ## 日记尾巴（我昨天怎么想的）   ← 关键的一块
+//   ## 最近的经历
+//   ## 手头没做完的事
+//   ## 我以前留的便签
+//
+// 列表页上标题只用得上「日记尾巴」那一段 —— 它是这个房间和我昨天的连接，
+// 比时间戳有信息量。展开才看全文。
+function roomHead(txt){
+  const m=String(txt).match(/##\s*日记尾巴[^\n]*\n+([\s\S]*?)(?=\n##\s|$)/);
+  if(!m) return '';
+  let s=m[1].replace(/[（(]还没有日记[）)]/g,'').trim();
+  s=s.replace(/^[-*]\s*/gm,'').replace(/\n+/g,' ').trim();
+  return s.length>40 ? s.slice(0,40)+'…' : s;
+}
+function roomBody(txt){
+  // 去掉首行 "# 醒来房间 <时间>"（时间在标题行已经有了，别重复）
+  return String(txt).replace(/^#\s*醒来房间[^\n]*\n+/,'').trim();
+}
 
 // ── 导航 ──
 //
