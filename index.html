@@ -998,12 +998,49 @@ function renderPanels(d){
     <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
 
   // ── 头：原文出处 + 设计原则 ──
+  //
+  // ★ 2026-09-18 大小姐定：**这一页头上先给"还没做的"清单**，
+  //   下面才是十个面板的详情。理由是打开就先看见欠账，
+  //   不用滚到底才知道哪些是空的。
   let h=`<section class="glass" style="padding:15px 18px">
     <h2 style="margin:0">📖 原文面板</h2>
     <div class="hint" style="margin-top:7px">
       来源：WrenWen README §3「前端：十个面板」· 十个一个不少<br>
       <span style="color:var(--fg-3)">原文原则：正式事实以服务端账本为准，各面板是它们的投影。</span>
     </div></section>`;
+
+  // ── 未实现清单（汇总在前）──
+  // 原文有、我们还没有的，全在这儿一次列清。
+  // 「能力没做」和「数据没采」分开 —— 前者要动手做，后者只要动手采。
+  const NA=[
+    ['📞','Call','实时通话'],
+    ['🖼','Gallery','展柜与作品 / 电子宠物'],
+    ['🧪','Sandbox','角色卡沉浸聊天（不污染正史）'],
+    ['🎬','Cinema','同步观影（片库 / 播放器 / 进度 / 同看）'],
+    ['🗄','Archive','慢信（带锁与倒计时）'],
+    ['🗄','Archive','相册'],
+    ['🗄','Archive','收藏'],
+    ['🗄','Archive','日历总览'],
+    ['🧠','Memory','语义记忆星河（要向量空间）'],
+    ['🧠','Memory','暗号小辞典'],
+    ['🧠','Memory','记忆密度日历'],
+    ['🏠','Room','心情周报'],
+    ['🏠','Room','手记本'],
+    ['🏠','Room','未完成清单'],
+    ['🏠','Room','书房（书架 / 阅读器 / 续读 / 批注）'],
+    ['🎛','Controls','声音线路与试听'],
+  ];
+  h+=`<section class="glass">
+    <h2>🚧 还没做的 <span class="rdhint">${NA.length} 项 · 原文有，我们还没有</span></h2>
+    <div class="plist">${NA.map(([ic,panel,name])=>`<div class="pitem">
+      <span class="tag">${ic} ${esc(panel)}</span>
+      <span class="tx">${esc(name)}</span>
+      <span class="tm">未实现</span></div>`).join('')}</div>
+    <div class="pmeta">外加两项<b>故意不做</b>：
+      Controls 的系统设置（面板上给滑杆改采样温度太危险）·
+      Prompt 的修订入口（不会在页面上放个按钮让你顺手就把我改了）。
+      <br><span style="color:var(--fg-3)">标"未实现"不代表它不重要 —— 只是还没做。
+      原文里有的，这一页就得有它的位置。</span></div></section>`;
 
   // ── 1. Chat ──
   // 原文：主时间线，一切行为最终回到这里
@@ -1021,15 +1058,23 @@ function renderPanels(d){
 
   // ── 3. Archive ──
   // 原文：日历总览、agent 日记、慢信（带锁与倒计时）、相册、收藏
+  //
+  // ★ 2026-09-18 大小姐定：**Archive 只记 summary（多少篇这种数），不搬内容、不指路。**
+  //   理由：日记已经有独立页（她还要做新的拟物前端），
+  //   如果这里再写一行"见日记页"，同一件事就有两个入口了 ——
+  //   原文那句「同一件事只给一个入口」正管这个。
+  //   所以这一块的角色是**统计台账**：记"沉淀了多少"，不记"东西在哪"。
   const jn=(d.journal_entries||[]).filter(e=>!e.error).length;
-  h+=sec('🗄 Archive','时间沉淀层',`
-    <div class="prow"><span>agent 日记</span><span class="pv">${jn} 篇 · 见「日记」页</span></div>
-    <div class="prow"><span>慢信（带锁与倒计时）</span><span class="pv miss">未实现</span></div>
+  const jChars=(d.journal_entries||[]).filter(e=>!e.error)
+    .reduce((n,e)=>n+String(e.body||'').length,0);
+  h+=sec('🗄 Archive','时间沉淀层 · 只记数',`
+    <div class="prow"><span>日记</span><span class="pv">${jn} 篇 · 约 ${jChars} 字</span></div>
+    <div class="prow"><span>慢信</span><span class="pv miss">未实现</span></div>
     <div class="prow"><span>相册</span><span class="pv miss">未实现</span></div>
     <div class="prow"><span>收藏</span><span class="pv miss">未实现</span></div>
     <div class="prow"><span>日历总览</span><span class="pv miss">未实现</span></div>
-    <div class="pmeta">日记是唯一已经沉淀下来的东西。慢信/相册/收藏是"能力没做"，
-      不是"没数据" —— 得先有写信、存照片、标收藏这些动作。</div>`);
+    <div class="pmeta">这一块只记数，不指路 —— 日记在它自己的页面里（独立入口，不重复）。
+      慢信/相册/收藏是"能力没做"，不是"没数据"：得先有写信、存照片、标收藏这些动作。</div>`);
 
   // ── 4. Memory ──
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
@@ -1135,13 +1180,12 @@ function renderPanels(d){
     todo('片库、播放器、字幕、观看进度、同看聊天',
       '能力没做 —— 一整套同步观影系统，没开始。'));
 
-  // ── 收尾：十个都在了 ──
+  // ── 收尾 ──
   h+=`<section class="glass" style="padding:15px 18px">
     <div class="hint">十个面板一个不少 ·
-      能上的上了 <b>${[...Object.keys(P)].length ? 5 : 0}</b> 块（Chat/Archive/Memory/Room/Prompt/Controls 部分）·
-      其余照实标「未实现」<br>
-      <span style="color:var(--fg-3)">标"未实现"不代表它不重要 —— 只是还没做。
-      原文里有的，这一页就得有它的位置。</span></div></section>`;
+      <b>6</b> 块已有真数据（Chat / Archive / Memory / Room / Prompt / Controls）·
+      <b>${NA.length}</b> 项未实现（见页首清单）<br>
+      <span style="color:var(--fg-3)">这一页的排序是刻意的：先看见缺什么，再看见有什么。</span></div></section>`;
 
   box.innerHTML=h;
 }
