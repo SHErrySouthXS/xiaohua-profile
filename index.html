@@ -510,6 +510,41 @@
   details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
   details.pitem[open]>summary::before{content:'▾ '}
 
+  /* ── 醒来房间的折叠条 ──
+     ⚠️ 2026-09-18 修：原先 summary 里「日期 + 日记尾巴摘要」挤成一行，
+        在窄屏上日期被摘要压住、两段字黏在一起（大小姐截图指出）。
+        原因是 details.pitem.col 里 summary 没有自己的行约束，
+        .tx 的 flex:1 1 auto 把 .tm 一起吃了进去。
+        现在：日期独占一行（不换行），摘要在下一行整行铺开。 */
+  details.room>summary{
+    display:block; padding:2px 0;
+  }
+  details.room>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px}
+  details.room[open]>summary::before{content:'▾ '}
+  details.room>summary .r-at{
+    display:block; color:var(--fg-3); font-size:10.5px; line-height:1.6;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  details.room>summary .r-peek{
+    display:block; margin-top:3px; font-size:12px; line-height:1.6;
+    color:var(--fg-2);
+  }
+  /* ── 折叠段（Memory 的 thoughts / 线索等）──
+     和醒来房间同一套：标题行是按钮，内容收在下面。 */
+  details.fold>summary{
+    display:flex; align-items:baseline; gap:8px; flex-wrap:wrap;
+    padding:6px 0; cursor:pointer; list-style:none;
+    border-top:1px solid var(--line);
+  }
+  details.fold:first-child>summary{border-top:0}
+  details.fold>summary::-webkit-details-marker{display:none}
+  details.fold>summary::before{content:'▸ '; color:var(--fg-3); font-size:11px; flex:0 0 auto}
+  details.fold[open]>summary::before{content:'▾ '}
+  details.fold[open]>summary{border-bottom:1px solid var(--line); margin-bottom:6px}
+  details.fold>summary .f-h{font-size:12px; color:var(--fg-1); font-weight:600}
+  details.fold>summary .f-n{font-size:10.5px; color:var(--fg-3)}
+
   /* ── 第二页：日记 ── */
   .jentry{margin-bottom:11px; padding:0; overflow:hidden}
   .jentry summary{
@@ -1122,22 +1157,40 @@ function renderPanels(d){
     <div class="prow"><span>系统体检</span><span class="pv ok">首页同源卡片</span></div>
     <div class="prow"><span>档案筛选与联想路径</span>
       <span class="pv">${M.threads_total||0} 条线索</span></div>
-    ${th.length?`<div class="plist">${th.map(t=>`<div class="pitem">
-      <span class="tag">${esc(t.kind||'信号')}</span>
-      <span class="tx">${esc(t.text||'')}</span>
-      <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
-    </div>`).join('')}</div>`:''}
-    ${tr.length?`<div class="pblock"><div class="pblock-h">线索（一条线索 = 一件事的进展连线）</div>
+
+    ${/* ── 折叠：信号 / 线索 / 暗号小辞典（2026-09-18 大小姐要求）──
+         Memory 原来的三块平铺，整页拉得很长。改成折叠段，
+         标题行给条数，要看再点开 —— 结构不动、内容一条不少。*/''}
+    ${th.length?`<details class="fold"><summary>
+        <span class="f-h">信号</span>
+        <span class="f-n">${th.length} 条 · 我记下的零碎判断</span>
+      </summary>
+      <div class="plist">${th.map(t=>`<div class="pitem">
+        <span class="tag">${esc(t.kind||'信号')}</span>
+        <span class="tx">${esc(t.text||'')}</span>
+        <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
+      </div>`).join('')}</div>
+      <div class="pmeta" style="margin-top:8px">强度＝这条信号在我心里的分量；
+        撞见次数＝它被后来的事反复印证的次数。</div>
+    </details>`:''}
+
+    ${tr.length?`<details class="fold"><summary>
+        <span class="f-h">线索</span>
+        <span class="f-n">${tr.length} 条 · 一条线索 = 一件事的进展连线</span>
+      </summary>
       ${tr.map(t=>`<div class="pitem col">
         <div><b>${esc(t.name||'')}</b> <span class="tm">${t.turns_n||0} 个回合</span></div>
         <div class="tx">${esc(t.last||'')}</div>
         ${t.last_evidence?`<div class="tm">她说过：${esc(t.last_evidence)}</div>`:''}
-      </div>`).join('')}</div>`:''}
+      </div>`).join('')}
+    </details>`:''}
+
     <div class="pmeta">记忆水位：${(M.recall||{}).n||0} 条被标记过。</div>
 
-    ${hw.entries&&hw.entries.length?`<div class="pblock"><div class="pblock-h">
-        暗号小辞典 · 她说过的话
-        <span class="tm">（${hw.entries.length} 条 / 共记下 ${M.her_said_total||0} 条）</span></div>
+    ${hw.entries&&hw.entries.length?`<details class="fold"><summary>
+        <span class="f-h">暗号小辞典 · 她说过的话</span>
+        <span class="f-n">${hw.entries.length} 条 / 共记下 ${M.her_said_total||0} 条</span>
+      </summary>
       <div class="pmeta" style="margin:0 0 6px">只认微信那条通道 —— 飞书是工作台，
         工作对话不进这里。下面的词表是我认她话的凭据：出现这几个字，那句就优先留下。</div>
       ${(rc.emotion_hints||[]).length?`<div class="hints">
@@ -1149,7 +1202,7 @@ function renderPanels(d){
         <span class="s-at">${esc(e.at||'')}</span>
         <span class="s-tx">${esc(e.text||'')}</span>
       </div>`).join('')}
-      </div></div>`:''}
+      </div></details>`:''}
 
     ${todo('记忆密度日历','数据没采 —— 密度要按天统计记忆条数，得先有记忆的时间分布。')}
     ${(M.memories_total||0)>0?'':`<div class="pblock"><div class="pblock-h">
@@ -1210,9 +1263,9 @@ function renderPanels(d){
     ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
         醒来房间 · 全部 ${R.rooms_total||R.rooms.length} 间
         <span class="tm">（我醒来时手里那个房间 · 全量，不截断）</span></div>
-      ${R.rooms.map(r=>`<details class="pitem col"><summary>
-        <span class="tm">${esc(r.at||'')}</span>
-        ${roomHead(r.text||'')?`<span class="tx">${esc(roomHead(r.text))}</span>`:''}
+      ${R.rooms.map(r=>`<details class="pitem col room"><summary>
+        <span class="r-at">${esc(r.at||'')}</span>
+        ${roomHead(r.text||'')?`<span class="r-peek">${esc(roomHead(r.text))}</span>`:''}
         </summary>
         <pre class="rm">${esc(roomBody(r.text||''))}</pre></details>`).join('')}</div>`:''}
     ${/* ── 手记本（①）──
