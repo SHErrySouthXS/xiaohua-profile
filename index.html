@@ -491,6 +491,20 @@
   .plog{margin:8px 0 2px 6px; padding-left:10px;
     border-left:2px solid var(--fg-3)}
   .plog .pitem:last-child{border-bottom:0}
+  /* 暗号小辞典 —— 她说过的话。左边一道柔和的线，像书页的装订线 */
+  .said{display:flex; gap:9px; align-items:baseline; padding:5px 0;
+    border-bottom:1px dashed rgba(255,255,255,.07)}
+  .said:last-child{border-bottom:0}
+  .said .s-at{color:var(--fg-3); font-size:10.5px; flex:0 0 34px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; padding-top:2px}
+  .said .s-tx{color:var(--fg-1); font-size:12.5px; line-height:1.55; word-break:break-word}
+  /* 她话里出现过的情绪词 / 关于我们的词 —— 词表，不是标签墙 */
+  .hints{display:flex; flex-wrap:wrap; gap:5px; margin:7px 0 0}
+  .hints .hw{font-size:11px; padding:2px 8px; border-radius:9px;
+    background:rgba(255,159,197,.10); color:var(--pink);
+    border:1px solid rgba(255,159,197,.22)}
+  .hints .hw.o{background:rgba(255,255,255,.05); color:var(--fg-2);
+    border-color:rgba(255,255,255,.12)}
   details.pitem>summary{cursor:pointer; list-style:none}
   details.pitem>summary::-webkit-details-marker{display:none}
   details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
@@ -1103,6 +1117,7 @@ function renderPanels(d){
   // ── 4. Memory ──
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
   const th=(M.thoughts||[]), tr=(M.threads||[]);
+  const hw=(M.her_words||{}), rc=(hw.recall||{});
   h+=sec('🧠 Memory','记忆系统的透明窗口',`
     <div class="prow"><span>系统体检</span><span class="pv ok">首页同源卡片</span></div>
     <div class="prow"><span>档案筛选与联想路径</span>
@@ -1119,9 +1134,31 @@ function renderPanels(d){
         ${t.last_evidence?`<div class="tm">她说过：${esc(t.last_evidence)}</div>`:''}
       </div>`).join('')}</div>`:''}
     <div class="pmeta">记忆水位：${(M.recall||{}).n||0} 条被标记过。</div>
-    ${todo('语义记忆星河','能力没做 —— 需要一个向量空间把记忆铺成星河，我们没有 embedding 检索层。')}
-    ${todo('暗号小辞典','能力没做 —— 我们没有"暗号"这个机制（原文里是两人之间约定俗成的说法表）。')}
-    ${todo('记忆密度日历','数据没采 —— 密度要按天统计记忆条数，得先有记忆的时间分布。')}`);
+
+    ${hw.entries&&hw.entries.length?`<div class="pblock"><div class="pblock-h">
+        暗号小辞典 · 她说过的话
+        <span class="tm">（${hw.entries.length} 条 / 共记下 ${M.her_said_total||0} 条）</span></div>
+      <div class="pmeta" style="margin:0 0 6px">只认微信那条通道 —— 飞书是工作台，
+        工作对话不进这里。下面的词表是我认她话的凭据：出现这几个字，那句就优先留下。</div>
+      ${(rc.emotion_hints||[]).length?`<div class="hints">
+        ${(rc.emotion_hints||[]).map(w=>`<span class="hw">${esc(w)}</span>`).join('')}
+        ${(rc.ours_hints||[]).map(w=>`<span class="hw o">${esc(w)}</span>`).join('')}
+      </div>`:''}
+      <div style="margin-top:9px">
+      ${hw.entries.map(e=>`<div class="said">
+        <span class="s-at">${esc(e.at||'')}</span>
+        <span class="s-tx">${esc(e.text||'')}</span>
+      </div>`).join('')}
+      </div></div>`:''}
+
+    ${todo('记忆密度日历','数据没采 —— 密度要按天统计记忆条数，得先有记忆的时间分布。')}
+    ${(M.memories_total||0)>0?'':`<div class="pblock"><div class="pblock-h">
+        语义记忆星河 <span class="tm">（还没到能搭的时候）</span></div>
+      <div class="pmeta" style="margin:0">不是"少个向量库"这么简单 ——
+        连记忆条目都还没有（蒸馏入库这条路没跑起来，${'ledgers/memories.json'} 不存在）。
+        而且就算有条目，也不能拿词面重合冒充语义相似度：
+        原文把"物理上没有零结果的引擎"当反面教材，那种图好看但没意义。
+        要搭得先接真 embedding，接上了才谈得上"星河"。</div></div>`}`);
 
   // ── 5. Room ──
   // 原文七项：心情周报、欲望与感受、唤醒时间线、手记本、工作台、未完成清单、书房
@@ -1178,8 +1215,21 @@ function renderPanels(d){
         ${roomHead(r.text||'')?`<span class="tx">${esc(roomHead(r.text))}</span>`:''}
         </summary>
         <pre class="rm">${esc(roomBody(r.text||''))}</pre></details>`).join('')}</div>`:''}
+    ${/* ── 手记本（①）──
+         每回合能在账里留一句 note，**下次醒来会读到**（ledger.py 的 notes()）。
+         之前它散在账本里，没人看得见 —— 现在收成一本。*/''}
+    ${(R.notes||[]).length?`<div class="pblock"><div class="pblock-h">
+        手记本 · ${R.notes_total} 条
+        <span class="tm">（我随手记下的，下次醒来会读到）</span></div>
+      ${R.notes.map(n=>`<div class="pitem">
+        <span class="tm">${esc(n.at||'')}</span>
+        ${n.hand?`<span class="tag">${esc(n.hand)}</span>`:''}
+        <span class="tx">${esc(n.text||'')}</span>
+      </div>`).join('')}
+      <div class="pmeta" style="margin-top:6px">便签是最弱的一类素材（只在"该不该带回来"的
+        打分里加 1 分），所以条数本来就少 —— 有几条是几条，不凑。</div></div>`
+      :todo('手记本','数据没采 —— 机制在（每回合可留一句 note），但账里还没有便签。')}
     ${todo('心情周报','数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。')}
-    ${todo('手记本','能力没做 —— 原文里 agent 随手记东西的本子，我们没有这个动作。')}
     ${todo('书房（书架/阅读器/续读/批注）','能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。')}`);
 
   // ── 6. Prompt ──
