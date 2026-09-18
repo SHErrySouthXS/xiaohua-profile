@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>小华 · 运行看板</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0b0f14; --card:#131a22; --card2:#182130; --line:#243040;
+    --fg:#e8eef5; --dim:#8fa3b8; --dim2:#5f7288;
+    --ok:#3ddc97; --warn:#ffc857; --bad:#ff5c7a;
+    --accent:#7aa2f7;
+  }
+  body{
+    background:var(--bg); color:var(--fg);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    padding:20px 16px 48px; max-width:880px; margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  header{margin-bottom:22px}
+  h1{font-size:20px;font-weight:600;letter-spacing:.02em;display:flex;align-items:center;gap:9px}
+  h1 .dot{width:9px;height:9px;border-radius:50%;background:var(--ok);flex:none;
+    box-shadow:0 0 0 0 rgba(61,220,151,.6);animation:pulse 2.4s infinite}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(61,220,151,.5)}
+    70%{box-shadow:0 0 0 9px rgba(61,220,151,0)}
+    100%{box-shadow:0 0 0 0 rgba(61,220,151,0)}
+  }
+  .sub{color:var(--dim2);font-size:12px;margin-top:7px;line-height:1.6}
+
+  .status{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px 18px;margin-bottom:16px;display:flex;align-items:center;
+    justify-content:space-between;gap:12px;flex-wrap:wrap;
+  }
+  .status .head{font-size:17px;font-weight:600}
+  .status.ok{border-left:3px solid var(--ok)}
+  .status.warn{border-left:3px solid var(--warn)}
+  .status.bad{border-left:3px solid var(--bad)}
+  .status.ok .head{color:var(--ok)}
+  .status.warn .head{color:var(--warn)}
+  .status.bad .head{color:var(--bad)}
+  .badge{font-size:11px;color:var(--dim2);border:1px solid var(--line);
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:11px;margin-bottom:16px}
+  .cell{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+  .cell .k{font-size:11px;color:var(--dim2);letter-spacing:.06em;margin-bottom:7px}
+  .cell .v{font-size:15px;font-weight:600;word-break:break-word}
+  .cell .v.sm{font-size:13px;font-weight:500;color:var(--dim)}
+
+  section{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:17px 18px;margin-bottom:16px}
+  h2{font-size:13px;font-weight:600;color:var(--dim);letter-spacing:.08em;
+    margin-bottom:14px;text-transform:uppercase}
+
+  .radar-wrap{display:flex;justify-content:center;padding:4px 0 6px}
+  svg.radar{width:100%;max-width:400px;height:auto;overflow:visible}
+
+  .bars{display:flex;flex-direction:column;gap:9px}
+  .bar-row{display:grid;grid-template-columns:58px 1fr 42px;align-items:center;gap:10px}
+  .bar-row .nm{font-size:12px;color:var(--dim);text-align:right}
+  .bar-track{height:7px;background:var(--card2);border-radius:99px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#3b6fd4,#7aa2f7);
+    transition:width .5s ease}
+  .bar-row.top .bar-fill{background:linear-gradient(90deg,#d4a53b,#ffc857)}
+  .bar-row .vl{font-size:12px;color:var(--dim2);font-variant-numeric:tabular-nums}
+
+  .checklist{display:flex;flex-direction:column;gap:0}
+  .item{display:grid;grid-template-columns:20px 1fr;gap:11px;padding:11px 0;
+    border-bottom:1px solid var(--line);align-items:start}
+  .item:last-child{border-bottom:none}
+  .item .ic{font-size:13px;line-height:1.5;text-align:center}
+  .item .nm{font-size:14px;font-weight:500;margin-bottom:3px}
+  .item .ev{font-size:12px;color:var(--dim2);line-height:1.55;word-break:break-word}
+
+  .spark{width:100%;height:44px;display:block}
+  .empty{color:var(--dim2);font-size:13px;padding:10px 0}
+
+  footer{color:var(--dim2);font-size:11px;text-align:center;margin-top:26px;line-height:1.9}
+  footer a{color:var(--dim);text-decoration:none}
+  .stale{color:var(--warn)}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="dot" id="dot"></span>小华 · 运行看板</h1>
+  <div class="sub" id="meta">加载中…</div>
+</header>
+
+<div id="app"></div>
+
+<footer>
+  <div>每 30 分钟自动更新 · 数据源：本机 companion 体检</div>
+  <div id="foot-extra"></div>
+</footer>
+
+<script>
+const REFRESH_MS = 5 * 60 * 1000;   // 页面自身每 5 分钟重拉一次数据文件
+const STALE_MIN = 75;               // 超过这个分钟数视为数据陈旧
+
+function esc(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
+
+function render(d){
+  const color = d.color || 'ok';
+  const app = document.getElementById('app');
+  const gen = new Date((d.generated_at||'').replace(/-/g,'/'));
+  const ageMin = isNaN(gen) ? null : (Date.now() - gen.getTime())/60000;
+  const stale = ageMin !== null && ageMin > STALE_MIN;
+
+  document.getElementById('dot').style.background =
+    ({ok:'var(--ok)', warn:'var(--warn)', bad:'var(--bad)'})[color] || 'var(--dim)';
+
+  document.getElementById('meta').innerHTML =
+    `最近体检 <b>${esc(d.generated_at||'—')}</b>` +
+    (ageMin!==null ? ` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}` : '') +
+    ` ｜ ${d.bad||0} 项异常 · ${d.warn||0} 项留意 · 共 ${d.total||0} 项`;
+
+  let html = '';
+
+  if(d.probe_error){
+    html += `<div class="status bad"><div class="head">采集异常</div>
+      <div class="badge">探针报错</div></div>
+      <section><div class="empty">${esc(d.probe_error)}</div></section>`;
+    app.innerHTML = html; return;
+  }
+
+  html += `<div class="status ${color}">
+    <div class="head">${esc(d.head||'—')}</div>
+    <div class="badge">${stale?'数据可能已陈旧':'实时快照'}</div>
+  </div>`;
+
+  // 概览卡
+  const L = d.ledger||{}, M = d.model||{}, A = d.anchor||{}, R = d.rhythm||{};
+  html += `<div class="grid">
+    <div class="cell"><div class="k">唤醒模型</div>
+      <div class="v ${M.ok===false?'':''}" style="${M.ok===false?'color:var(--bad)':''}">${esc(M.wake||'—')}</div></div>
+    <div class="cell"><div class="k">微信锚点</div>
+      <div class="v">${A.at?esc(A.at):'—'}</div>
+      <div class="v sm" style="margin-top:4px">${A.hours_ago!=null?esc(A.hours_ago)+' 小时前':''}</div></div>
+    <div class="cell"><div class="k">唤醒账本</div>
+      <div class="v">${L.entries!=null?esc(L.entries)+' 条':'—'}</div>
+      <div class="v sm" style="margin-top:4px">${L.last24h!=null?'近 24h '+esc(L.last24h)+' 条 · 开口 '+esc(L.spoke24h):''}</div></div>
+    <div class="cell"><div class="k">Token 消耗</div>
+      <div class="v">${L.total_tokens!=null?esc(L.total_tokens):'—'}</div></div>
+  </div>`;
+
+  // 九维雷达
+  const dims = d.dimensions||[], vals = d.drives||[];
+  if(dims.length && vals.length===dims.length){
+    html += `<section><h2>🧭 九维驱动</h2>${radarSVG(dims, vals)}</section>`;
+    html += `<section><h2>驱动强度</h2><div class="bars">${
+      dims.map((n,i)=>{
+        const v = Math.max(0, Math.min(1, vals[i]||0));
+        const top = v >= 0.8 ? ' top' : '';
+        return `<div class="bar-row${top}"><div class="nm">${esc(n)}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${(v*100).toFixed(1)}%"></div></div>
+          <div class="vl">${v.toFixed(2)}</div></div>`;
+      }).join('')}</div></section>`;
+  }
+
+  // 体检明细
+  const rows = d.rows||[];
+  if(rows.length){
+    html += `<section><h2>✅ 自检项（${rows.length}）</h2><div class="checklist">${
+      rows.map(r=>`<div class="item">
+        <div class="ic">${ICON[r.state]||'•'}</div>
+        <div><div class="nm">${esc(r.name)}</div>
+        <div class="ev">${esc(r.evidence)}</div></div></div>`).join('')}</div></section>`;
+  }
+
+  // 历史趋势
+  const h = d.history||[];
+  if(h.length>1){
+    html += `<section><h2>📉 历史（近 ${h.length} 次采样）</h2>${sparkSVG(h)}</section>`;
+  }
+
+  app.innerHTML = html;
+
+  if(stale){
+    document.getElementById('foot-extra').innerHTML =
+      '<span class="stale">⚠️ 数据超过 75 分钟未更新，可能推送链路异常</span>';
+  }
+}
+
+function radarSVG(dims, vals){
+  const S=340, C=S/2, R=118, n=dims.length, MAX=1;
+  const pt=(i,r)=>{
+    const a=-Math.PI/2 + i*2*Math.PI/n;
+    return [C+Math.cos(a)*r, C+Math.sin(a)*r];
+  };
+  let g='';
+  for(let ring=1; ring<=4; ring++){
+    const rr=R*ring/4;
+    const pts=dims.map((_,i)=>pt(i,rr).join(',')).join(' ');
+    g+=`<polygon points="${pts}" fill="none" stroke="#243040" stroke-width="1"/>`;
+  }
+  dims.forEach((_,i)=>{
+    const [x,y]=pt(i,R);
+    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="#243040" stroke-width="1"/>`;
+  });
+  const dpts=dims.map((_,i)=>{
+    const v=Math.max(0,Math.min(MAX,vals[i]||0));
+    return pt(i,R*v).join(',');
+  }).join(' ');
+  g+=`<polygon points="${dpts}" fill="rgba(122,162,247,.22)" stroke="#7aa2f7" stroke-width="2"/>`;
+  dims.forEach((_,i)=>{
+    const v=Math.max(0,Math.min(MAX,vals[i]||0));
+    const [x,y]=pt(i,R*v);
+    g+=`<circle cx="${x}" cy="${y}" r="3" fill="#7aa2f7"/>`;
+  });
+  dims.forEach((nm,i)=>{
+    const [x,y]=pt(i,R+24);
+    const anchor = Math.abs(x-C)<6 ? 'middle' : (x>C ? 'start' : 'end');
+    const dy = y<C-6 ? -2 : (y>C+6 ? 9 : 4);
+    g+=`<text x="${x}" y="${y+dy}" fill="#8fa3b8" font-size="11"
+      text-anchor="${anchor}" font-family="inherit">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
+  });
+  return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
+}
+
+function sparkSVG(hist){
+  const W=800, H=44, pad=3;
+  const bad = hist.map(x=>x.bad||0);
+  const mx = Math.max(1, ...bad);
+  const step = hist.length>1 ? (W-2*pad)/(hist.length-1) : 0;
+  const y = v => H-pad - (v/mx)*(H-2*pad);
+  const pts = bad.map((v,i)=>[pad+i*step, y(v)]);
+  const line = pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+  const area = line + ` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <path d="${area}" fill="rgba(61,220,151,.12)"/>
+    <path d="${line}" fill="none" stroke="#3ddc97" stroke-width="1.6"/>
+  </svg>
+  <div style="font-size:11px;color:var(--dim2);margin-top:6px">
+    纵轴 = 异常项数（峰值 ${mx}）· 横轴 = 时间</div>`;
+}
+
+async function load(){
+  try{
+    // 加时间戳绕开缓存，保证每次拿到最新 JSON
+    const r = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    render(await r.json());
+  }catch(e){
+    document.getElementById('app').innerHTML =
+      `<div class="status bad"><div class="head">读取数据失败</div>
+       <div class="badge">${esc(e.message)}</div></div>
+       <section><div class="empty">等一下会自动重试。如果持续如此，说明推送链路断了。</div></section>`;
+    document.getElementById('meta').textContent = '数据不可用';
+  }
+}
+load();
+setInterval(load, REFRESH_MS);
+</script>
+</body>
+</html>
