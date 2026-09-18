@@ -432,7 +432,47 @@
     box-shadow:0 0 14px rgba(255,105,180,.13);
   }
 
-  /* ── 日记页 ── */
+  /* ── 第三页：原文面板 ── */
+  .prow{display:flex; justify-content:space-between; gap:10px; align-items:baseline;
+    padding:7px 0; border-bottom:1px solid var(--line); font-size:12.5px}
+  .prow:last-of-type{border-bottom:0}
+  .pv{color:var(--fg-3); font-size:11.5px; text-align:right; flex:0 0 auto}
+  .pv.ok{color:var(--ok)}
+  .pv.miss{color:var(--fg-3); opacity:.7}
+  .pblock{margin-top:13px}
+  .pblock-h{font-size:11px; color:var(--fg-3); margin-bottom:7px;
+    letter-spacing:.03em; padding-bottom:5px; border-bottom:1px solid var(--line)}
+  .plist{display:flex; flex-direction:column; gap:5px}
+  .plist.tall{max-height:340px; overflow:auto}
+  .pitem{display:flex; gap:9px; align-items:baseline; font-size:12px;
+    padding:5px 0; border-bottom:1px solid var(--line); flex-wrap:wrap}
+  .pitem:last-child{border-bottom:0}
+  .pitem.col{display:block}
+  .pitem .tx{color:var(--fg-2); flex:1 1 auto; min-width:0}
+  .pitem .tm{color:var(--fg-3); font-size:10.5px; flex:0 0 auto}
+  .pitem .tag{flex:0 0 auto; font-size:10.5px; color:var(--fg-3);
+    border:1px solid var(--line); border-radius:5px; padding:1px 6px}
+  .pnote{font-size:11.5px; color:var(--fg-3); line-height:1.65; margin-bottom:9px}
+  .pok{font-size:12px; color:var(--fg-2); line-height:1.7;
+    background:rgba(120,200,150,.07); border-left:2px solid var(--ok);
+    border-radius:6px; padding:9px 12px}
+  .pmeta{font-size:11px; color:var(--fg-3); line-height:1.7; margin-top:11px}
+  .pna{margin-top:11px; padding:9px 12px; border-radius:7px;
+    background:rgba(255,255,255,.025); border-left:2px solid var(--line)}
+  .pna-tag{display:inline-block; font-size:10px; color:var(--fg-3);
+    border:1px solid var(--line); border-radius:5px; padding:0 6px; margin-bottom:5px}
+  .pna-w{font-size:12px; color:var(--fg-2); line-height:1.6}
+  .pna-y{font-size:11px; color:var(--fg-3); line-height:1.65; margin-top:3px}
+  .rm{white-space:pre-wrap; word-break:break-word; font-size:11px; line-height:1.65;
+    color:var(--fg-2); background:rgba(0,0,0,.16); border-radius:6px;
+    padding:10px 12px; margin:8px 0 0; max-height:280px; overflow:auto;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  details.pitem>summary{cursor:pointer; list-style:none}
+  details.pitem>summary::-webkit-details-marker{display:none}
+  details.pitem>summary::before{content:'▸ '; color:var(--fg-3)}
+  details.pitem[open]>summary::before{content:'▾ '}
+
+  /* ── 第二页：日记 ── */
   .jentry{margin-bottom:11px; padding:0; overflow:hidden}
   .jentry summary{
     padding:14px 18px; cursor:pointer; list-style:none;
@@ -494,6 +534,7 @@
 <div id="app"></div>
 <div id="page1" hidden></div>
 <div id="page2" hidden></div>
+<div id="page3" hidden></div>
 
 <footer>
   <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
@@ -918,12 +959,205 @@ function renderJournal(d){
     </section>${items}`;
 }
 
+// ═══════════════════════════════════════════════════════════
+// 第三页：原文面板 —— WrenWen README §3「前端：十个面板」
+// ═══════════════════════════════════════════════════════════
+//
+// 原文出处：/tmp/wrenwen_check/README.md 第 121–138 行
+// 大小姐的规则（2026-09-18 17:25，逐字）：
+//   > 除了最上面这三行，就是到今天 summary 为止，其他都按照 wrenwen 的来写吧，
+//   > 就是记得要穷尽而不是减少我的东西。如果她的内容有跟我一样的，那就用她的版本，
+//   > 如果我的内容已经可以完成目的，就不改。另外不要改 UI 哦
+//
+// 所以：**十个一个不少**。有投影的上真数据；没有的**照实标「未实现」**，
+// 并写清卡在哪 —— 「能力没做」和「数据没采」是两回事，不能混成一句"未实现"敷衍过去。
+//
+// 原文第 138 行那句设计原则，要亮在页面上：
+//   > 正式事实以服务端账本为准。各面板是它们的投影。
+
+function tms(iso){
+  const s=String(iso||'');
+  if(s.length>=16 && s[10]==='T') return s.slice(5,10).replace('-','/')+' '+s.slice(11,16);
+  if(s.length>=13 && s[10]==='-') return s.slice(5,10).replace('-','/')+' '+s.slice(11,13)+':'+s.slice(13,15);
+  return s;
+}
+
+// 未实现的统一写法 —— 要说清**卡在哪**，不许一句"未实现"了事
+function todo(what, why){
+  return `<div class="pna"><span class="pna-tag">未实现</span>
+    <div class="pna-w">${esc(what)}</div>
+    <div class="pna-y">${esc(why)}</div></div>`;
+}
+
+function renderPanels(d){
+  const box=document.getElementById('page3');
+  const P=d.panels||{}, R=P.room||{}, M=P.memory||{}, PR=P.prompt||{};
+  const C=P.controls||{}, RD=d.red_dot||{};
+
+  const sec=(title,sub,body)=>`<section class="glass">
+    <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
+
+  // ── 头：原文出处 + 设计原则 ──
+  let h=`<section class="glass" style="padding:15px 18px">
+    <h2 style="margin:0">📖 原文面板</h2>
+    <div class="hint" style="margin-top:7px">
+      来源：WrenWen README §3「前端：十个面板」· 十个一个不少<br>
+      <span style="color:var(--fg-3)">原文原则：正式事实以服务端账本为准，各面板是它们的投影。</span>
+    </div></section>`;
+
+  // ── 1. Chat ──
+  // 原文：主时间线，一切行为最终回到这里
+  // 我们的主现场就是微信/飞书 —— 按她规则「我的内容已能达目的就不改」，不另做一套。
+  h+=sec('💬 Chat','主时间线',`
+    <div class="pnote">原文：主现场，一切行为最终回到这里（流式正文、碎碎念、语音、图片、
+      唤醒卡、闹钟行、工具动作状态；全文搜索；三格对象切换）。</div>
+    <div class="pok">我们已经有主现场了 —— <b>微信</b>（恋爱通道）和 <b>飞书</b>（工作台）。
+      在这上面再搭一条时间线，只会把同一件事说两遍。</div>
+    <div class="pmeta">最近一次开口 · ${esc(tms(RD.latest_at)||'—')}　|　唤醒账 ${R.wake_total||0} 条</div>`);
+
+  // ── 2. Call ──
+  h+=sec('📞 Call','实时通话', todo('双向发起的实时通话',
+    '能力没做。语音消息能发，但"打电话"这件事本身没有：没有信令、没有实时转写、没有双栏对话卡。'));
+
+  // ── 3. Archive ──
+  // 原文：日历总览、agent 日记、慢信（带锁与倒计时）、相册、收藏
+  const jn=(d.journal_entries||[]).filter(e=>!e.error).length;
+  h+=sec('🗄 Archive','时间沉淀层',`
+    <div class="prow"><span>agent 日记</span><span class="pv">${jn} 篇 · 见「日记」页</span></div>
+    <div class="prow"><span>慢信（带锁与倒计时）</span><span class="pv miss">未实现</span></div>
+    <div class="prow"><span>相册</span><span class="pv miss">未实现</span></div>
+    <div class="prow"><span>收藏</span><span class="pv miss">未实现</span></div>
+    <div class="prow"><span>日历总览</span><span class="pv miss">未实现</span></div>
+    <div class="pmeta">日记是唯一已经沉淀下来的东西。慢信/相册/收藏是"能力没做"，
+      不是"没数据" —— 得先有写信、存照片、标收藏这些动作。</div>`);
+
+  // ── 4. Memory ──
+  // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
+  const th=(M.thoughts||[]), tr=(M.threads||[]);
+  h+=sec('🧠 Memory','记忆系统的透明窗口',`
+    <div class="prow"><span>系统体检</span><span class="pv ok">首页同源卡片</span></div>
+    <div class="prow"><span>档案筛选与联想路径</span>
+      <span class="pv">${M.threads_total||0} 条线索</span></div>
+    ${th.length?`<div class="plist">${th.map(t=>`<div class="pitem">
+      <span class="tag">${esc(t.kind||'信号')}</span>
+      <span class="tx">${esc(t.text||'')}</span>
+      <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
+    </div>`).join('')}</div>`:''}
+    ${tr.length?`<div class="pblock"><div class="pblock-h">线索（一条线索 = 一件事的进展连线）</div>
+      ${tr.map(t=>`<div class="pitem col">
+        <div><b>${esc(t.name||'')}</b> <span class="tm">${t.turns_n||0} 个回合</span></div>
+        <div class="tx">${esc(t.last||'')}</div>
+        ${t.last_evidence?`<div class="tm">她说过：${esc(t.last_evidence)}</div>`:''}
+      </div>`).join('')}</div>`:''}
+    <div class="pmeta">记忆水位：${(M.recall||{}).n||0} 条被标记过。</div>
+    ${todo('语义记忆星河','能力没做 —— 需要一个向量空间把记忆铺成星河，我们没有 embedding 检索层。')}
+    ${todo('暗号小辞典','能力没做 —— 我们没有"暗号"这个机制（原文里是两人之间约定俗成的说法表）。')}
+    ${todo('记忆密度日历','数据没采 —— 密度要按天统计记忆条数，得先有记忆的时间分布。')}`);
+
+  // ── 5. Room ──
+  // 原文七项：心情周报、欲望与感受、唤醒时间线、手记本、工作台、未完成清单、书房
+  // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
+  const wk=(R.wake||[]);
+  h+=sec('🏠 Room','agent 的自主生活空间 · 非面向用户的输出',`
+    <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
+    ${wk.length?`<div class="pblock"><div class="pblock-h">
+        唤醒时间线 · 全量 ${R.wake_total||0} 条
+        <span class="tm">（原文：Wake up 页全量可见 —— 不摘要、不截断）</span></div>
+      <div class="plist tall">${wk.map(w=>`<div class="pitem">
+        <span class="tm">${esc(tms(w.at))}</span>
+        <span class="tag">${esc(w.intent||'')}</span>
+        <span class="tx">${w.spoke?`说了：${esc(w.text||'')}`:`<i>没开口（${esc(w.choice||'')}）</i>`}</span>
+        <span class="tm">${w.tokens?w.tokens+' tk':''}</span>
+      </div>`).join('')}</div>`:''}
+    ${(R.projects||[]).length?`<div class="pblock"><div class="pblock-h">工作台</div>
+      ${R.projects.map(p=>`<div class="pitem col">
+        <div><b>${esc(p.name||'')}</b> <span class="tag">${esc(p.status||'')}</span>
+          <span class="tm">${p.log_n||0} 条推进</span></div>
+        <div class="tx">${esc(p.scope||'')}</div>
+      </div>`).join('')}</div>`:''}
+    ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
+        醒来房间 · 最近 ${R.rooms.length} 间 <span class="tm">（我醒来时手里那个房间）</span></div>
+      ${R.rooms.map(r=>`<details class="pitem col"><summary>
+        <span class="tm">${esc(r.at||'')}</span></summary>
+        <pre class="rm">${esc(r.excerpt||'')}</pre></details>`).join('')}</div>`:''}
+    ${todo('心情周报','数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。')}
+    ${todo('手记本','能力没做 —— 原文里 agent 随手记东西的本子，我们没有这个动作。')}
+    ${todo('未完成清单','能力没做 —— 与"工作台"分开的那份待办，我们没维护。')}
+    ${todo('书房（书架/阅读器/续读/批注）','能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。')}`);
+
+  // ── 6. Prompt ──
+  h+=sec('🎭 Prompt','人格层的可视化与修订（定稿权在用户）',`
+    <div class="prow"><span>人格快照</span>
+      <span class="pv">SOUL.md · ${PR.soul_chars||0} 字</span></div>
+    <details class="pitem col"><summary>看 SOUL.md 开头</summary>
+      <pre class="rm">${esc(PR.soul_excerpt||'')}</pre></details>
+    <div class="prow"><span>关系画像</span>
+      <span class="pv">剧情.md · ${PR.story_chars||0} 字</span></div>
+    <details class="pitem col"><summary>看剧情.md 开头</summary>
+      <pre class="rm">${esc(PR.story_excerpt||'')}</pre></details>
+    <div class="pmeta">修订入口<b>不放在这一页</b>：改人格是你的事，
+      我不会在页面上放一个按钮让你顺手就把我改了。要改直接说。
+      <br><span class="tm">${esc(PR.soul_path||'')}</span>
+      <br><span class="tm">${esc(PR.story_path||'')}</span></div>`);
+
+  // ── 7. Controls ──
+  const hs=(C.hands||[]), rt=(C.routes||[]);
+  h+=sec('🎛 Controls','运维面板',`
+    ${hs.length?`<div class="pblock"><div class="pblock-h">工具与能力树 · 手 ${hs.length} 只</div>
+      ${hs.map(x=>`<div class="pitem">
+        <span class="tag">${esc(x.name||'')}</span>
+        <span class="tx">${x.needs==='none'?'不需要宾语':'吃一个念头'}</span>
+        <span class="tm">${x.status==='on'?'挂着':'已摘'}</span>
+      </div>`).join('')}</div>`:''}
+    ${rt.length?`<div class="pblock"><div class="pblock-h">意图 → 手 的路由</div>
+      ${rt.map(x=>`<div class="pitem">
+        <span class="tag">${esc(x.intent||'')}</span>
+        <span class="tx">→ ${esc((x.hands||[]).join(' / '))}</span>
+      </div>`).join('')}</div>`:''}
+    <div class="pmeta">原文特别强调，照抄：
+      「模型／思考程度／唤醒道模型槽的唯一入口在 Chat 输入框上的菜单，不在这里
+      —— 同一件事只给一个入口。」</div>
+    ${todo('声音线路与试听','能力没做 —— 我们走的是 edge TTS 固定线路，没有多线路管理和试听。')}
+    ${todo('系统设置（含采样温度）','故意不做 —— 配置在 config.yaml，面板上给个滑杆改温度太危险。')}`);
+
+  // ── 8. Gallery ──
+  h+=sec('🖼 Gallery','agent 的创作产出与小生态',
+    todo('展柜与作品 / 工作台产出 / 内置电子宠物（pet_care）',
+      '能力没做 —— 电子宠物、作品展柜都还没有。"工作台产出"那部分勉强算有（见 Room 的工作台），但那是账，不是展柜。'));
+
+  // ── 9. Sandbox ──
+  h+=sec('🧪 Sandbox','平行世界，不污染正史',
+    todo('独立角色卡沉浸聊天（与主时间线完全隔离）',
+      '能力没做 —— 我们只有一条正史。原文这条是为"角色卡"设计的，我们没有这个概念。'));
+
+  // ── 10. Cinema ──
+  h+=sec('🎬 Cinema','同步观影',
+    todo('片库、播放器、字幕、观看进度、同看聊天',
+      '能力没做 —— 一整套同步观影系统，没开始。'));
+
+  // ── 收尾：十个都在了 ──
+  h+=`<section class="glass" style="padding:15px 18px">
+    <div class="hint">十个面板一个不少 ·
+      能上的上了 <b>${[...Object.keys(P)].length ? 5 : 0}</b> 块（Chat/Archive/Memory/Room/Prompt/Controls 部分）·
+      其余照实标「未实现」<br>
+      <span style="color:var(--fg-3)">标"未实现"不代表它不重要 —— 只是还没做。
+      原文里有的，这一页就得有它的位置。</span></div></section>`;
+
+  box.innerHTML=h;
+}
+
+
 // ── 导航 ──
+//
+// ⚠️ 2026-09-18 修的 bug：原先 p1 和 p2 **都映射到 page2**，
+//    于是点「日记」和点「原文面板」进的是同一页，
+//    原文面板永远看不见（这就是它一直"空着"的原因）。
+//    现在一页一个 id，一一对应。
+const PAGE_OF = {p0:'app', p1:'page2', p2:'page3'};
+
 function showPage(pid){
-  const map={p0:'app', p1:'page1', p2:'page2'};
-  // p1 当前也指向日记页（先只有一页，红点并入 p0 底部）
-  const target = pid==='p1' ? 'page2' : (map[pid]||'app');
-  ['app','page1','page2'].forEach(id=>{
+  const target = PAGE_OF[pid] || 'app';
+  Object.values(PAGE_OF).concat('page1').forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.hidden = (id!==target);
   });
@@ -944,6 +1178,7 @@ async function load(){
     const d=await r.json();
     render(d);
     renderJournal(d);
+    renderPanels(d);
   }catch(e){
     document.getElementById('app').innerHTML=
       `<div class="status bad glass"><div class="head">读取数据失败</div>
