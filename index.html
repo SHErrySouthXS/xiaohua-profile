@@ -3,104 +3,110 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#0a0709">
+<meta name="theme-color" content="#e8cdd3">
 <title>男友 Profile：小华</title>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
 
+  /* ══════════════════════════════════════════════════════════════
+     粉 · 浅色磨砂玻璃
+     ──────────────────────────────────────────────────────────────
+     ⚠️ 方向校正记录（2026-09-18，大小姐给的粉海滩图纠正）：
+        前几版做的是「深黑底 + 粉霓虹光晕 + 白字」——错了。
+        大小姐要的是「粉色海滩图做背景 + 浅色磨砂玻璃 + 深色文字」。
+
+     为什么浅底深字是**正确**的（不是审美偏好，是可读性）：
+        磨砂玻璃会把背景模糊 + 叠白，合成色约 #E8CDD3（藕粉，偏亮）。
+        白字压在偏亮的浅玻璃上 → 发灰发虚 → 正好违背"文字要清晰可见"。
+        深色字压在浅粉玻璃上 → 对比度最高 → 清爽利落。
+
+     磨砂效果成立的前提（关键，别再犯）：
+        玻璃背后**必须有丰富明暗层次**的图，blur 才有东西可磨。
+        纯黑底上放光斑是做不出磨砂的 —— 没有可采样的细节。
+     ══════════════════════════════════════════════════════════════ */
+
   :root{
-    /* ── 粉 · 黑 主色调 ── */
-    --bg-base:#0a0709;          /* 近黑，不是纯黑 —— 让玻璃有东西可透 */
-    --pink:#f4b6c2;             /* 主强调：低饱和柔光粉 */
-    --pink-hot:#ffb6c1;         /* 发光粉 */
-    --pink-deep:#d98fa4;        /* 深一档 */
-    --pink-glow:rgba(255,182,193,.35);
+    /* 深色文字三级（压浅粉玻璃） */
+    --ink:#3a2f35;        /* 主文字：深咖紫 */
+    --ink-2:#5a4a52;      /* 次级 */
+    --ink-3:#7d6a72;      /* 辅助 */
+    --ink-4:#9a8790;      /* 最弱 */
 
-    /* 玻璃层 */
-    --glass:rgba(255,255,255,.065);
-    --glass-2:rgba(255,255,255,.095);
-    --glass-3:rgba(255,255,255,.13);
-    --glass-brd:rgba(255,255,255,.14);
-    --glass-brd-top:rgba(255,255,255,.34);
+    /* 粉色强调（深一档，才能压住浅底） */
+    --rose:#c2566f;       /* 主强调 */
+    --rose-deep:#a8415c;
+    --rose-soft:#e8a8b8;
 
-    /* 文字三级：保证"清晰可见"（第一版太暗，整档提亮） */
-    --fg:#ffffff;
-    --fg-2:#f4eef1;
-    --fg-3:#c2b5bc;
-    --fg-4:#9c8f96;
+    /* 磨砂玻璃：偏白半透明 */
+    --glass:rgba(255,255,255,.42);
+    --glass-2:rgba(255,255,255,.52);
+    --glass-brd:rgba(255,255,255,.62);
+    --glass-brd-b:rgba(255,255,255,.34);
 
-    --ok:#8fd9b6;
-    --warn:#ffcf8a;
-    --bad:#ff8095;
+    --ok:#2f8f6b;
+    --warn:#b07d1f;
+    --bad:#c2354f;
 
-    --r-lg:24px;
-    --r-md:18px;
-    --r-sm:14px;
+    --r-lg:22px;
+    --r-md:16px;
   }
 
   html,body{height:100%}
   body{
-    background:var(--bg-base);
-    color:var(--fg);
+    /* 背景图：固定，不随滚动 —— 卡片滚过时玻璃持续"磨"同一片色彩 */
+    background:
+      url("bg.jpg") center top / cover no-repeat fixed,
+      #e8cdd3;
+    color:var(--ink);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
-    padding:18px 14px 46px; max-width:780px; margin:0 auto;
+    padding:20px 14px 48px; max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
     overflow-x:hidden;
   }
-
-  /* ── 环境光：粉紫色雾光，给磨砂玻璃提供可折射的底色 ──
-     ⚠️ 这一层是"磨砂感"的前提：玻璃要有东西可模糊。
-     踩坑记录：第一版用 `body::before { filter: blur(54px) }` 做大范围雾光，
-     无头浏览器/部分移动端渲染时**大范围 fixed 元素的 filter 会被吞掉**，
-     实测背景仍是一片死黑 → 卡片"没东西可磨" → 看着像哑光面板。
-     改法：**不依赖 filter**，直接用多层 radial-gradient 做柔和雾光。
-     （gradient 本身边缘就是软的，不需要 blur；兼容性也更好） */
+  /* 极淡的白色柔光，让文字区更稳（不改变整体粉调） */
   body::before{
     content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background:
-      radial-gradient(circle 60vw at 14% 2%,   rgba(255,110,170,.52) 0%, rgba(255,110,170,.16) 36%, transparent 70%),
-      radial-gradient(circle 56vw at 94% 14%,  rgba(255,90,160,.44)  0%, rgba(255,90,160,.13) 38%, transparent 72%),
-      radial-gradient(circle 50vw at 80% 52%,  rgba(255,120,195,.34) 0%, rgba(255,120,195,.10) 40%, transparent 74%),
-      radial-gradient(circle 80vw at 44% 102%, rgba(255,100,165,.46) 0%, rgba(255,100,165,.13) 38%, transparent 72%),
-      radial-gradient(circle 46vw at 2% 68%,   rgba(255,140,185,.30) 0%, transparent 72%),
-      radial-gradient(circle 40vw at 62% 78%,  rgba(240,130,230,.20) 0%, transparent 74%);
-  }
-  /* 细腻噪点，避免大面积渐变出现色带 */
-  body::after{
-    content:""; position:fixed; inset:0; pointer-events:none; z-index:1; opacity:.05;
-    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+    background:linear-gradient(180deg,
+      rgba(255,255,255,.12) 0%,
+      rgba(255,255,255,.03) 30%,
+      rgba(255,255,255,.06) 70%,
+      rgba(255,255,255,.16) 100%);
   }
   header, #app, footer{position:relative; z-index:2}
 
-  header{margin-bottom:16px; padding:2px 4px}
-  h1{
-    font-size:18px; font-weight:600; letter-spacing:.01em; line-height:1.4;
-    text-shadow:0 1px 12px rgba(0,0,0,.5);
-  }
-  .sub{
-    color:var(--fg-3); font-size:12px; margin-top:7px; line-height:1.65;
-    text-shadow:0 1px 8px rgba(0,0,0,.55);
-  }
-  .sub b{color:var(--fg-2); font-weight:600}
+  header{margin-bottom:16px; padding:0 4px}
 
-  /* ── 玻璃基类 ──
-     第一版玻璃太"薄"（fill .065 + 无内发光）→ 看着像哑光面板。
-     现在：fill 更实一点承托文字、边框高光更强、加内顶高光 + 底部暗边造厚度。 */
-  .glass{
-    background:linear-gradient(165deg,
-      rgba(255,255,255,.075), rgba(255,255,255,.028) 40%, rgba(255,255,255,.05));
-    backdrop-filter:blur(34px) saturate(2.0);
-    -webkit-backdrop-filter:blur(34px) saturate(2.0);
+  /* 标题区：自带一层玻璃，保证在任何背景段都清晰 */
+  .hero{
+    padding:16px 18px; margin-bottom:13px;
+    background:rgba(255,255,255,.40);
+    backdrop-filter:blur(26px) saturate(1.5);
+    -webkit-backdrop-filter:blur(26px) saturate(1.5);
     border:1px solid var(--glass-brd);
-    border-top-color:rgba(255,255,255,.44);     /* 上边亮 = 玻璃厚度 */
-    border-left-color:rgba(255,255,255,.26);
+    border-top-color:rgba(255,255,255,.75);
+    border-radius:var(--r-lg);
+    box-shadow:0 6px 26px rgba(120,80,95,.16),
+               0 1px 0 rgba(255,255,255,.7) inset;
+  }
+  h1{font-size:18px; font-weight:650; letter-spacing:.01em; line-height:1.42; color:var(--ink)}
+  .sub{color:var(--ink-3); font-size:12px; margin-top:7px; line-height:1.65}
+  .sub b{color:var(--ink-2); font-weight:600}
+
+  /* ── 磨砂玻璃基类 ── */
+  .glass{
+    background:linear-gradient(168deg,
+      rgba(255,255,255,.50), rgba(255,255,255,.34) 46%, rgba(255,255,255,.44));
+    backdrop-filter:blur(30px) saturate(1.6);
+    -webkit-backdrop-filter:blur(30px) saturate(1.6);
+    border:1px solid var(--glass-brd);
+    border-top-color:rgba(255,255,255,.78);
+    border-bottom-color:var(--glass-brd-b);
     border-radius:var(--r-lg);
     box-shadow:
-      0 10px 36px rgba(0,0,0,.46),              /* 外阴影：悬浮 */
-      0 0 0 1px rgba(255,255,255,.045) inset,   /* 细内圈 */
-      0 1.5px 0 rgba(255,255,255,.16) inset,    /* 顶部内高光 */
-      0 -1.5px 0 rgba(0,0,0,.22) inset;         /* 底部内暗边 */
+      0 8px 28px rgba(120,80,95,.15),
+      0 1px 0 rgba(255,255,255,.75) inset,
+      0 -1px 0 rgba(160,120,135,.12) inset;
   }
 
   /* ── 状态条 ── */
@@ -109,26 +115,16 @@
     display:flex; align-items:center; justify-content:space-between;
     gap:12px; flex-wrap:wrap;
   }
-  .status .head{
-    font-size:16.5px; font-weight:650; letter-spacing:.01em;
-    text-shadow:0 1px 10px rgba(0,0,0,.6);
-  }
-  /* 状态色只做"信号"，不做色块 —— 粉黑调性不被绿/黄稀释 */
-  .status.ok   .head{color:var(--fg)}
-  .status.warn .head{color:var(--warn)}
-  .status.bad  .head{color:var(--bad)}
+  .status .head{font-size:16.5px; font-weight:650; letter-spacing:.01em; color:var(--ink)}
   .status.ok   .head::before{content:"● "; color:var(--ok); font-size:13px}
   .status.warn .head::before{content:"● "; color:var(--warn); font-size:13px}
   .status.bad  .head::before{content:"● "; color:var(--bad); font-size:13px}
-  .status.ok   {box-shadow:0 10px 36px rgba(0,0,0,.46), 0 0 0 1px rgba(255,255,255,.045) inset,
-                 0 1.5px 0 rgba(255,255,255,.16) inset}
-  .status.bad  {box-shadow:0 10px 36px rgba(0,0,0,.46), 0 0 40px rgba(255,128,149,.16),
-                 0 1.5px 0 rgba(255,255,255,.16) inset}
+  .status.bad{box-shadow:0 8px 28px rgba(194,53,79,.2), 0 1px 0 rgba(255,255,255,.75) inset}
 
   .badge{
-    font-size:11px; color:var(--fg-3);
-    background:rgba(255,255,255,.06);
-    border:1px solid rgba(255,255,255,.10);
+    font-size:11px; color:var(--ink-3);
+    background:rgba(255,255,255,.45);
+    border:1px solid rgba(255,255,255,.6);
     padding:4px 11px; border-radius:999px; white-space:nowrap;
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
   }
@@ -136,23 +132,14 @@
   /* ── 栅格 ── */
   .row3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:11px}
   .row4{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:13px}
-  .cell{padding:14px 14px; min-width:0}
-  .cell .k{
-    font-size:11.5px; color:var(--fg-3); margin-bottom:8px;
-    letter-spacing:.05em; text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
-  .cell .v{
-    font-size:14.5px; font-weight:600; word-break:break-word; line-height:1.35;
-    text-shadow:0 1px 10px rgba(0,0,0,.55);
-  }
-  .cell .v.sm{
-    font-size:11px; font-weight:500; color:var(--fg-3);
-    margin-top:5px; line-height:1.5; text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
+  .cell{padding:14px; min-width:0}
+  .cell .k{font-size:11.5px; color:var(--ink-3); margin-bottom:8px; letter-spacing:.04em}
+  .cell .v{font-size:14.5px; font-weight:650; word-break:break-word; line-height:1.35; color:var(--ink)}
+  .cell .v.sm{font-size:11px; font-weight:500; color:var(--ink-3); margin-top:5px; line-height:1.5}
   .cell.ok   .v{color:var(--ok)}
   .cell.warn .v{color:var(--warn)}
   .cell.bad  .v{color:var(--bad)}
-  .cell.accent .v{color:var(--pink)}
+  .cell.accent .v{color:var(--rose)}
 
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
@@ -160,28 +147,17 @@
   }
 
   section{padding:17px 18px; margin-bottom:13px}
-  h2{
-    font-size:11.5px; font-weight:600; color:var(--fg-3);
-    letter-spacing:.09em; margin-bottom:14px; text-transform:uppercase;
-    text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
+  h2{font-size:11.5px; font-weight:650; color:var(--ink-3);
+    letter-spacing:.09em; margin-bottom:14px; text-transform:uppercase}
 
-  /* ── 📝 今天：粉调玻璃，整页最柔的一块 ── */
+  /* ── 📝 今天：粉调玻璃 ── */
   .today{
     background:linear-gradient(160deg,
-      rgba(255,182,193,.14), rgba(217,143,164,.06) 55%, rgba(255,255,255,.045));
-    border-color:rgba(255,182,193,.26);
-    border-top-color:rgba(255,200,210,.42);
-    box-shadow:
-      0 8px 32px rgba(0,0,0,.42),
-      0 0 46px rgba(255,182,193,.10),
-      0 1px 0 rgba(255,255,255,.14) inset;
+      rgba(255,255,255,.46), rgba(255,225,233,.38) 60%, rgba(255,255,255,.42));
+    border-color:rgba(255,255,255,.68);
   }
-  .today h2{color:var(--pink)}
-  .today p{
-    font-size:14.5px; line-height:2.05; color:#fbf3f6; letter-spacing:.012em;
-    text-shadow:0 1px 12px rgba(0,0,0,.5);
-  }
+  .today h2{color:var(--rose)}
+  .today p{font-size:14.5px; line-height:2.05; color:var(--ink); letter-spacing:.012em}
 
   /* ── 雷达图 ── */
   .radar-wrap{display:flex; justify-content:center; padding:2px 0 4px}
@@ -190,89 +166,72 @@
   /* ── 驱动条 ── */
   .bars{display:flex; flex-direction:column; gap:10px}
   .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:10px}
-  .bar-row .nm{
-    font-size:11.5px; color:var(--fg-2); text-align:right;
-    text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
+  .bar-row .nm{font-size:11.5px; color:var(--ink-2); text-align:right}
   .bar-track{
     height:7px; border-radius:99px; overflow:hidden;
-    background:rgba(255,255,255,.07);
-    box-shadow:0 1px 0 rgba(255,255,255,.06) inset, 0 -1px 0 rgba(0,0,0,.2) inset;
+    background:rgba(255,255,255,.5);
+    box-shadow:0 1px 2px rgba(120,80,95,.12) inset;
   }
   .bar-fill{
     height:100%; border-radius:99px;
-    background:linear-gradient(90deg, rgba(217,143,164,.55), var(--pink));
-    box-shadow:0 0 12px rgba(255,182,193,.5);
+    background:linear-gradient(90deg, rgba(232,168,184,.85), var(--rose-soft));
     transition:width .5s ease;
   }
   .bar-row.top .bar-fill{
-    background:linear-gradient(90deg, var(--pink-deep), var(--pink-hot));
-    box-shadow:0 0 20px var(--pink-glow), 0 0 8px rgba(255,255,255,.5);
+    background:linear-gradient(90deg, var(--rose), var(--rose-deep));
+    box-shadow:0 0 10px rgba(194,86,111,.45);
   }
-  .bar-row .vl{
-    font-size:11.5px; color:var(--fg-3);
-    font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
-  .bar-row.top .vl{color:var(--pink); font-weight:600}
+  .bar-row .vl{font-size:11.5px; color:var(--ink-3); font-variant-numeric:tabular-nums}
+  .bar-row.top .vl{color:var(--rose); font-weight:650}
 
-  /* ── 自检清单 ── */
+  /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
-  .item{
-    display:grid; grid-template-columns:18px 1fr; gap:11px;
+  .item{display:grid; grid-template-columns:18px 1fr; gap:11px;
     padding:11px 0; align-items:start;
-    border-bottom:1px solid rgba(255,255,255,.07);
-  }
+    border-bottom:1px solid rgba(160,120,135,.14)}
   .item:last-child{border-bottom:none}
   .item .ic{font-size:12px; line-height:1.65; text-align:center}
-  .item .nm{
-    font-size:13.5px; font-weight:550; margin-bottom:4px;
-    color:var(--fg); text-shadow:0 1px 8px rgba(0,0,0,.5);
-  }
-  .item .ev{
-    font-size:11.5px; color:var(--fg-3); line-height:1.6; word-break:break-word;
-    text-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
+  .item .nm{font-size:13.5px; font-weight:600; margin-bottom:4px; color:var(--ink)}
+  .item .ev{font-size:11.5px; color:var(--ink-3); line-height:1.6; word-break:break-word}
 
-  /* ── 折叠面板 ── */
+  /* ── 折叠 ── */
   details{
     margin-bottom:13px; overflow:hidden;
-    background:var(--glass);
-    backdrop-filter:blur(24px) saturate(1.5);
-    -webkit-backdrop-filter:blur(24px) saturate(1.5);
+    background:linear-gradient(168deg,
+      rgba(255,255,255,.50), rgba(255,255,255,.34) 46%, rgba(255,255,255,.44));
+    backdrop-filter:blur(30px) saturate(1.6);
+    -webkit-backdrop-filter:blur(30px) saturate(1.6);
     border:1px solid var(--glass-brd);
-    border-top-color:var(--glass-brd-top);
+    border-top-color:rgba(255,255,255,.78);
     border-radius:var(--r-lg);
-    box-shadow:0 8px 32px rgba(0,0,0,.42), 0 1px 0 rgba(255,255,255,.10) inset;
+    box-shadow:0 8px 28px rgba(120,80,95,.15), 0 1px 0 rgba(255,255,255,.75) inset;
   }
   details summary{
-    padding:15px 18px; cursor:pointer; font-size:12.5px; font-weight:600;
-    color:var(--fg-2); list-style:none;
+    padding:15px 18px; cursor:pointer; font-size:12.5px; font-weight:650;
+    color:var(--ink-2); list-style:none;
     display:flex; justify-content:space-between; align-items:center;
-    text-shadow:0 1px 8px rgba(0,0,0,.5);
   }
   details summary::-webkit-details-marker{display:none}
-  details summary::after{
-    content:"▾"; color:var(--fg-3); font-size:11px; transition:transform .22s;
-  }
+  details summary::after{content:"▾"; color:var(--ink-3); font-size:11px; transition:transform .22s}
   details[open] summary::after{transform:rotate(180deg)}
   details .inner{padding:0 18px 16px}
 
   .spark{width:100%; height:42px; display:block}
 
-  footer{
-    color:var(--fg-4); font-size:11px; text-align:center;
-    margin-top:26px; line-height:1.95;
-    text-shadow:0 1px 8px rgba(0,0,0,.5);
-  }
-  .stale{color:var(--warn)}
-  .hint{font-size:11px; color:var(--fg-3); margin-top:7px}
+  footer{color:var(--ink-4); font-size:11px; text-align:center;
+    margin-top:24px; line-height:1.95;
+    text-shadow:0 1px 2px rgba(255,255,255,.5)}
+  .stale{color:var(--bad); font-weight:600}
+  .hint{font-size:11px; color:var(--ink-3); margin-top:7px}
 </style>
 </head>
 <body>
 
 <header>
-  <h1 id="title">男友 Profile：小华</h1>
-  <div class="sub" id="meta">加载中…</div>
+  <div class="hero">
+    <h1 id="title">男友 Profile：小华</h1>
+    <div class="sub" id="meta">加载中…</div>
+  </div>
 </header>
 
 <div id="app"></div>
@@ -294,14 +253,14 @@ function esc(s){
 const G = c => `class="glass ${c||''}"`;
 
 function render(d){
-  const title = document.getElementById('title');
-  const meta  = document.getElementById('meta');
-  const app   = document.getElementById('app');
+  const title=document.getElementById('title');
+  const meta=document.getElementById('meta');
+  const app=document.getElementById('app');
 
   if(d.probe_error){
-    title.textContent = '男友 Profile：小华 · 体检没跑起来';
-    meta.textContent = '采集异常';
-    app.innerHTML = `<div class="status bad glass"><div class="head">探针自己挂了</div>
+    title.textContent='男友 Profile：小华 · 体检没跑起来';
+    meta.textContent='采集异常';
+    app.innerHTML=`<div class="status bad glass"><div class="head">探针自己挂了</div>
       <div class="badge">先怀疑探针</div></div>
       <section class="glass"><div class="item" style="padding:0;border:none">
       <div class="ic">❌</div><div><div class="ev">${esc(d.probe_error)}</div></div>
@@ -309,35 +268,31 @@ function render(d){
     return;
   }
 
-  const colorMap = {green:'ok', yellow:'warn', red:'bad'};
-  const color = colorMap[d.color] || d.color || 'ok';
-  title.textContent = `男友 Profile：小华 · ${d.head||''}`;
+  const colorMap={green:'ok',yellow:'warn',red:'bad'};
+  const color=colorMap[d.color]||d.color||'ok';
+  title.textContent=`男友 Profile：小华 · ${d.head||''}`;
 
-  const gen = new Date((d.generated_at||'').replace(/-/g,'/'));
-  const ageMin = isNaN(gen) ? null : (Date.now() - gen.getTime())/60000;
-  const stale = ageMin !== null && ageMin > STALE_MIN;
+  const gen=new Date((d.generated_at||'').replace(/-/g,'/'));
+  const ageMin=isNaN(gen)?null:(Date.now()-gen.getTime())/60000;
+  const stale=ageMin!==null&&ageMin>STALE_MIN;
 
-  meta.innerHTML =
-    `最近体检 <b>${esc(d.generated_at||'—')}</b>` +
-    (ageMin!==null ? ` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}` : '') +
+  meta.innerHTML=`最近体检 <b>${esc(d.generated_at||'—')}</b>`+
+    (ageMin!==null?` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}`:'')+
     ` ｜ ${d.bad||0} 项异常 · ${d.warn||0} 项留意 · 共 ${d.total||0} 项`;
 
-  let h = '';
-
-  h += `<div class="status ${color} glass">
+  let h='';
+  h+=`<div class="status ${color} glass">
     <div class="head">${esc(d.head||'—')}</div>
-    <div class="badge">${stale?'数据可能已陈旧':'实时快照'}</div>
-  </div>`;
+    <div class="badge">${stale?'数据可能已陈旧':'实时快照'}</div></div>`;
 
-  // ── 第一排 ──
-  let heartTitle, heartDetail;
-  if(d.bad){ heartTitle='异常'; heartDetail=`${d.bad} 项要处理`; }
-  else if(d.warn){ heartTitle='留意'; heartDetail=`${d.warn} 项待观察`; }
-  else { heartTitle='正常'; heartDetail=`${d.total} 项全绿`; }
-  const heartState = d.bad ? 'bad' : (d.warn ? 'warn' : 'ok');
-  const v = d.verdict || {};
+  let heartTitle,heartDetail;
+  if(d.bad){heartTitle='异常';heartDetail=`${d.bad} 项要处理`;}
+  else if(d.warn){heartTitle='留意';heartDetail=`${d.warn} 项待观察`;}
+  else{heartTitle='正常';heartDetail=`${d.total} 项全绿`;}
+  const heartState=d.bad?'bad':(d.warn?'warn':'ok');
+  const v=d.verdict||{};
 
-  h += `<div class="row3">
+  h+=`<div class="row3">
     <div ${G('cell '+heartState)}><div class="k">心跳状态</div>
       <div class="v">${esc(heartTitle)}</div>
       <div class="v sm">${esc(heartDetail)}</div></div>
@@ -349,9 +304,8 @@ function render(d){
       <div class="v sm">${v.strength!=null?'强度 '+v.strength.toFixed(2):''}</div></div>
   </div>`;
 
-  // ── 第二排 ──
-  const A=d.anchor||{}, L=d.ledger||{}, J=d.journal||{};
-  h += `<div class="row4">
+  const A=d.anchor||{},L=d.ledger||{},J=d.journal||{};
+  h+=`<div class="row4">
     <div ${G('cell')}><div class="k">📍 上一次锚点</div>
       <div class="v">${esc(A.value||'—')}</div>
       <div class="v sm">${esc(A.sub||'')}</div></div>
@@ -366,17 +320,15 @@ function render(d){
       <div class="v sm">${esc(J.sub||'')}</div></div>
   </div>`;
 
-  // ── 📝 今天 ──
   if(d.summary){
-    h += `<section class="glass today"><h2>📝 今天</h2>
+    h+=`<section class="glass today"><h2>📝 今天</h2>
       <p>${esc(d.summary)}</p></section>`;
   }
 
-  // ── 九维 ──
-  const dims=d.dimensions||[], vals=d.drives||[];
-  if(dims.length && vals.length===dims.length){
-    h += `<section class="glass"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
-    h += `<section class="glass"><h2>驱动强度</h2><div class="bars">${
+  const dims=d.dimensions||[],vals=d.drives||[];
+  if(dims.length&&vals.length===dims.length){
+    h+=`<section class="glass"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
+    h+=`<section class="glass"><h2>驱动强度</h2><div class="bars">${
       dims.map((n,i)=>{
         const x=Math.max(0,Math.min(1,vals[i]||0));
         return `<div class="bar-row${x>=0.8?' top':''}"><div class="nm">${esc(n)}</div>
@@ -385,105 +337,95 @@ function render(d){
       }).join('')}</div></section>`;
   }
 
-  // ── 作息校准 ──
-  const rp = d.rhythm;
-  if(rp && typeof rp === 'object'){
-    const hours = rp.hours || [];
-    const peak = hours.length ? Math.max(...hours) : 0;
-    const ramp = "▁▂▃▄▅▆▇█";
-    let bar = "";
+  const rp=d.rhythm;
+  if(rp&&typeof rp==='object'){
+    const hours=rp.hours||[];
+    const peak=hours.length?Math.max(...hours):0;
+    const ramp="▁▂▃▄▅▆▇█";
+    let bar="";
     for(const c of hours){
-      if(!c) bar += "·";
-      else if(!peak) bar += "▁";
-      else bar += ramp[Math.min(7, Math.round(c / peak * 7))];
+      if(!c) bar+="·";
+      else if(!peak) bar+="▁";
+      else bar+=ramp[Math.min(7,Math.round(c/peak*7))];
     }
-    const days = rp.days || 0, target = rp.target || 14, ticks = rp.ticks || 0;
-    let mark, head, sub, cls;
-    if(rp.ready){ cls='ok'; mark='✅'; head='可以校准了'; sub='样本够了，随时能回放校准 peakHour'; }
-    else if(!ticks){ cls=''; mark='⬜'; head='还没开始攒'; sub='心跳每 tick 自动记一条，不用管'; }
-    else { cls='warn'; mark='⏳'; head=`还差 ${Math.max(0,target-days)} 天`; sub='校准前先攒够两个完整周，免得把一次加班当成规律'; }
+    const days=rp.days||0,target=rp.target||14,ticks=rp.ticks||0;
+    let mark,head,sub;
+    if(rp.ready){mark='✅';head='可以校准了';sub='样本够了，随时能回放校准 peakHour';}
+    else if(!ticks){mark='⬜';head='还没开始攒';sub='心跳每 tick 自动记一条，不用管';}
+    else{mark='⏳';head=`还差 ${Math.max(0,target-days)} 天`;sub='校准前先攒够两个完整周，免得把一次加班当成规律';}
 
-    h += `<section class="glass"><h2>🌙 作息校准</h2>
+    h+=`<section class="glass"><h2>🌙 作息校准</h2>
       <div class="item" style="padding:0;border:none"><div class="ic">${mark}</div>
-      <div><div class="nm" style="${cls==='ok'?'color:var(--ok)':cls==='warn'?'color:var(--warn)':''}">${esc(head)}</div>
-      <div class="ev">${esc(sub)}</div></div></div>
+      <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
-        letter-spacing:2px;color:var(--pink);word-break:break-all;
-        text-shadow:0 0 14px var(--pink-glow)">${esc(bar)}</div>
+        letter-spacing:2px;color:var(--rose);word-break:break-all">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
 
-  // ── 待处理 ──
-  let todoText, todoDetail, todoState;
-  if(d.bad){ const f=(d.rows||[]).find(x=>x.state==='bad')||{};
-    todoText=`${d.bad} 项要处理 —— ${f.name||''}`; todoDetail=f.evidence||''; todoState='bad'; }
-  else if(d.warn){ const f=(d.rows||[]).find(x=>x.state==='warn')||{};
-    todoText=`${d.warn} 项留意`; todoDetail=f.evidence||''; todoState='warn'; }
-  else { todoText='全部正常，没有要处理的'; todoDetail=`${d.ok_count||d.total} 项全绿`; todoState='ok'; }
-  h += `<section class="glass"><h2>✅ 待处理</h2>
+  let todoText,todoDetail,todoState;
+  if(d.bad){const f=(d.rows||[]).find(x=>x.state==='bad')||{};
+    todoText=`${d.bad} 项要处理 —— ${f.name||''}`;todoDetail=f.evidence||'';todoState='bad';}
+  else if(d.warn){const f=(d.rows||[]).find(x=>x.state==='warn')||{};
+    todoText=`${d.warn} 项留意`;todoDetail=f.evidence||'';todoState='warn';}
+  else{todoText='全部正常，没有要处理的';todoDetail=`${d.ok_count||d.total} 项全绿`;todoState='ok';}
+  h+=`<section class="glass"><h2>✅ 待处理</h2>
     <div class="item" style="padding:0;border:none"><div class="ic">${ICON[todoState]}</div>
-    <div><div class="nm">${esc(todoText)}</div>
-    <div class="ev">${esc(todoDetail)}</div></div></div></section>`;
+    <div><div class="nm">${esc(todoText)}</div><div class="ev">${esc(todoDetail)}</div></div></div></section>`;
 
-  // ── 折叠 ──
-  const MODEL_ROWS = ["唤醒模型","profile 默认","模型铁律","qwen 残留"];
-  const rows = d.rows || [];
-  const modelRows = rows.filter(r=>MODEL_ROWS.includes(r.name));
-  const otherRows = rows.filter(r=>!MODEL_ROWS.includes(r.name));
-  const fold = (t,list)=>`<details><summary>${esc(t)}</summary>
+  const MODEL_ROWS=["唤醒模型","profile 默认","模型铁律","qwen 残留"];
+  const rows=d.rows||[];
+  const modelRows=rows.filter(r=>MODEL_ROWS.includes(r.name));
+  const otherRows=rows.filter(r=>!MODEL_ROWS.includes(r.name));
+  const fold=(t,list)=>`<details><summary>${esc(t)}</summary>
     <div class="inner"><div class="checklist">${list.map(r=>`<div class="item">
       <div class="ic">${ICON[r.state]||'•'}</div>
       <div><div class="nm">${esc(r.name)}</div>
       <div class="ev">${esc(r.evidence)}</div></div></div>`).join('')}</div></div></details>`;
-  if(modelRows.length) h += fold(`🧠 模型（${modelRows.length}）`, modelRows);
-  if(otherRows.length) h += fold(`🔍 全部自检项（${otherRows.length}）`, otherRows);
+  if(modelRows.length) h+=fold(`🧠 模型（${modelRows.length}）`,modelRows);
+  if(otherRows.length) h+=fold(`🔍 全部自检项（${otherRows.length}）`,otherRows);
 
-  // ── 历史 ──
-  const hist = d.history || [];
+  const hist=d.history||[];
   if(hist.length>1){
-    const allZero = hist.every(x=>(x.bad||0)===0);
-    h += `<section class="glass"><h2>📉 历史（近 ${hist.length} 次）</h2>${sparkSVG(hist)}
+    const allZero=hist.every(x=>(x.bad||0)===0);
+    h+=`<section class="glass"><h2>📉 历史（近 ${hist.length} 次）</h2>${sparkSVG(hist)}
       ${allZero?`<div class="hint" style="color:var(--ok);margin-top:8px">
         ✅ 这 ${hist.length} 次采样全部 0 异常</div>`:''}
     </section>`;
   }
 
-  app.innerHTML = h;
+  app.innerHTML=h;
 
   if(stale){
-    document.getElementById('foot-extra').innerHTML =
+    document.getElementById('foot-extra').innerHTML=
       '<span class="stale">⚠️ 超过 75 分钟未更新，推送链路可能异常</span>';
   }
 }
 
-function radarSVG(dims, vals){
-  const S=330, C=S/2, R=112, n=dims.length;
-  const pt=(i,r)=>{ const a=-Math.PI/2+i*2*Math.PI/n;
-    return [C+Math.cos(a)*r, C+Math.sin(a)*r]; };
+function radarSVG(dims,vals){
+  const S=330,C=S/2,R=112,n=dims.length;
+  const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;
+    return [C+Math.cos(a)*r,C+Math.sin(a)*r];};
   let g='';
   for(let ring=1;ring<=4;ring++){
     const rr=R*ring/4;
     g+=`<polygon points="${dims.map((_,i)=>pt(i,rr).join(',')).join(' ')}"
-      fill="none" stroke="rgba(255,255,255,.11)" stroke-width="1"/>`;
+      fill="none" stroke="rgba(120,80,95,.22)" stroke-width="1"/>`;
   }
-  dims.forEach((_,i)=>{ const [x,y]=pt(i,R);
-    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.11)" stroke-width="1"/>`; });
+  dims.forEach((_,i)=>{const [x,y]=pt(i,R);
+    g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(120,80,95,.22)" stroke-width="1"/>`;});
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(255,182,193,.20)" stroke="#f4b6c2" stroke-width="2"
-    style="filter:drop-shadow(0 0 10px rgba(255,182,193,.55))"/>`;
+    fill="rgba(194,86,111,.20)" stroke="#c2566f" stroke-width="2"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
-    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#ffb6c1"
-      style="filter:drop-shadow(0 0 6px rgba(255,182,193,.85))"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#c2566f"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
-    const anchor = Math.abs(x-C)<6 ? 'middle' : (x>C ? 'start' : 'end');
-    const dy = y<C-6 ? -2 : (y>C+6 ? 9 : 4);
-    g+=`<text x="${x}" y="${y+dy}" fill="#d9cfd4" font-size="10.5"
-      text-anchor="${anchor}" font-family="inherit"
-      style="text-shadow:0 1px 6px rgba(0,0,0,.8)">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
+    const anchor=Math.abs(x-C)<6?'middle':(x>C?'start':'end');
+    const dy=y<C-6?-2:(y>C+6?9:4);
+    g+=`<text x="${x}" y="${y+dy}" fill="#5a4a52" font-size="10.5" font-weight="500"
+      text-anchor="${anchor}" font-family="inherit">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
   });
   return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
 }
@@ -499,11 +441,10 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,182,193,.34)"/>
-      <stop offset="100%" stop-color="rgba(255,182,193,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(194,86,111,.30)"/>
+      <stop offset="100%" stop-color="rgba(194,86,111,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#f4b6c2" stroke-width="1.8"
-      style="filter:drop-shadow(0 0 7px rgba(255,182,193,.6))"/></svg>
+    <path d="${line}" fill="none" stroke="#c2566f" stroke-width="1.8"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
@@ -522,7 +463,7 @@ async function load(){
   }
 }
 load();
-setInterval(load, REFRESH_MS);
+setInterval(load,REFRESH_MS);
 </script>
 </body>
 </html>
