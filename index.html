@@ -70,12 +70,17 @@
   html,body{height:100%}
   body{
     /* 背景：深紫黑径向渐变 —— 中心略亮、四周更暗（暗角/聚焦感）
-       ⚠️ 不是纯黑（大小姐 2026-09-18 指出："背景不是完全实的黑色"） */
-    background:
-      radial-gradient(circle 120% at 50% 0%,
-        var(--bg-center) 0%, var(--bg-mid) 55%, var(--bg-edge) 100%)
-      fixed,
-      var(--bg-edge);
+       ⚠️ 不是纯黑（大小姐 2026-09-18 指出："背景不是完全实的黑色"）
+       ⚠️ 踩坑：别用 background 简写混写 attachment ——
+          `radial-gradient(...) fixed, color` 里的逗号会被当成"新的一层"，
+          整条声明解析失败 → 背景变 none（实测 body_bg="none"）。
+          正确做法：渐变与 attachment 分开声明。 */
+    background-color:var(--bg-edge);
+    background-image:radial-gradient(circle 120% at 50% 0%,
+      var(--bg-center) 0%, var(--bg-mid) 55%, var(--bg-edge) 100%);
+    background-attachment:fixed;
+    background-repeat:no-repeat;
+    background-size:cover;
     color:var(--fg);
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     padding:20px 14px 48px; max-width:780px; margin:0 auto;
