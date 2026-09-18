@@ -221,6 +221,13 @@
   }
   .dotitem .tx{color:var(--fg-2)}
   .dotitem .tm{color:var(--fg-3); font-size:11px; white-space:nowrap}
+  /* 「新」的小记号 —— 点掉红点后它就没了，但**内容一直留着** */
+  .dotitem .fresh{
+    flex:0 0 auto; width:5px; height:5px; border-radius:50%;
+    background:var(--pink-hot); box-shadow:0 0 6px rgba(255,105,180,.85);
+    margin-right:1px;
+  }
+  .dotitem.read{opacity:.6}
 
   @media(max-width:600px){
     .row3{grid-template-columns:1fr 1fr}
@@ -639,13 +646,14 @@ function render(d){
   if(rdN>0 && (RD.items||[]).length){
     const items=(RD.items||[]).map(it=>{
       const tm=(it.at||'').slice(11,16);
-      return `<div class="dotitem">
-        <span class="tag">${esc(it.label||'')}</span>
+      const dot=it.fresh?`<span class="fresh"></span>`:'';
+      return `<div class="dotitem${it.fresh?'':' read'}">
+        ${dot}<span class="tag">${esc(it.label||'')}</span>
         <span class="tx">${esc(it.text||'')}</span>
         <span class="tm">${esc(tm)}</span></div>`;
     }).join('');
     h+=`<section class="glass today" id="rdPanel" style="cursor:pointer">
-      <h2>🔴 夜里的活 · ${rdN} 件 <span style="font-size:11px;font-weight:400;color:var(--fg-3)">（看过就收起来）</span></h2>
+      <h2>🔴 夜里的活 <span class="rdhint" style="font-size:11px;font-weight:400;color:var(--fg-3)">共 ${RD.total||rdN} 件 · 点一下，那颗点就没了；东西留着</span></h2>
       <div class="dotlist">${items}</div></section>`;
   }
 
@@ -746,15 +754,32 @@ function render(d){
   const rdCell=document.getElementById('rdCell');
   const rdCount=Number((d.red_dot||{}).count||0);   // ⚠️ 不能叫 rdN：上一个作用域已有同名 const
   if(rdCount>0){
-    const clearDot=()=>{
-      // 视觉立刻收起（不等网络）
-      const dp=document.getElementById('rdPanel'); if(dp) dp.remove();
+    // ★ 点掉的只是"新"的标记，**内容一直在**（2026-09-18 大小姐定：A 方案）
+    //
+    // 之前这里是错的：`dp.remove()` 把整块 DOM 删掉 —— 那叫"阅后即焚"，
+    // 不是原文说的"翻开即消"。原文消的是**入口上那颗点**，不是活本身。
+    //   > 出口是入口红点：对应入口亮一颗点、翻开即消
+    //
+    // 所以现在：content 留着，只把"新"的状态去掉。
+    const markRead=()=>{
+      // ★ 只去掉"新"的标记，**一个字的活都不删**
       const dt=document.querySelector('#rdCell .dot'); if(dt) dt.remove();
+      if(rdCell) rdCell.style.cursor='default';
+      document.querySelectorAll('#rdPanel .dotitem .fresh')
+        .forEach(e=>e.remove());
+      document.querySelectorAll('#rdPanel .dotitem')
+        .forEach(e=>e.classList.add('read'));
       const ds=document.getElementById('rdSub');
-      if(ds) ds.textContent='看过了';
+      if(ds) ds.textContent=(J.sub||'夜里的活');
+      const rp=document.getElementById('rdPanel');
+      if(rp){
+        rp.style.cursor='default';
+        const hint=rp.querySelector('.rdhint');
+        if(hint) hint.textContent='这些一直留着，随时回来翻';
+      }
     };
     const onRead=async()=>{
-      clearDot();
+      markRead();
       if(typeof READ_ENDPOINT!=='string'||!READ_ENDPOINT) return;
       try{
         await fetch(READ_ENDPOINT,{method:'POST',mode:'cors',
