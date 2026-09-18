@@ -17,10 +17,18 @@
      ══════════════════════════════════════════════════════════════ */
 
   :root{
-    /* ── 指标色：粉 ── */
-    --pink:#f4b6c2;
-    --pink-hot:#ffb6c1;
-    --pink-deep:#d98fa4;
+    /* ── 指标色：粉 ──
+       取色依据（大小姐给的参考图 · 霓虹粉发光方块/发光半球）：
+         高光 #FFD9E8 / 中间调 #F7B8D3 / 边缘 #E58BB2
+       ⚠️ 参考图那种粉**看着柔和，实际靠"外发光"撑出亮度**——
+          直接把 #F7B8D3 搬到深底上会偏灰偏暗（踩过：用 #f4b6c2 太灰）。
+          所以深底上要提饱和 + 补发光：主色 #FF9EC5，高光 #FFD1E3。 */
+    --pink:#ff9ec5;          /* 数据条主色（提饱和，压深底才亮） */
+    --pink-line:#ffb3d9;     /* 雷达描边 */
+    --pink-hot:#ffd1e3;      /* 高光 / 高值强调 */
+    --pink-deep:#d96a9e;     /* 渐变起点 / 边缘 */
+    --pink-glow:rgba(255,158,197,.45);
+    --pink-fill:rgba(255,158,197,.22);
 
     /* ── 文字三级 ── */
     --fg:#ffffff;
@@ -141,8 +149,8 @@
   /* ── 📝 今天：粉调玻璃 ── */
   .today{
     background:linear-gradient(160deg,
-      rgba(255,182,193,.13), rgba(217,143,164,.05) 55%, rgba(255,255,255,.06));
-    border-color:rgba(255,182,193,.24);
+      rgba(255,158,197,.14), rgba(217,106,158,.05) 55%, rgba(255,255,255,.06));
+    border-color:rgba(255,158,197,.26);
     border-top-color:rgba(255,200,210,.4);
   }
   .today h2{color:var(--pink)}
@@ -169,12 +177,13 @@
   }
   .bar-fill{
     height:100%; border-radius:99px;
-    background:linear-gradient(90deg, rgba(217,143,164,.62), var(--pink));
+    background:linear-gradient(90deg, var(--pink-deep), var(--pink));
+    box-shadow:0 0 10px var(--pink-glow);
     transition:width .5s ease;
   }
   .bar-row.top .bar-fill{
-    background:linear-gradient(90deg, var(--pink-deep), var(--pink-hot));
-    box-shadow:0 0 18px rgba(255,182,193,.5), 0 0 8px rgba(255,255,255,.45);
+    background:linear-gradient(90deg, var(--pink), var(--pink-hot));
+    box-shadow:0 0 18px var(--pink-glow), 0 0 8px rgba(255,255,255,.5);
   }
   .bar-row .vl{
     font-size:11.5px; color:var(--fg-3);
@@ -366,7 +375,7 @@ function render(d){
       <div><div class="nm">${esc(head)}</div><div class="ev">${esc(sub)}</div></div></div>
       <div style="margin-top:13px;font-family:ui-monospace,monospace;font-size:14px;
         letter-spacing:2px;color:var(--pink);word-break:break-all;
-        text-shadow:0 0 14px rgba(255,182,193,.5)">${esc(bar)}</div>
+        text-shadow:0 0 16px rgba(255,158,197,.6)">${esc(bar)}</div>
       <div class="hint">0 — 23 时 · 已攒 ${esc(days)} 天 / ${esc(target)} 天 · ${esc(ticks)} 个样本</div>
     </section>`;
   }
@@ -422,14 +431,14 @@ function radarSVG(dims,vals){
   }
   dims.forEach((_,i)=>{const [x,y]=pt(i,R);
     g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.13)" stroke-width="1"/>`;});
-  // 雷达填充/描边：粉
+  // 雷达填充/描边：霓虹粉 + 外发光
   g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(255,182,193,.20)" stroke="#f4b6c2" stroke-width="2"
-    style="filter:drop-shadow(0 0 10px rgba(255,182,193,.55))"/>`;
+    fill="rgba(255,158,197,.22)" stroke="#ffb3d9" stroke-width="2"
+    style="filter:drop-shadow(0 0 12px rgba(255,158,197,.65))"/>`;
   dims.forEach((_,i)=>{
     const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
-    g+=`<circle cx="${x}" cy="${y}" r="3.2" fill="#ffb6c1"
-      style="filter:drop-shadow(0 0 6px rgba(255,182,193,.85))"/>`;
+    g+=`<circle cx="${x}" cy="${y}" r="3.4" fill="#ffd1e3"
+      style="filter:drop-shadow(0 0 7px rgba(255,158,197,.95))"/>`;
   });
   dims.forEach((nm,i)=>{
     const [x,y]=pt(i,R+23);
@@ -453,11 +462,11 @@ function sparkSVG(hist){
   const area=line+` L${pts[pts.length-1][0].toFixed(1)},${H-pad} L${pts[0][0].toFixed(1)},${H-pad} Z`;
   return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
     <defs><linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(255,182,193,.32)"/>
-      <stop offset="100%" stop-color="rgba(255,182,193,0)"/></linearGradient></defs>
+      <stop offset="0%" stop-color="rgba(255,158,197,.34)"/>
+      <stop offset="100%" stop-color="rgba(255,158,197,0)"/></linearGradient></defs>
     <path d="${area}" fill="url(#sg)"/>
-    <path d="${line}" fill="none" stroke="#f4b6c2" stroke-width="1.8"
-      style="filter:drop-shadow(0 0 7px rgba(255,182,193,.55))"/></svg>
+    <path d="${line}" fill="none" stroke="#ffb3d9" stroke-width="1.8"
+      style="filter:drop-shadow(0 0 7px rgba(255,158,197,.6))"/></svg>
     <div class="hint">纵轴 = 异常项数（峰值 ${mx}）</div>`;
 }
 
