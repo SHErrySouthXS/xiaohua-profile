@@ -535,6 +535,26 @@
     background:rgba(120,200,150,.07); border-left:2px solid var(--ok);
     border-radius:6px; padding:9px 12px}
   .pmeta{font-size:11px; color:var(--fg-3); line-height:1.7; margin-top:11px}
+
+  /* ★ 2026-09-19 清单勾选（她点一下就划掉）——
+     方框是她能点的东西，得看起来像能点：有边框、有触感、点得到。 */
+  .cl-row{display:flex; gap:10px; align-items:flex-start; font-size:12px;
+    padding:9px 2px; border-bottom:1px solid var(--line)}
+  .cl-row:last-child{border-bottom:0}
+  .cl-row.done .tx{opacity:.5; text-decoration:line-through}
+  .cl-check{flex:0 0 auto; width:19px; height:19px; margin-top:1px;
+    border:1.5px solid var(--line); border-radius:5px;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:12px; color:transparent; cursor:pointer;
+    transition:all .15s ease; user-select:none; -webkit-tap-highlight-color:transparent}
+  .cl-check:hover{border-color:var(--ok); background:rgba(120,200,150,.10)}
+  .cl-check:active{transform:scale(.9)}
+  .cl-check.done{border-color:var(--ok); background:rgba(120,200,150,.18); color:var(--ok)}
+  .cl-body{flex:1 1 auto; min-width:0}
+  .cl-body .tx{color:var(--fg-2)}
+  .cl-body .tm{color:var(--fg-3); font-size:10.5px; margin-top:3px}
+  .cl-body .tag{font-size:10.5px; color:var(--fg-3);
+    border:1px solid var(--line); border-radius:5px; padding:1px 6px}
   .pna{margin-top:11px; padding:9px 12px; border-radius:7px;
     background:rgba(255,255,255,.025); border-left:2px solid var(--line)}
   .pna-tag{display:inline-block; font-size:10px; color:var(--fg-3);
@@ -767,17 +787,38 @@
   <div class="sub" id="meta">加载中…</div>
 </header>
 
-<!-- 导航：第一页＝现面板（不动）；第二页＝日记；第三页起＝WrenWen 十个面板 -->
+<!-- 导航（★ 2026-09-19 大小姐重排 —— 面板按归属各自成 tab）
+     p0 运行看板   现面板，不动
+     p1 Room       日历总览 + Room 内容（我自己的事）
+     p2 日记       不动
+     p3 Memory     记忆系统的透明窗口
+     p4 未完成清单  可点勾（她点掉 / 对话里说"做掉了"都算）
+     p5 Gallery    图片收藏
+     p6 Sandbox    试验场
+     p7 Cinema     放映室
+     p8 原文面板    其余面板留在这儿
+-->
 <nav id="nav">
   <button class="tab on" data-p="p0">运行看板</button>
-  <button class="tab" data-p="p1">日记</button>
-  <button class="tab" data-p="p2">原文面板</button>
+  <button class="tab" data-p="p1">Room</button>
+  <button class="tab" data-p="p2">日记</button>
+  <button class="tab" data-p="p3">Memory</button>
+  <button class="tab" data-p="p4">未完成清单</button>
+  <button class="tab" data-p="p5">Gallery</button>
+  <button class="tab" data-p="p6">Sandbox</button>
+  <button class="tab" data-p="p7">Cinema</button>
+  <button class="tab" data-p="p8">原文面板</button>
 </nav>
 
 <div id="app"></div>
 <div id="page1" hidden></div>
 <div id="page2" hidden></div>
 <div id="page3" hidden></div>
+<div id="page4" hidden></div>
+<div id="page5" hidden></div>
+<div id="page6" hidden></div>
+<div id="page7" hidden></div>
+<div id="page8" hidden></div>
 
 <footer>
   <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
@@ -793,6 +834,13 @@ const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
 //   留空 = 只做视觉收起（刷新后红点会回来）。
 //   开了公网回调口之后填这里，就是原文说的真·翻开即消。
 const READ_ENDPOINT = '';
+
+// ★ 2026-09-19 清单勾选的回调端点（她点方框 → 服务端记账）。
+//   留空 = 只做本地视觉（点一下划掉，刷新后回来）。
+//   要真记账得开个公网口子收这个 POST —— 见 xiaohua-profile-board skill。
+//   ⚠️ 前端**永远不是权威**：真正的"做掉了"以她的话为准，
+//      这个端点只是个便利通道，丢了我会在下次对话里问她。
+const CL_ENDPOINT = '';
 
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c =>
@@ -1260,16 +1308,39 @@ function todo(what, why){
     <div class="pna-y">${esc(why)}</div></div>`;
 }
 
+// 面板外壳 —— ★ 2026-09-19 从 renderPanels 提成全局。
+//   原先它是 renderPanels() 内部的局部函数，导致别的渲染函数用不了它。
+//   拆 tab 后每块内容各归各的渲染函数，这个壳得共用。
+function sec(title,sub,body){
+  return `<section class="glass">
+    <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
+}
+
 function renderPanels(d){
-  const box=document.getElementById('page3');
   const P=d.panels||{}, R=P.room||{}, M=P.memory||{}, PR=P.prompt||{};
   const C=P.controls||{}, RD=d.red_dot||{};
   // ★ 点击日历格子要用到当天的明细，而 calPick() 是全局 onclick
   //   —— 把整份 data 挂在 window 上，省一次 fetch。
   window.__DATA__=d;
 
-  const sec=(title,sub,body)=>`<section class="glass">
-    <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
+  // ★★ 2026-09-19 大小姐重排：面板按归属各自成一个 tab ★★
+  //
+  //   原先十个面板全挤在 page3 一页里（renderPanels 一口气全渲染）。
+  //   现在拆成「一页一个盒子」，每块内容只渲染到自己的盒子：
+  //
+  //     page1  Room       = 日历总览 + Room 内容（★ 她要的：这两个一个 tab）
+  //     page2  日记       = renderJournal（不动）
+  //     page3  Memory
+  //     page4  未完成清单  = 可点勾（★ 交互）
+  //     page5  Gallery
+  //     page6  Sandbox
+  //     page7  Cinema
+  //     page8  原文面板    = 其余（Chat / Call / Archive / Prompt / Controls
+  //                          + 未实现汇总 + 收尾）
+  //
+  //   ⚠️ 每块内容**只能渲染一次** —— 原先 h 是累加的，现在各归各的盒子，
+  //      别再往同一个 h 里塞，否则两个 tab 会显示同一段。
+  const box=document.getElementById('page8');  // 原文面板（其余都在这儿）
 
   // ── 头：原文出处 + 设计原则 ──
   //
@@ -1280,7 +1351,9 @@ function renderPanels(d){
     <h2 style="margin:0">📖 原文面板</h2>
     <div class="hint" style="margin-top:7px">
       来源：WrenWen README §3「前端：十个面板」· 十个一个不少<br>
-      <span style="color:var(--fg-3)">原文原则：正式事实以服务端账本为准，各面板是它们的投影。</span>
+      <span style="color:var(--fg-3)">原文原则：正式事实以服务端账本为准，各面板是它们的投影。</span><br>
+      <span style="color:var(--fg-3)">★ 2026-09-19：Room / Memory / 未完成清单 / Gallery 等已各自成 tab，
+      这一页留的是其余面板。</span>
     </div></section>`;
 
   // ── 未实现清单（汇总在前）──
@@ -1356,18 +1429,18 @@ function renderPanels(d){
       慢信/相册/收藏是"能力没做"，不是"没数据"：得先有写信、存照片、标收藏这些动作。</div>`);
 
   // ── 3.5 日历总览（Archive 第一项，2026-09-18 落地）──
-  //   紧跟在 Archive 后面 —— 它就是 Archive 展开的那一块，
+  //   ★ 2026-09-19 改道：**搬到 page1，和 Room 同一个 tab**（大小姐要的）。
+  //   原文里它属 Archive，但前台把她要看的"日子"和 Room 放一起更顺手。
   //   归档那一行只记数（"28/35 天有痕迹"），真正的日子在这儿。
-  //   ⚠️ 这里必须**用 sec() 包**：calendarPanel() 只出内容，
-  //      它拿不到 sec（那是本函数的局部变量），外壳由这儿加。
-  h+=sec('📅 日历总览','这些日子都留下了什么（35 天）',
+  let hRoom=sec('📅 日历总览','这些日子都留下了什么（35 天）',
          calendarPanel(P.calendar));
 
-  // ── 4. Memory ──
+  // ── 4. Memory ──★ 2026-09-19 改道：搬到 page3 独立 tab
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
+  let hMem='';
   const th=(M.thoughts||[]), tr=(M.threads||[]);
   const hw=(M.her_words||{}), rc=(hw.recall||{});
-  h+=sec('🧠 Memory','记忆系统的透明窗口',`
+  hMem+=sec('🧠 Memory','记忆系统的透明窗口',`
     <div class="prow"><span>系统体检</span><span class="pv ok">首页同源卡片</span></div>
     <div class="prow"><span>档案筛选与联想路径</span>
       <span class="pv">${M.threads_total||0} 条线索</span></div>
@@ -1451,7 +1524,7 @@ function renderPanels(d){
   //
   // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
   const wk=(R.wake||[]);
-  h+=sec('🏠 Room','我自己的事 · 非面向你的输出',`
+  hRoom+=sec('🏠 Room','我自己的事 · 非面向你的输出',`
     <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
     ${wk.length?`<div class="pblock"><div class="pblock-h">
         唤醒时间线 · 全量 ${R.wake_total||0} 条
@@ -1518,27 +1591,41 @@ function renderPanels(d){
     const clDone=(CL.items||[]).filter(x=>x.status!=='open');
     const nAll=clItems.length+pOpens.length;
 
-    h+=sec('📋 未完成清单','我还没做完的事 · 你问我都会答',`
+    hCL=sec('📋 未完成清单','我还没做完的事 · 点一下就是做掉了',`
       ${nAll?`
       <div class="pblock nextwrk"><div class="pblock-h">
         还没做完的 · ${nAll} 条
-        <span class="tm">（带序号 · 条目本身进我每轮的上下文）</span></div>
-        ${clItems.map(it=>`<div class="pitem col">
-          <div><span class="tag">${it.id}、</span>
-            <span class="tx">${esc(it.what||'')}</span></div>
-          ${it.at?`<div class="tm">${esc(it.at)} 记下${it.source?` · 出自 ${esc(it.source)}`:''}</div>`:''}
-        </div>`).join('')}
-        ${pOpens.slice().reverse().map(e=>`<div class="pitem col">
-          <div><span class="tag">🗂 ${esc(e.proj||'')}</span>
-            <span class="tx">${esc(e.what||'')}</span></div>
-          ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
-          ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
-        </div>`).join('')}
+        <span class="tm">（点左边方框 = 做掉了 · 条目本身进我每轮的上下文）</span></div>
+        ${clItems.map(it=>`
+          <div class="cl-row${it.status!=='open'?' done':''}">
+            <span class="cl-check${it.status!=='open'?' done':''}"
+                  data-id="${esc(String(it.id))}"
+                  data-what="${esc(it.what||'')}"
+                  role="checkbox" tabindex="0"
+                  aria-checked="${it.status!=='open'?'true':'false'}">${it.status!=='open'?'✓':''}</span>
+            <div class="cl-body">
+              <div><span class="tag">${it.id}、</span>
+                <span class="tx">${esc(it.what||'')}</span></div>
+              ${it.at?`<div class="tm">${esc(it.at)} 记下${it.source?` · 出自 ${esc(it.source)}`:''}</div>`:''}
+            </div>
+          </div>`).join('')}
+        ${pOpens.slice().reverse().map(e=>`
+          <div class="cl-row work">
+            <span class="cl-check" data-id="proj:${esc(e.proj||'')}"
+                  data-what="${esc(e.what||'')}"
+                  role="checkbox" tabindex="0" aria-checked="false">✓</span>
+            <div class="cl-body">
+              <div><span class="tag">🗂 ${esc(e.proj||'')}</span>
+                <span class="tx">${esc(e.what||'')}</span></div>
+              ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
+              ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
+            </div>
+          </div>`).join('')}
       </div>`:todo('未完成清单','都没有 —— 关系和工作的清单都是空的。')}
 
       ${clDone.length?`<div class="pblock"><div class="pblock-h">
         做掉了 · ${clDone.length} 条
-        <span class="tm">（她说了"做掉了"才会进这儿 —— 系统不自判）</span></div>
+        <span class="tm">（你说了"做掉了"才会进这儿 —— 系统不自判）</span></div>
         ${clDone.map(it=>`<div class="pitem">
           <span class="tag">${it.id}、</span>
           <span class="tx" style="opacity:.55;text-decoration:line-through">${esc(it.what||'')}</span>
@@ -1551,7 +1638,10 @@ function renderPanels(d){
         · 带 🗂 的 = <b>工作里欠的</b>（projects.open，项目自己写的「下一步」）<br>
         混成一张单子就分不清哪件是欠你的、哪件是活。
         <br><br>
-        <b>谁划掉</b>：只有你说「做掉了 / 不用管了」我才划 —— 系统不自己给自己划勾。
+        <b>怎么划掉</b>：两种通道 ——<br>
+        ① <b>你在这儿点一下方框</b>（点了就划，服务端会记账）<br>
+        ② <b>你在对话里说"那个做掉了"</b>，我自己划<br>
+        <span style="color:var(--fg-3)">系统不自己给自己划勾 —— 只有你的话算。</span>
         ${CL.updated_at?`<br><span class="tm">清单最后更新 ${esc(CL.updated_at)}</span>`:''}
       </div>`);
   }
@@ -1592,17 +1682,17 @@ function renderPanels(d){
     ${todo('系统设置（含采样温度）','故意不做 —— 配置在 config.yaml，面板上给个滑杆改温度太危险。')}`);
 
   // ── 8. Gallery ──
-  h+=sec('🖼 Gallery','agent 的创作产出与小生态',
+  hGal=sec('🖼 Gallery','agent 的创作产出与小生态',
     todo('展柜与作品 / 工作台产出 / 内置电子宠物（pet_care）',
       '能力没做 —— 电子宠物、作品展柜都还没有。"工作台产出"那部分勉强算有（见 Room 的工作台），但那是账，不是展柜。'));
 
   // ── 9. Sandbox ──
-  h+=sec('🧪 Sandbox','平行世界，不污染正史',
+  hSand=sec('🧪 Sandbox','平行世界，不污染正史',
     todo('独立角色卡沉浸聊天（与主时间线完全隔离）',
       '能力没做 —— 我们只有一条正史。原文这条是为"角色卡"设计的，我们没有这个概念。'));
 
   // ── 10. Cinema ──
-  h+=sec('🎬 Cinema','同步观影',
+  hCin=sec('🎬 Cinema','同步观影',
     todo('片库、播放器、字幕、观看进度、同看聊天',
       '能力没做 —— 一整套同步观影系统，没开始。'));
 
@@ -1613,7 +1703,56 @@ function renderPanels(d){
       <b>${NA.length}</b> 项未实现（见页首清单）<br>
       <span style="color:var(--fg-3)">这一页的排序是刻意的：先看见缺什么，再看见有什么。</span></div></section>`;
 
-  box.innerHTML=h;
+  // ══════════════════════════════════════════════════════════════
+  //  ★★ 2026-09-19 分发：每块内容写进自己的 tab 盒子 ★★
+  // ══════════════════════════════════════════════════════════════
+  //
+  //  ⚠️ 页头那句「原件出处」也只在原文面板页显示（page8）。
+  //     Room / Memory / 清单 各 tab 只放自己的内容 —— 别把整份 h 塞过去。
+  const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
+
+  put('page1', hRoom);   // 日历总览 + Room（★ 她要的：这两个一个 tab）
+  put('page3', hMem);    // Memory
+  put('page4', hCL);     // 未完成清单（可点勾）
+  put('page5', hGal);    // Gallery
+  put('page6', hSand);   // Sandbox
+  put('page7', hCin);    // Cinema
+  box.innerHTML=h;       // page8 原文面板：其余都在这儿
+
+  // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
+  bindChecklistToggle();
+}
+
+
+// ── 清单勾选交互（★ 2026-09-19 大小姐要的）──
+//
+//  她点一下 checkbox = 「这件事做掉了」→ 划掉。
+//  另一条通道（对话里她说"那个我做完了"）由后端 finish() 走，不在这儿。
+//
+//  ⚠️ 这个前端**不改服务端账本** —— 看板是投影。
+//     点击只是**本地视觉** + 给后端发一条"她要划掉第 N 条"的信号。
+//     真正的划掉由服务端记账（她的话是权威，前端不是）。
+function bindChecklistToggle(){
+  document.querySelectorAll('#page4 .cl-check').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const id=el.dataset.id, what=el.dataset.what||'';
+      if(!id) return;
+      // 视觉立刻响应 —— 她要马上看到"划掉了"
+      el.classList.toggle('done');
+      const row=el.closest('.cl-row');
+      if(row) row.classList.toggle('done', el.classList.contains('done'));
+      // 发给后端（失败也不回滚视觉：她的意图已经表达了）
+      if(typeof CL_ENDPOINT==='string' && CL_ENDPOINT){
+        try{
+          await fetch(CL_ENDPOINT,{method:'POST',mode:'cors',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({id:String(id), what:String(what),
+                                 done:el.classList.contains('done'),
+                                 at:new Date().toISOString()})});
+        }catch(e){ /* 网络失败 → 下次对话里我再问她一遍 */ }
+      }
+    });
+  });
 }
 
 
@@ -1908,7 +2047,8 @@ function roomBody(txt){
 //    于是点「日记」和点「原文面板」进的是同一页，
 //    原文面板永远看不见（这就是它一直"空着"的原因）。
 //    现在一页一个 id，一一对应。
-const PAGE_OF = {p0:'app', p1:'page2', p2:'page3'};
+const PAGE_OF = {p0:'app', p1:'page1', p2:'page2', p3:'page3',
+                 p4:'page4', p5:'page5', p6:'page6', p7:'page7', p8:'page8'};
 
 function showPage(pid){
   const target = PAGE_OF[pid] || 'app';
