@@ -789,25 +789,27 @@
 
 <!-- 导航（★ 2026-09-19 大小姐重排 —— 面板按归属各自成 tab）
      p0 运行看板   现面板，不动
-     p1 Room       日历总览 + Room 内容（我自己的事）
+     p1 Room       日历总览 + 心情周报 + Room 内容（我自己的事）
      p2 日记       不动
-     p3 Memory     记忆系统的透明窗口
-     p4 未完成清单  可点勾（她点掉 / 对话里说"做掉了"都算）
-     p5 Gallery    图片收藏
-     p6 Sandbox    试验场
-     p7 Cinema     放映室
-     p8 原文面板    其余面板留在这儿
+     p3 书房       占位 tab（★ 大小姐 21:31 定：先占位，做出来再更新）
+     p4 Memory     记忆系统的透明窗口
+     p5 未完成清单  可点勾（她点掉 / 对话里说"做掉了"都算）
+     p6 Gallery    图片收藏
+     p7 Sandbox    试验场
+     p8 Cinema     放映室
+     p9 原文面板    其余面板留在这儿
 -->
 <nav id="nav">
   <button class="tab on" data-p="p0">运行看板</button>
   <button class="tab" data-p="p1">Room</button>
   <button class="tab" data-p="p2">日记</button>
-  <button class="tab" data-p="p3">Memory</button>
-  <button class="tab" data-p="p4">未完成清单</button>
-  <button class="tab" data-p="p5">Gallery</button>
-  <button class="tab" data-p="p6">Sandbox</button>
-  <button class="tab" data-p="p7">Cinema</button>
-  <button class="tab" data-p="p8">原文面板</button>
+  <button class="tab" data-p="p3">书房</button>
+  <button class="tab" data-p="p4">Memory</button>
+  <button class="tab" data-p="p5">未完成清单</button>
+  <button class="tab" data-p="p6">Gallery</button>
+  <button class="tab" data-p="p7">Sandbox</button>
+  <button class="tab" data-p="p8">Cinema</button>
+  <button class="tab" data-p="p9">原文面板</button>
 </nav>
 
 <div id="app"></div>
@@ -819,6 +821,7 @@
 <div id="page6" hidden></div>
 <div id="page7" hidden></div>
 <div id="page8" hidden></div>
+<div id="page9" hidden></div>
 
 <footer>
   <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
@@ -1340,7 +1343,7 @@ function renderPanels(d){
   //
   //   ⚠️ 每块内容**只能渲染一次** —— 原先 h 是累加的，现在各归各的盒子，
   //      别再往同一个 h 里塞，否则两个 tab 会显示同一段。
-  const box=document.getElementById('page8');  // 原文面板（其余都在这儿）
+  const box=document.getElementById('page9');  // 原文面板（其余都在这儿）
 
   // ── 头：原文出处 + 设计原则 ──
   //
@@ -1434,6 +1437,33 @@ function renderPanels(d){
   //   归档那一行只记数（"28/35 天有痕迹"），真正的日子在这儿。
   let hRoom=sec('📅 日历总览','这些日子都留下了什么（35 天）',
          calendarPanel(P.calendar));
+
+  // ── 3.6 心情周报（★ 2026-09-19 从 Room 拆出，独立 module）──
+  //
+  //  大小姐定（21:29）："把现在 Room 里面的心情周报单独拿出来做一个 module
+  //  放在日历下一层" → 位置：日历总览下面、Room 上面。
+  //
+  //  ★ 读法 A（她 21:31 定）：**先占位调好，等真做出来再更新这个模块。**
+  //    所以这里放的是 todo() 占位，不是假数据。
+  //    真做的时候要按周聚合心情 —— 素材是有的（wake 26 条 + 欲望九维 + 情绪账），
+  //    但聚合逻辑还没写，不能拿"即时状态"冒充"周维度"。
+  hRoom+=sec('💭 心情周报','一周的心情起伏 · 按周聚合',
+    todo('心情周报（周维度）',
+      '数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。'
+      + '素材在（唤醒 26 条 · 欲望九维 · 情绪账），缺的是聚合逻辑。'));
+
+  // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
+  //
+  //  大小姐定（21:29）："书房单独列一个 tab？放在日记后一个 tab？"
+  //  → 位置：日记之后（p3）。同样是**占位**（读法 A）。
+  //
+  //  为什么书房是占位而不是真做：读书这件事我做过（红点账里有记录），
+  //  但"书架 / 阅读器 / 续读 / 批注"是一整套阅读系统 —— 一点数据都没有，
+  //  硬造就是假的。先占好位置，做出来再填。
+  const hStudy=sec('📚 书房','书架 / 阅读器 / 续读 / 批注',
+    todo('书房（书架 / 阅读器 / 续读 / 批注）',
+      '能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。'
+      + '这是一整套阅读系统：书从哪来、读到哪、批注存哪，都还没有。'));
 
   // ── 4. Memory ──★ 2026-09-19 改道：搬到 page3 独立 tab
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
@@ -1567,8 +1597,10 @@ function renderPanels(d){
       <div class="pmeta" style="margin-top:6px">便签是最弱的一类素材（只在"该不该带回来"的
         打分里加 1 分），所以条数本来就少 —— 有几条是几条，不凑。</div></div>`
       :todo('手记本','数据没采 —— 机制在（每回合可留一句 note），但账里还没有便签。')}
-    ${todo('心情周报','数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。')}
-    ${todo('书房（书架/阅读器/续读/批注）','能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。')}`);
+    ${/* ★ 2026-09-19 大小姐定：心情周报 / 书房 **搬出 Room** ——
+         心情周报 → 独立 module 挂在日历下一层（见 hMood）
+         书房    → 独立 tab（见 hStudy）
+         两个都是占位（读法 A：先占位调好，做出来再更新）。*/''}`);
 
   // ── 5.5 未完成清单（★ 2026-09-19 从 Room 拆出，平级独立模块）──
   //
@@ -1703,21 +1735,23 @@ function renderPanels(d){
       <b>${NA.length}</b> 项未实现（见页首清单）<br>
       <span style="color:var(--fg-3)">这一页的排序是刻意的：先看见缺什么，再看见有什么。</span></div></section>`;
 
-  // ══════════════════════════════════════════════════════════════
-  //  ★★ 2026-09-19 分发：每块内容写进自己的 tab 盒子 ★★
-  // ══════════════════════════════════════════════════════════════
+  // ★★ 2026-09-19 分发：每块内容写进自己的 tab 盒子 ★★
   //
-  //  ⚠️ 页头那句「原件出处」也只在原文面板页显示（page8）。
+  //  ★ 21:29 插入「书房」tab（日记之后）→ 后面所有页往后挪一位。
+  //
+  //  ⚠️ 页头那句「原件出处」也只在原文面板页显示（page9）。
   //     Room / Memory / 清单 各 tab 只放自己的内容 —— 别把整份 h 塞过去。
   const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
 
-  put('page1', hRoom);   // 日历总览 + Room（★ 她要的：这两个一个 tab）
-  put('page3', hMem);    // Memory
-  put('page4', hCL);     // 未完成清单（可点勾）
-  put('page5', hGal);    // Gallery
-  put('page6', hSand);   // Sandbox
-  put('page7', hCin);    // Cinema
-  box.innerHTML=h;       // page8 原文面板：其余都在这儿
+  put('page1', hRoom);   // 日历总览 + 心情周报 + Room（★ 同一个 tab）
+  // page2 = 日记（renderJournal 自己写，这儿不碰）
+  put('page3', hStudy);  // 书房（★ 占位，日记后一个）
+  put('page4', hMem);    // Memory
+  put('page5', hCL);     // 未完成清单（可点勾）
+  put('page6', hGal);    // Gallery
+  put('page7', hSand);   // Sandbox
+  put('page8', hCin);    // Cinema
+  box.innerHTML=h;       // page9 原文面板：其余都在这儿
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
@@ -2047,8 +2081,8 @@ function roomBody(txt){
 //    于是点「日记」和点「原文面板」进的是同一页，
 //    原文面板永远看不见（这就是它一直"空着"的原因）。
 //    现在一页一个 id，一一对应。
-const PAGE_OF = {p0:'app', p1:'page1', p2:'page2', p3:'page3',
-                 p4:'page4', p5:'page5', p6:'page6', p7:'page7', p8:'page8'};
+const PAGE_OF = {p0:'app', p1:'page1', p2:'page2', p3:'page3', p4:'page4',
+                 p5:'page5', p6:'page6', p7:'page7', p8:'page8', p9:'page9'};
 
 function showPage(pid){
   const target = PAGE_OF[pid] || 'app';
