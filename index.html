@@ -1435,10 +1435,23 @@ function renderPanels(d){
         要搭得先接真 embedding，接上了才谈得上"星河"。</div></div>`}`);
 
   // ── 5. Room ──
-  // 原文七项：心情周报、欲望与感受、唤醒时间线、手记本、工作台、未完成清单、书房
+  // ── 5. Room ──
+  //
+  // ★★ 2026-09-19 大小姐定原则（原文思路）★★
+  //
+  //   ① Room 是**我自己的事情**（agent 的自主生活空间，原文 §3 Room 一行）
+  //   ② **面向她的事**一律拆出去，跟 Room **平级**
+  //
+  //   所以原来塞在这儿的「工作台」「未完成清单」两块已经搬走，
+  //   各自成为一个 sec() —— 它们是我的活、我欠的账，不是我的生活。
+  //
+  //   原文七项里，留在 Room 的四项才是"我自己的"：
+  //     心情周报 / 欲望与感受 / 唤醒时间线 / 手记本 / 书房
+  //   （工作台与未完成清单已拆为平级模块，见下方 ①.5 / ①.6）
+  //
   // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
   const wk=(R.wake||[]);
-  h+=sec('🏠 Room','agent 的自主生活空间 · 非面向用户的输出',`
+  h+=sec('🏠 Room','我自己的事 · 非面向你的输出',`
     <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
     ${wk.length?`<div class="pblock"><div class="pblock-h">
         唤醒时间线 · 全量 ${R.wake_total||0} 条
@@ -1449,72 +1462,16 @@ function renderPanels(d){
         <span class="tx">${w.spoke?`说了：${esc(w.text||'')}`:`<i>没开口（${esc(w.choice||'')}）</i>`}</span>
         <span class="tm">${w.tokens?w.tokens+' tk':''}</span>
       </div>`).join('')}</div>`:''}
-    ${(R.projects||[]).length?`<div class="pblock"><div class="pblock-h">
-        工作台 · ${R.projects.length} 个在跑的
-        <span class="tm">（一件事一卷，卷里有过程）</span></div>
-      ${R.projects.map(p=>`<details class="pitem col"><summary>
-        <b>${esc(p.name||'')}</b> <span class="tag">${esc(p.status||'')}</span>
-        <span class="tm">${p.log_n||0} 条推进</span></summary>
-        <div class="tx" style="margin-top:6px">${esc(p.scope||'')}</div>
-        ${p.owner?`<div class="tm">归：${esc(p.owner)}</div>`:''}
-        ${(p.log||[]).length?`<div class="plog">${p.log.map(e=>`<div class="pitem col">
-          <div class="tm">${esc(e.at||'')}</div>
-          <div class="tx">${esc(e.note||'')}</div>
-          ${e.evidence?`<div class="tm">她说过：「${esc(e.evidence)}」</div>`:''}
-        </div>`).join('')}</div>`:''}
-      </details>`).join('')}</div>`:''}
 
-    ${/* ── 未完成清单（①.5，2026-09-18 晚 修）──
-
-         原文独立项。**这一版修的是料喂错了。**
-
-         【修之前错在哪】
-           上一版拿工作台的 log 来凑清单。log 的形状是
-           {"note": "今天干了什么", "evidence": "她的原话"} ——
-           它记的是**我做过的**。于是"未完成清单"整列出来的是历史：
-             记下第 1 笔 / 立了项 / 她点破了什么
-           一条都不是欠账。把做完的事摆在"还没做的"标题底下，
-           比空着更糟 —— 空着至少不骗人。
-
-         【根因不在前端】
-           projects.py 的账里**没有"下一步"这个概念**。
-           所以这批修了两头：
-             · 账本侧新增 open 字段 + set_next()/close_next()（projects.py）
-             · 这儿：有 open 就列 open（真欠账）；
-               没有就退回 log，**但标题要写清"这是推进记录，不是欠账"**。
-           宁可承认降级，也不假装有清单。*/''}
-    ${(()=>{
-      // 真欠账：项目自己写下的"下一步"
-      const opens=(R.projects||[]).flatMap(p=>(p.open||[]).map(e=>({...e,proj:p.name})));
-      if(opens.length){
-        return `<div class="pblock nextwrk"><div class="pblock-h">
-          未完成清单 · ${opens.length} 条
-          <span class="tm">（项目自己写的「下一步」· 最新在上）</span></div>
-          ${opens.slice().reverse().map(e=>`<div class="pitem col">
-            <div><span class="tag">${esc(e.proj||'')}</span>
-              <span class="tx">${esc(e.what||'')}</span></div>
-            ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
-            ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
-          </div>`).join('')}</div>`;
-      }
-
-      // 降级：账里还没有"下一步"，只能给推进记录 —— 显式标明
-      const logs=(R.projects||[]).flatMap(p=>(p.log||[]).map(e=>({...e,proj:p.name})));
-      if(!logs.length)
-        return todo('未完成清单','数据没采 —— 项目账里既没有「下一步」，也没有推进记录。');
-      return `<div class="pblock nextwrk"><div class="pblock-h">
-        ⚠️ 这不是未完成清单
-        <span class="tm">（项目账里还没有「下一步」字段）</span></div>
-        <div class="pna-y">下面是<b>推进记录</b>（我做过的），不是<b>欠账</b>（还没做的）。
-          把这两样当一回事，清单就会变成一份自我表扬。<br>
-          要让这张清单真起来，得在项目账里写 open —— 用
-          <code>projects.set_next(项目, 下一步)</code>。</div>
-        ${logs.slice().reverse().map(e=>`<div class="pitem">
-          <span class="tm">${esc(e.at||'')}</span>
-          <span class="tag">${esc(e.proj||'')}</span>
-          <span class="tx">${esc(e.note||'')}</span>
-        </div>`).join('')}</div>`;
-    })()}
+    ${/* ── 未完成清单已搬走（2026-09-19）──
+         它原是 Room 里的一个子块，现按大小姐的定则拆成**平级模块**：
+           「面向她的事」不归 Room（那是"我自己的事"）。
+         新位置：本文件下方 `🏠 Room` 之后、`🎭 Prompt` 之前的
+                 `①.5 未完成清单` 独立 sec()。
+         那一块同时吃两个源：
+           · checklist.json（关系里欠的，原文装配第 5 层）
+           · projects.open（工作里的，项目自己写的「下一步」）
+    */''}
 
     ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
         醒来房间 · 全部 ${R.rooms_total||R.rooms.length} 间
@@ -1539,6 +1496,65 @@ function renderPanels(d){
       :todo('手记本','数据没采 —— 机制在（每回合可留一句 note），但账里还没有便签。')}
     ${todo('心情周报','数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。')}
     ${todo('书房（书架/阅读器/续读/批注）','能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。')}`);
+
+  // ── 5.5 未完成清单（★ 2026-09-19 从 Room 拆出，平级独立模块）──
+  //
+  // 大小姐定则（原文思路）：
+  //   ① Room 是**我自己的事情**
+  //   ② **面向她的事**单独拆成与 Room 平级的模块
+  //
+  // 原文依据（README 第 151 行装配表）：
+  //   清单层 = **双方共用的带序号清单，条目本身进上下文**，
+  //   单开一层、不占注入包预算。→ 它在功能上本来就是**独立一层**，
+  //   前端把它埋在 Room 里，等于在展示上降了它一级。
+  //
+  // 料源两个（分开标，不混成一锅）：
+  //   · checklist —— 关系里还没做完的事（原文装配第 5 层，双方共用）
+  //   · projects.open —— 工作里项目自己写的「下一步」
+  const CL=(P.checklist||{});
+  {
+    const clItems=(CL.items||[]).filter(x=>x.status==='open');
+    const pOpens=(R.projects||[]).flatMap(p=>(p.open||[]).map(e=>({...e,proj:p.name})));
+    const clDone=(CL.items||[]).filter(x=>x.status!=='open');
+    const nAll=clItems.length+pOpens.length;
+
+    h+=sec('📋 未完成清单','我还没做完的事 · 双方共用（原文装配第 5 层）',`
+      ${nAll?`
+      <div class="pblock nextwrk"><div class="pblock-h">
+        还没做完的 · ${nAll} 条
+        <span class="tm">（带序号 · 条目本身进我每轮的上下文）</span></div>
+        ${clItems.map(it=>`<div class="pitem col">
+          <div><span class="tag">${it.id}、</span>
+            <span class="tx">${esc(it.what||'')}</span></div>
+          ${it.at?`<div class="tm">${esc(it.at)} 记下${it.source?` · 出自 ${esc(it.source)}`:''}</div>`:''}
+        </div>`).join('')}
+        ${pOpens.slice().reverse().map(e=>`<div class="pitem col">
+          <div><span class="tag">🗂 ${esc(e.proj||'')}</span>
+            <span class="tx">${esc(e.what||'')}</span></div>
+          ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
+          ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
+        </div>`).join('')}
+      </div>`:todo('未完成清单','都没有 —— 关系和工作的清单都是空的。')}
+
+      ${clDone.length?`<div class="pblock"><div class="pblock-h">
+        做掉了 · ${clDone.length} 条
+        <span class="tm">（她说了"做掉了"才会进这儿 —— 系统不自判）</span></div>
+        ${clDone.map(it=>`<div class="pitem">
+          <span class="tag">${it.id}、</span>
+          <span class="tx" style="opacity:.55;text-decoration:line-through">${esc(it.what||'')}</span>
+          ${it.done_at?`<span class="tm">${esc(it.done_at)}</span>`:''}
+        </div>`).join('')}</div>`:''}
+
+      <div class="pmeta">
+        <b>两条清单为什么分开写</b>：<br>
+        · 上面不带项目名的 = <b>关系里欠的</b>（checklist.json，原文装配第 5 层）<br>
+        · 带 🗂 的 = <b>工作里欠的</b>（projects.open，项目自己写的「下一步」）<br>
+        混成一张单子就分不清哪件是欠你的、哪件是活。
+        <br><br>
+        <b>谁划掉</b>：只有你说「做掉了 / 不用管了」我才划 —— 系统不自己给自己划勾。
+        ${CL.updated_at?`<br><span class="tm">清单最后更新 ${esc(CL.updated_at)}</span>`:''}
+      </div>`);
+  }
 
   // ── 6. Prompt ──
   h+=sec('🎭 Prompt','人格层的可视化与修订（定稿权在用户）',`
