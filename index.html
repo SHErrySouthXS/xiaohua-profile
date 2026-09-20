@@ -2193,15 +2193,17 @@ const ROUTES = {
   'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
   'room/cinema': {el:'page8',    lvl:2, title:'Cinema',   parent:'room'},
   'room/sandbox':{el:'page9',    lvl:2, title:'Sandbox',  parent:'room'},
+  // ★ 2026-09-20 补：Memory 挪进 Room 当最后一个 icon（大小姐定）
+  'room/memory': {el:'page4',    lvl:2, title:'Memory',   parent:'room'},
 };
 
 // 旧链接兼容：2026-09-20 之前的 #p0~#p9 自动转到新路径
-// ⚠️ p4(Memory) 和 p9(原文面板) 都归到「我」是**故意的** —— 两个旧页
-//    的内容都并进了新的一级页。但 p9 单独试时不该和 p4 撞，
-//    所以 p9 指向 room/sandbox 之外仍保留 me 的语义 —— 这里 p9 给 me，
-//    因为原文面板的人设块是它最主要的遗留物。
+// ⚠️ p4(Memory) 和 p9(原文面板) 的归属：
+//    p4 → room/memory（Memory 现在是 Room 的 icon 之一）
+//    p9 → me（原文面板的人设块并进了「我」）
 const LEGACY = {
-  p0:'board', p1:'room', p2:'room/journal', p3:'room/study', p4:'me',
+  p0:'board', p1:'room', p2:'room/journal', p3:'room/study',
+  p4:'room/memory',
   p5:'todo', p6:'room/gallery', p7:'room/sandbox', p8:'room/cinema', p9:'me',
 };
 
@@ -2269,6 +2271,10 @@ async function load(){
     renderPanels(d);
     renderRoomIndex();   // ★ Room 二级 icon 页
     renderMe(d);         // ★ 「我」平铺
+    // ★ 2026-09-20 补：数据到位后重跑一次路由 —— 修「直接访问三级 URL 时
+    //   返回条不出现」。原因：初始 show() 跑在 load 之前，那时视图盒子里
+    //   还是空的，插返回条没意义。数据渲染完再插一次才稳。
+    show(routeOf(), false);
   }catch(e){
     document.getElementById('app').innerHTML=
       `<div class="status bad glass"><div class="head">读取数据失败</div>
@@ -2290,6 +2296,7 @@ const ICONS = {
   gallery:`<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-9 9"/>`,
   cinema: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M16 5v14"/><path d="M3 9h5M3 15h5M16 9h5M16 15h5"/>`,
   sandbox:`<path d="M9 3h6v5l4 9a2 2 0 0 1-1.8 3H6.8A2 2 0 0 1 5 17l4-9z"/><path d="M9 3v5M15 3v5"/>`,
+  memory: `<path d="M9 3a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3 3 3 0 0 0 3-2V5a3 3 0 0 0-3-2z"/><path d="M15 3a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3 3 3 0 0 1-3-2"/>`,
 };
 
 function renderRoomIndex(){
@@ -2303,6 +2310,7 @@ function renderRoomIndex(){
     ['gallery','Gallery', '图片收藏'],
     ['cinema', 'Cinema',  '放映室'],
     ['sandbox','Sandbox', '试验场'],
+    ['memory', 'Memory',  '记忆系统的透明窗口'],
   ];
   host.innerHTML=`<section class="glass" style="padding:15px 17px">
     <h2 style="margin:0 0 3px">🏠 Room</h2>
