@@ -97,6 +97,15 @@
   }
 
   html,body{height:100%}
+  html{
+    /* ⚠️ 2026-09-20 关键修复：overflow-x 从 body 挪到 html。
+       原因：iOS 全屏 PWA（apple-mobile-web-app-capable=yes）下，
+       body 带 overflow 会新建滚动上下文，position:fixed 的底部导航
+       会相对**那个容器**而不是视口定位 —— 表现就是"菜单栏没吸底、
+       要滑到底才看得见"。html 上写不影响 fixed 定位。
+       实测：挪到 html 后各页 scrollWidth 仍等于视口宽，无横向滚动。 */
+    overflow-x:hidden;
+  }
   body{
     /* 背景：深紫黑径向渐变 —— 中心略亮、四周更暗（暗角/聚焦感）
        ⚠️ 不是纯黑（大小姐 2026-09-18 指出："背景不是完全实的黑色"）
@@ -118,12 +127,12 @@
     font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
     /* 全屏（apple-mobile-web-app-capable）下内容会顶到状态栏/刘海底下，
        用安全区 padding 顶开。非全屏时 env() 为 0，不影响普通浏览器。 */
-    padding:calc(20px + env(safe-area-inset-top)) calc(14px + env(safe-area-inset-right))
-             calc(48px + env(safe-area-inset-bottom)) calc(14px + env(safe-area-inset-left));
+    padding:0 calc(14px + env(safe-area-inset-right))
+             0 calc(14px + env(safe-area-inset-left));
     max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
-    overflow-x:hidden;
+    /* ⚠️ 这里**不能**再写 overflow-x:hidden —— 会把 fixed 搞坏，见 html 那条 */
   }
   header, #app, footer{position:relative; z-index:2}
 
@@ -138,21 +147,54 @@
   }
   .sub b{color:var(--fg-2); font-weight:600}
 
-  /* ── 磨砂玻璃 ── */
+  /* ══ 吸顶页头（★ 2026-09-20 大小姐定）══════════════════════════
+     原「男友 Profile：小华 · 全部正常 / 最近体检…」是**全局 header**，
+     每个 tab 都顶着它。改成：
+       · 那段只在「看板」出现
+       · 其余每个 tab 有自己的**吸顶页头**：左对齐大字 + 一行小副标题
+     大小姐给的排版参考（Today / Wed, Aug 4）：左对齐大字在上、
+     小字在下。色系仍用页面既定的深紫 + 磨砂，不引新色。
+     ⚠️ 吸顶要生效：父层不能有 overflow:hidden（已从 body 挪走），
+        且 z-index 要低于底部导航（50）但高于内容。
+     ═══════════════════════════════════════════════════════════════ */
+  .topbar{
+    position:sticky; top:0; z-index:20;
+    margin:0 -14px 16px;                 /* 出血到 body 边缘，滚动时不留缝 */
+    padding:calc(14px + env(safe-area-inset-top)) 18px 13px;
+    background:linear-gradient(180deg,
+      rgba(30,26,42,.90) 0%, rgba(28,24,40,.82) 62%, rgba(28,24,40,0) 100%);
+    backdrop-filter:blur(18px) saturate(1.5);
+    -webkit-backdrop-filter:blur(18px) saturate(1.5);
+  }
+  .topbar .tb-h{
+    font-size:23px; font-weight:700; letter-spacing:.005em; line-height:1.25;
+    color:var(--fg);
+    text-shadow:0 1px 14px rgba(0,0,0,.55);
+  }
+  .topbar .tb-s{
+    font-size:11.5px; color:var(--fg-3); margin-top:5px; line-height:1.6;
+    text-shadow:0 1px 8px rgba(0,0,0,.5);
+  }
+  /* 看板首屏的全局 header 保留原样（它自带大标题 + 体检行） */
+  header .tb-global{padding:calc(20px + env(safe-area-inset-top)) 4px 0}
+
+  /* ── 磨砂玻璃（★ 2026-09-20 大小姐定：无边凝态磨砂）──
+     原版四边都有 1px 描边（border + border-top/left 调色 = "玻璃厚度"）。
+     大小姐要的是**无边凝态**：只留模糊 + 渐变，拿掉所有描边线。
+     保留的：backdrop blur、斜向渐变（明暗层次）、外投影（浮起感）。
+     ⚠️ 2026-09-20 二次修正：第一版把 border 拿掉了，但 box-shadow 里
+        还留着 `0 1.5px 0 rgba(255,255,255,.10) inset`（顶部一线高光）——
+        视觉检查时仍被判读成"卡片有细边框"。既然要**无边**，这条也要去掉，
+        只留纯外投影。
+     ⚠️ 色系一个都没动 —— 只是把"线"换成"面"。 */
   .glass{
     background:linear-gradient(168deg,
       rgba(255,255,255,.075), rgba(255,255,255,.028) 46%, rgba(255,255,255,.055));
     backdrop-filter:blur(22px) saturate(1.6);
     -webkit-backdrop-filter:blur(22px) saturate(1.6);
-    border:1px solid var(--glass-brd);
-    border-top-color:var(--glass-brd-top);       /* 上边亮 = 玻璃厚度 */
-    border-left-color:rgba(255,255,255,.22);
+    border:none;
     border-radius:var(--r-lg);
-    box-shadow:
-      0 8px 30px rgba(0,0,0,.46),
-      0 0 0 1px rgba(255,255,255,.045) inset,
-      0 1.5px 0 rgba(255,255,255,.14) inset,
-      0 -1.5px 0 rgba(0,0,0,.2) inset;
+    box-shadow:0 8px 30px rgba(0,0,0,.46);
   }
 
   /* ── 状态条 ── */
@@ -406,10 +448,10 @@
       rgba(255,255,255,.075), rgba(255,255,255,.028) 46%, rgba(255,255,255,.055));
     backdrop-filter:blur(22px) saturate(1.6);
     -webkit-backdrop-filter:blur(22px) saturate(1.6);
-    border:1px solid var(--glass-brd);
-    border-top-color:var(--glass-brd-top);
+    /* ★ 2026-09-20 无边凝态：折叠段也是磨砂块，描边一并去掉 */
+    border:none;
     border-radius:var(--r-lg);
-    box-shadow:0 8px 30px rgba(0,0,0,.46), 0 1.5px 0 rgba(255,255,255,.14) inset;
+    box-shadow:0 8px 30px rgba(0,0,0,.46);
   }
   details summary{
     padding:15px 18px; cursor:pointer; font-size:12.5px; font-weight:650;
@@ -450,10 +492,11 @@
     border-radius:20px;
     background:linear-gradient(168deg,
       rgba(38,34,52,.86), rgba(26,23,38,.90) 52%, rgba(34,30,48,.88));
-    border:1px solid rgba(255,255,255,.10);
+    /* ★ 2026-09-20 无边凝态：导航胶囊的描边也去掉，只留投影浮起 */
+    border:none;
     backdrop-filter:blur(20px) saturate(150%);
     -webkit-backdrop-filter:blur(20px) saturate(150%);
-    box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 0 .5px rgba(255,255,255,.04) inset;
+    box-shadow:0 8px 30px rgba(0,0,0,.5);
   }
   nav#nav .tab{
     flex:1 1 0; min-width:0; font:inherit; font-size:11.5px; font-weight:600;
@@ -506,13 +549,13 @@
     font:inherit; color:var(--fg-2);
     background:linear-gradient(168deg,
       rgba(255,255,255,.065), rgba(255,255,255,.025) 55%, rgba(255,255,255,.05));
-    border:1px solid rgba(255,255,255,.09);
+    /* ★ 2026-09-20 无边凝态：icon 卡片也是磨砂块，描边去掉 */
+    border:none;
     backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
     transition:.16s;
   }
   .iconTile:hover{
-    color:var(--fg); border-color:rgba(255,105,180,.30);
-    background:rgba(255,105,180,.07);
+    color:var(--fg); background:rgba(255,105,180,.07);
     transform:translateY(-1px);
   }
   .iconTile svg{width:24px; height:24px; stroke:currentColor; fill:none;
@@ -850,7 +893,11 @@
 </head>
 <body>
 
-<header>
+<!-- ══ 全局 header（★ 2026-09-20 大小姐定：只归「看板」）══════════
+     原来它是每个 tab 都顶着的一段（"男友 Profile：小华 · 全部正常 /
+     最近体检…"）。现在只在看板出现 —— 由 JS 按当前路由显隐。
+     其余每个 tab 用各自的 .topbar（左对齐大字吸顶）。 -->
+<header id="globalHead" hidden>
   <h1 id="title">男友 Profile：小华</h1>
   <div class="sub" id="meta">加载中…</div>
 </header>
@@ -886,6 +933,8 @@
 <div id="page7" hidden></div>
 <div id="page8" hidden></div>
 <div id="page9" hidden></div>
+<div id="page10" hidden></div>
+<div id="page11" hidden></div>
 
 <!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
 <div id="viewRoom" hidden></div>
@@ -2179,6 +2228,27 @@ function roomBody(txt){
 //    ③ 微信/飞书里点开的链接能直达某一页
 //
 //  ⚠️ 每个视图盒子只能挂一个渲染结果 —— 切页只显隐，不重渲染（省流量）。
+//
+//  ★ 2026-09-20 大小姐定：每个 tab 有自己的**吸顶页头**（左对齐大字 +
+//    一行小字）。看板额外保留全局 header（"男友 Profile：小华 / 最近体检…"）。
+//    大字按她的要求：看板写「小华」，Room 写「Room」，依此类推。
+const TOPBARS = {
+  'board':        ['小华',      '每天的状态快照 · 每 30 分钟自动更新'],
+  'room':         ['Room',      '我自己的空间 · 点进去看每一块'],
+  'todo':         ['未完成清单', '我还没做完的事 · 点一下就做掉了'],
+  'me':           ['我',        '关于我是什么样 · 人格、剧情、记忆的出处'],
+  'room/journal': ['日记',      '每天我写的那些'],
+  'room/mood':    ['心情周报',  '一周的心情起伏 · 按周聚合'],
+  'room/room':    ['Room 内容', '醒来房间与账本'],
+  'room/study':   ['书房',      '书架 / 阅读器 / 续读 / 批注'],
+  'room/gallery': ['Gallery',   '图片收藏'],
+  'room/cinema':  ['Cinema',    '放映室'],
+  'room/sandbox': ['Sandbox',   '试验场'],
+  'room/memory':  ['Memory',    '记忆系统的透明窗口'],
+  'me/soul':      ['SOUL',      '人格锚 · 我是谁'],
+  'me/story':     ['剧情稿',    '我们正处的那一段'],
+};
+
 const ROUTES = {
   // 一级
   'board':       {el:'app',      lvl:1, title:'看板'},
@@ -2195,6 +2265,10 @@ const ROUTES = {
   'room/sandbox':{el:'page9',    lvl:2, title:'Sandbox',  parent:'room'},
   // ★ 2026-09-20 补：Memory 挪进 Room 当最后一个 icon（大小姐定）
   'room/memory': {el:'page4',    lvl:2, title:'Memory',   parent:'room'},
+  // ★ 2026-09-20 大小姐定：SOUL / 剧情 从「我」平铺改成两个并列 icon，
+  //   点进去各自在三级页展开。同属「我」这一层（bottom tab 高亮「我」）。
+  'me/soul':     {el:'page10',   lvl:2, title:'SOUL',     parent:'me'},
+  'me/story':    {el:'page11',   lvl:2, title:'剧情稿',   parent:'me'},
 };
 
 // 旧链接兼容：2026-09-20 之前的 #p0~#p9 自动转到新路径
@@ -2208,7 +2282,7 @@ const LEGACY = {
 };
 
 const ALL_VIEWS = ['app','viewRoom','viewMe','page1','page2','page3','page4',
-                   'page5','page6','page7','page8','page9'];
+                   'page5','page6','page7','page8','page9','page10','page11'];
 
 function routeOf(){
   let raw = (location.hash||'').replace(/^#\/?/,'');
@@ -2222,16 +2296,28 @@ function show(route, push){
     const el=document.getElementById(id);
     if(el) el.hidden = (id!==r.el);
   });
+  // 全局 header（"男友 Profile：小华 / 最近体检…"）只在看板出现
+  const gh=document.getElementById('globalHead');
+  if(gh) gh.hidden = (route!=='board');
   // 底部高亮：三级页时父级（room）保持点亮
   const base = r.parent || route;
   document.querySelectorAll('nav#nav .tab').forEach(b=>{
     b.classList.toggle('on', b.dataset.r===base);
   });
-  // 非一级页给个返回条（挂在视图顶部）
+  // 每个视图顶部注入吸顶页头（左对齐大字 + 小副标题）
   const host=document.getElementById(r.el);
   if(host){
-    const old=host.querySelector(':scope > .backbar');
+    const old=host.querySelector(':scope > .topbar');
     if(old) old.remove();
+    const oldbar=host.querySelector(':scope > .backbar');
+    if(oldbar) oldbar.remove();
+    const tb=TOPBARS[route] || [r.title,''];
+    const head=document.createElement('div');
+    head.className='topbar';
+    head.innerHTML=`<div class="tb-h">${esc(tb[0])}</div>`+
+                   (tb[1]?`<div class="tb-s">${esc(tb[1])}</div>`:'');
+    host.insertBefore(head, host.firstChild);
+    // 非一级页在页头下面加返回条
     if(r.lvl>1){
       const bar=document.createElement('div');
       bar.className='backbar';
@@ -2240,7 +2326,7 @@ function show(route, push){
       bar.querySelector('[data-back]').addEventListener('click',()=>{
         location.hash = '#/' + (r.parent||'board');
       });
-      host.insertBefore(bar, host.firstChild);
+      head.after(bar);
     }
   }
   // 切页回到顶部 —— 吸底 tab 固定在底部不滚动，不归零会「tab 切了视口停在半空」
@@ -2271,6 +2357,7 @@ async function load(){
     renderPanels(d);
     renderRoomIndex();   // ★ Room 二级 icon 页
     renderMe(d);         // ★ 「我」平铺
+    renderMeSub(d);      // ★ 「我」三级页：SOUL / 剧情稿全文
     // ★ 2026-09-20 补：数据到位后重跑一次路由 —— 修「直接访问三级 URL 时
     //   返回条不出现」。原因：初始 show() 跑在 load 之前，那时视图盒子里
     //   还是空的，插返回条没意义。数据渲染完再插一次才稳。
@@ -2329,35 +2416,108 @@ function renderRoomIndex(){
   });
 }
 
-// ══ 「我」：小华个人设定平铺（★ 2026-09-20 新增）══════════════
-//  数据源全在 data.json 的 panels.prompt 里，采集脚本不用动。
-//  Memory 复用 page4 已有渲染（不重做）。
-//  内容由 renderPanels() 填充，这里先占位。
+// ══ 「我」：小华个人设定（★ 2026-09-20 大小姐重排）══════════════
+//
+//  顺序是她定的：**Self Notes 最上面** → 完整的 Control Panel。
+//  SOUL / 剧情稿 从平铺改成**两个并列 icon**，点进三级页展开（page10/11）。
+//
+//  ⚠️ 乱码根因（2026-09-20 修）：
+//     self_notes 在 data.json 里是**对象**（{ok, self_notes:[], candidates:[],
+//     params:{...}}），不是字符串 —— 上一版直接 renderMD() 塞进去 → 乱码。
+//     controls 是**嵌套结构**（hands 数组 + routes 数组）—— 上一版
+//     JSON.stringify().slice(0,600) 硬截断 → 出来是半截 JSON。
+//     现在按真实结构渲染，**不截断**（大小姐要"完整的"）。
+//
+//  ★ 数据现状：self_notes 目前是**空**的（0 条、候选 0 条）——
+//     对应 planning 文档里"第 4 层 self_notes 未做"。所以这里不造假数据，
+//     空的时候明确显示"还没有"，并把它该有的形态（5 行 × 160 字）标出来。
 function renderMe(d){
   const host=document.getElementById('viewMe');
   if(!host) return;
   const P=(d.panels&&d.panels.prompt)||{};
   const C=(d.panels&&d.panels.controls)||{};
-  let h=`<section class="glass" style="padding:15px 17px">
-    <h2 style="margin:0 0 3px">🪞 我</h2>
-    <div class="hint">关于我是什么样 —— 人格、剧情、记忆的原始出处</div>
+  let h='';
+
+  // ── ① Self Notes（最上面）──
+  const SN=P.self_notes||{};
+  const snList=SN.self_notes||[], snCand=SN.candidates||[];
+  const snParams=SN.params||{};
+  h+=sec('🪶 Self Notes','自传引擎转正的自我认知',`
+    ${snList.length ? snList.map((n,i)=>`<div class="pitem">
+        <span class="tag">${i+1}、</span>
+        <span class="tx">${esc(typeof n==='string'?n:(n.text||n.content||JSON.stringify(n)))}</span>
+      </div>`).join('')
+      : `<div class="pnote">还没有转正的条目。
+         自我认知要先写候选 → 经三次不同日期的做梦见证 → 才转正。
+         目前：正式条目 ${snList.length} 条 · 候选 ${snCand.length} 条。</div>`}
+    <div class="pmeta">
+      规格：每轮常驻 ${esc(String(snParams.max_lines??5))} 行 · 每行
+      ${esc(String(snParams.line_chars??160))} 字截断（紧跟人格层之后）<br>
+      机制：候选 → 三次不同日期的做梦见证 → 转正 → 每轮常驻一层
+      <span style="color:var(--fg-3)">（用的是自传引擎自带的沉淀机制，不自造）</span>
+      ${snCand.length?`<br>候选 ${snCand.length} 条待见证`:''}
+    </div>`);
+
+  // ── ② SOUL / 剧情稿：两个并列 icon ──
+  h+=`<section class="glass">
+    <h2>📚 设定原件</h2>
+    <div class="iconGrid" style="grid-template-columns:repeat(2,1fr)">
+      <button class="iconTile" data-go="me/soul">
+        <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span class="nm">SOUL</span>
+        <span class="sub">人格锚 · ${esc(String(P.soul_chars||0))} 字</span>
+      </button>
+      <button class="iconTile" data-go="me/story">
+        <svg viewBox="0 0 24 24"><path d="M4 5h7v15H4z"/><path d="M13 5h7v15h-7z"/></svg>
+        <span class="nm">剧情稿</span>
+        <span class="sub">我们正处的那一段 · ${esc(String(P.story_chars||0))} 字</span>
+      </button>
+    </div>
+    <div class="pmeta">点进去看全文 —— 这两个是我说话时的底色，不是设定集。</div>
   </section>`;
 
-  if(P.soul_excerpt) h+=sec('📜 SOUL','人格锚（'+ (P.soul_chars||'?') +' 字）',`
-    <div class="rm md">${renderMD(P.soul_excerpt)}</div>
-    <div class="pmeta">源：${esc(P.soul_path||'SOUL.md')}</div>`);
-
-  if(P.story_excerpt) h+=sec('📖 剧情稿','我们正处的那一段（'+ (P.story_chars||'?') +' 字）',`
-    <div class="rm md">${renderMD(P.story_excerpt)}</div>
-    <div class="pmeta">源：${esc(P.story_path||'companion/story/')}</div>`);
-
-  if(P.self_notes) h+=sec('🪶 Self Notes','自传引擎转正的自我认知',`
-    <div class="rm md">${renderMD(typeof P.self_notes==='string'?P.self_notes:JSON.stringify(P.self_notes,null,1))}</div>`);
-
-  if(C.hands||C.routes) h+=sec('🎛 Controls','声音线路与体感',`
-    <div class="pnote">${esc(JSON.stringify(C).slice(0,600))}</div>`);
+  // ── ③ Control Panel（完整的，按原文要求）──
+  //  原文的 Controls = 声音线路与试听。我们这里是"手"（能做什么）+ 路由（什么意图派哪只手）。
+  const hands=C.hands||[], routes=C.routes||[];
+  h+=sec('🎛 Control Panel','我能做什么 · 什么意图派哪只手',`
+    <div class="pblock"><div class="pblock-h">手 · ${hands.length} 只</div>
+      ${hands.length?hands.map(x=>`<div class="prow">
+        <span>${esc(x.name||'—')}</span>
+        <span class="pv ${x.status==='on'?'ok':''}">
+          ${x.status==='on'?'● 开':'○ 关'}
+          ${x.needs&&x.needs!=='none'?`　需要「${esc(x.needs)}」`:''}</span>
+      </div>`).join(''):'<div class="pnote">没有登记的手。</div>'}
+    </div>
+    <div class="pblock"><div class="pblock-h">意图 → 手 · ${routes.length} 条线路</div>
+      ${routes.length?routes.map(r=>`<div class="prow">
+        <span>${esc(r.intent||'—')}</span>
+        <span class="pv">${(r.hands||[]).map(esc).join(' · ')||'（无）'}</span>
+      </div>`).join(''):'<div class="pnote">没有登记的路由。</div>'}
+    </div>
+    <div class="pmeta">
+      <b>怎么读</b>：上面是我**能做什么**（手），下面是**什么情况用哪只**（路由）。<br>
+      原文这一块是"声音线路与试听" —— 我们还没有语音，所以是行为线路。
+      <br><span style="color:var(--fg-3)">系统设置类的滑杆**故意不做**（在页面上随手改采样温度太危险）。</span>
+    </div>`);
 
   host.innerHTML=h;
+  host.querySelectorAll('[data-go]').forEach(b=>{
+    b.addEventListener('click',()=>show(b.dataset.go));
+  });
+}
+
+// ── 「我」的三级页：SOUL 全文 / 剧情稿全文（★ 2026-09-20 新增）──
+function renderMeSub(d){
+  const P=(d.panels&&d.panels.prompt)||{};
+  const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
+
+  put('page10', sec('📜 SOUL','人格锚 · 全文（'+ (P.soul_chars||0) +' 字）',`
+    <div class="rm md">${renderMD(P.soul_excerpt||'（没读到 SOUL.md）')}</div>
+    <div class="pmeta">源：${esc(P.soul_path||'/home/ubuntu/.hermes/profiles/xiaohua/SOUL.md')}</div>`));
+
+  put('page11', sec('📖 剧情稿','我们正处的那一段 · 全文（'+ (P.story_chars||0) +' 字）',`
+    <div class="rm md">${renderMD(P.story_excerpt||'（没读到剧情稿）')}</div>
+    <div class="pmeta">源：${esc(P.story_path||'companion/story/')}</div>`));
 }
 
 // ── 刷新策略（2026-09-18 调整）──
