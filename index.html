@@ -893,14 +893,13 @@
 </head>
 <body>
 
-<!-- ══ 全局 header（★ 2026-09-20 大小姐定：只归「看板」）══════════
-     原来它是每个 tab 都顶着的一段（"男友 Profile：小华 · 全部正常 /
-     最近体检…"）。现在只在看板出现 —— 由 JS 按当前路由显隐。
-     其余每个 tab 用各自的 .topbar（左对齐大字吸顶）。 -->
-<header id="globalHead" hidden>
-  <h1 id="title">男友 Profile：小华</h1>
-  <div class="sub" id="meta">加载中…</div>
-</header>
+<!-- ══ 全局 header（★ 2026-09-20 大小姐定：已废弃，拿掉）══════════
+     原来每页顶着「男友 Profile：小华 · 全部正常 / 最近体检…」。
+     改成「每页一个吸顶大字页头」之后，它就多余了 —— 大小姐定：
+     第一个 tab 上也拿掉，只把**体检时间**留在「小华」大字下面。
+     （"0 项异常 / 0 项留意 / 共 15 项"也去掉 —— 下面卡片里都有。）
+     保留这个空节点是给老逻辑兜底：render() 里若取不到会跳过，不会报错。 -->
+<header id="globalHead" hidden></header>
 
 <!-- 导航（★ 2026-09-20 大小姐重构成三级结构）
      一级（底部吸底胶囊，4 格）：
@@ -1047,13 +1046,13 @@ function inlineMD(s){
 }
 
 function render(d){
-  const title=document.getElementById('title');
-  const meta=document.getElementById('meta');
   const app=document.getElementById('app');
 
   if(d.probe_error){
-    title.textContent='男友 Profile：小华 · 体检没跑起来';
-    meta.textContent='采集异常';
+    // ★ 2026-09-20：全局 header 已拿掉，这里不再写 title/meta。
+    //   探针挂了的提示直接进看板页头小字 + 卡片。
+    window.__FRESH__ = '采集异常 · 探针没跑起来';
+    if(typeof refreshTopbarTime==='function') refreshTopbarTime();
     app.innerHTML=`<div class="status bad glass"><div class="head">探针自己挂了</div>
       <div class="badge">先怀疑探针</div></div>
       <section class="glass"><div class="item" style="padding:0;border:none">
@@ -1064,15 +1063,19 @@ function render(d){
 
   const colorMap={green:'ok',yellow:'warn',red:'bad'};
   const color=colorMap[d.color]||d.color||'ok';
-  title.textContent=`男友 Profile：小华 · ${d.head||''}`;
-
+  // ★ 2026-09-20：全局 header 已废弃（大小姐定）。
+  //   原来这两行写进 #title / #meta，现在改成把**体检时间**存进
+  //   一个全局变量，由 show() 渲染吸顶页头时用（放在「小华」大字下面）。
+  //   "0 项异常 / 0 项留意 / 共 15 项" 不再显示 —— 下面卡片里都有。
   const gen=new Date((d.generated_at||'').replace(/-/g,'/'));
   const ageMin=isNaN(gen)?null:(Date.now()-gen.getTime())/60000;
   const stale=ageMin!==null&&ageMin>STALE_MIN;
-
-  meta.innerHTML=`最近体检 <b>${esc(d.generated_at||'—')}</b>`+
-    (ageMin!==null?` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}`:'')+
-    ` ｜ ${d.bad||0} 项异常 · ${d.warn||0} 项留意 · 共 ${d.total||0} 项`;
+  window.__FRESH__ = d.generated_at
+    ? `最近体检 ${d.generated_at}` +
+      (ageMin!==null ? ` · ${ageMin<1?'刚刚':Math.floor(ageMin)+' 分钟前'}` : '')
+    : '';
+  // 页头脚本已渲染过的话，就地刷新一下时间（数据加载晚于首次 show()）
+  if(typeof refreshTopbarTime==='function') refreshTopbarTime();
 
   let h='';
   h+=`<div class="status ${color} glass">
@@ -2233,7 +2236,8 @@ function roomBody(txt){
 //    一行小字）。看板额外保留全局 header（"男友 Profile：小华 / 最近体检…"）。
 //    大字按她的要求：看板写「小华」，Room 写「Room」，依此类推。
 const TOPBARS = {
-  'board':        ['小华',      '每天的状态快照 · 每 30 分钟自动更新'],
+  // ★ 看板：小字位不放固定文案，改放**实时体检时间**（见 refreshTopbarTime）
+  'board':        ['小华',      '__FRESH__'],
   'room':         ['Room',      '我自己的空间 · 点进去看每一块'],
   'todo':         ['未完成清单', '我还没做完的事 · 点一下就做掉了'],
   'me':           ['我',        '关于我是什么样 · 人格、剧情、记忆的出处'],
@@ -2296,9 +2300,10 @@ function show(route, push){
     const el=document.getElementById(id);
     if(el) el.hidden = (id!==r.el);
   });
-  // 全局 header（"男友 Profile：小华 / 最近体检…"）只在看板出现
+  // 全局 header（"男友 Profile：小华 / 最近体检…"）★ 2026-09-20 已废弃，
+  // 恒隐藏；体检时间改由看板的吸顶页头小字承载（见下 refreshTopbarTime）。
   const gh=document.getElementById('globalHead');
-  if(gh) gh.hidden = (route!=='board');
+  if(gh) gh.hidden = true;
   // 底部高亮：三级页时父级（room）保持点亮
   const base = r.parent || route;
   document.querySelectorAll('nav#nav .tab').forEach(b=>{
@@ -2312,10 +2317,13 @@ function show(route, push){
     const oldbar=host.querySelector(':scope > .backbar');
     if(oldbar) oldbar.remove();
     const tb=TOPBARS[route] || [r.title,''];
+    // '__FRESH__' 是占位：看板的小字位放实时体检时间（等数据到了再填）
+    const sub = tb[1]==='__FRESH__' ? (window.__FRESH__||'') : tb[1];
     const head=document.createElement('div');
     head.className='topbar';
     head.innerHTML=`<div class="tb-h">${esc(tb[0])}</div>`+
-                   (tb[1]?`<div class="tb-s">${esc(tb[1])}</div>`:'');
+                   (sub?`<div class="tb-s" data-fresh="1">${esc(sub)}</div>`
+                       :(tb[1]==='__FRESH__'?`<div class="tb-s" data-fresh="1"></div>`:''));
     host.insertBefore(head, host.firstChild);
     // 非一级页在页头下面加返回条
     if(r.lvl>1){
@@ -2337,6 +2345,14 @@ function show(route, push){
 document.querySelectorAll('nav#nav .tab').forEach(b=>{
   b.addEventListener('click',()=>show(b.dataset.r));
 });
+
+// ★ 数据到位后刷新看板页头的时间小字（render() 里会调）
+//   为什么需要：首次 show() 跑在 fetch 之前，那时 __FRESH__ 还是空的。
+function refreshTopbarTime(){
+  document.querySelectorAll('.topbar .tb-s[data-fresh]').forEach(el=>{
+    el.textContent = window.__FRESH__ || '';
+  });
+}
 
 // hash 变化（返回键 / 手改地址）→ 重绘
 let _lastHash=null;
@@ -2363,12 +2379,13 @@ async function load(){
     //   还是空的，插返回条没意义。数据渲染完再插一次才稳。
     show(routeOf(), false);
   }catch(e){
+    window.__FRESH__ = '数据不可用 · 推送链路可能断了';
+    if(typeof refreshTopbarTime==='function') refreshTopbarTime();
     document.getElementById('app').innerHTML=
       `<div class="status bad glass"><div class="head">读取数据失败</div>
        <div class="badge">${esc(e.message)}</div></div>
        <section class="glass"><div class="ev" style="font-size:12px">等一下会自动重试。
        若持续如此，说明推送链路断了。</div></section>`;
-    document.getElementById('meta').textContent='数据不可用';
   }
 }
 
