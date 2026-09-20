@@ -105,6 +105,14 @@
        要滑到底才看得见"。html 上写不影响 fixed 定位。
        实测：挪到 html 后各页 scrollWidth 仍等于视口宽，无横向滚动。 */
     overflow-x:hidden;
+    /* ★ 2026-09-20 大小姐定：锁死下拉回弹。
+       iOS 上内容已到顶后继续下拉，整页会跟着走、露出底色 —— 观感像
+       "页面离开了屏幕边缘"。关掉纵向 overscroll 的橡皮筋即可：
+         · overscroll-behavior-y:none —— 现代 iOS/安卓都认
+         · 安卓老版本额外用 overscroll-behavior:none 兜底
+       ⚠️ 只关 overscroll，**不动 overflow-y** —— 页面本身照常能滚。 */
+    overscroll-behavior:none;
+    overscroll-behavior-y:none;
   }
   body{
     /* 背景：深紫黑径向渐变 —— 中心略亮、四周更暗（暗角/聚焦感）
@@ -133,6 +141,9 @@
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
     /* ⚠️ 这里**不能**再写 overflow-x:hidden —— 会把 fixed 搞坏，见 html 那条 */
+    /* ★ 2026-09-20 下拉回弹：body 也关一份（部分 WebView 认 body 不认 html） */
+    overscroll-behavior:none;
+    overscroll-behavior-y:none;
   }
   header, #app, footer{position:relative; z-index:2}
 
