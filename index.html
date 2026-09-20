@@ -432,25 +432,93 @@
   .stale{color:var(--warn)}
   .hint{font-size:11px; color:var(--fg-3); margin-top:7px}
 
-  /* ── 导航 tab（沿用现有 glass / pink 调性，不引新观感）── */
+  /* ── 导航：底部吸底 · 胶囊悬浮（★ 2026-09-20 大小姐定）──
+     从顶部横排（10 个、会折两行、跟着滚走）改成底部固定的胶囊条。
+     4 格：看板 / Room / 未完成清单 / 我。
+     ⚠️ 沿用页面既定 glass + pink 调性，不引新色（配色锁死，改前必问）。 */
   nav#nav{
-    display:flex; gap:8px; margin:0 0 14px; flex-wrap:wrap;
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    display:flex; gap:6px; justify-content:center; align-items:stretch;
+    /* 胶囊悬浮：整条左右留边 + 底部让开 Home 横条（安全区） */
+    padding:0 12px calc(10px + env(safe-area-inset-bottom));
+    pointer-events:none;              /* 条本身不挡内容，只有胶囊可点 */
+  }
+  nav#nav .navpill{
+    pointer-events:auto;
+    display:flex; gap:5px; padding:7px;
+    max-width:520px; width:100%; justify-content:space-between;
+    border-radius:20px;
+    background:linear-gradient(168deg,
+      rgba(38,34,52,.86), rgba(26,23,38,.90) 52%, rgba(34,30,48,.88));
+    border:1px solid rgba(255,255,255,.10);
+    backdrop-filter:blur(20px) saturate(150%);
+    -webkit-backdrop-filter:blur(20px) saturate(150%);
+    box-shadow:0 8px 30px rgba(0,0,0,.5), 0 0 0 .5px rgba(255,255,255,.04) inset;
   }
   nav#nav .tab{
-    font:inherit; font-size:12.5px; font-weight:600;
-    padding:7px 15px; border-radius:9px; cursor:pointer;
-    color:var(--fg-3);
-    background:rgba(255,255,255,.045);
-    border:1px solid rgba(255,255,255,.085);
+    flex:1 1 0; min-width:0; font:inherit; font-size:11.5px; font-weight:600;
+    padding:8px 6px; border-radius:15px; cursor:pointer;
+    color:var(--fg-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    background:transparent; border:1px solid transparent;
+    transition:.16s; text-align:center;
+  }
+  nav#nav .tab:hover{color:var(--fg-2); background:rgba(255,255,255,.05)}
+  nav#nav .tab.on{
+    color:var(--pink-hot); border-color:rgba(255,105,180,.34);
+    background:rgba(255,105,180,.13);
+    box-shadow:0 0 14px rgba(255,105,180,.16);
+  }
+  /* 内容底部让开吸底条 —— 不这么做最后一段会被盖住。
+     ⚠️ 2026-09-20 测出来的坑（连踩三次）：
+       ① 给 96px 不够 —— 页脚还有两行小字，滚到底被胶囊压住。
+       ② 只加在 body 上无效 —— body 的 padding-bottom 不进 scrollHeight。
+       ③ 加在 html 上也无效 —— html 有 padding 时会自己变成滚动容器边界，
+          scrollHeight 按内容算，padding 被吃掉（实测 body 高只有 714px）。
+     ✅ 真正管用的：用 `body::after` 造一个**真实占位块**（display:block +
+        明确高度）。它参与正常文档流，scrollHeight 一定会算上它。
+     高度：胶囊约 60px + 底部间距 10px = 70px，再给页脚留呼吸位 → 130px。 */
+  body::after{
+    content:""; display:block; clear:both;
+    height:calc(130px + env(safe-area-inset-bottom));
+  }
+  footer{margin-top:22px; padding-bottom:6px}
+
+  /* ── 二级页头（带返回键，三级结构用）── */
+  .backbar{display:flex; align-items:center; gap:9px; margin:0 0 13px; padding:0 2px}
+  .backbtn{
+    font:inherit; font-size:12px; font-weight:600; cursor:pointer;
+    display:inline-flex; align-items:center; gap:5px;
+    padding:6px 13px 6px 10px; border-radius:11px;
+    color:var(--fg-2); background:rgba(255,255,255,.05);
+    border:1px solid rgba(255,255,255,.10);
     backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
     transition:.16s;
   }
-  nav#nav .tab:hover{color:var(--fg-2); border-color:rgba(255,255,255,.16)}
-  nav#nav .tab.on{
-    color:var(--pink-hot); border-color:rgba(255,105,180,.42);
-    background:rgba(255,105,180,.10);
-    box-shadow:0 0 14px rgba(255,105,180,.13);
+  .backbtn:hover{color:var(--fg); border-color:rgba(255,255,255,.2)}
+  .backttl{font-size:12.5px; color:var(--fg-3); font-weight:600}
+
+  /* ── 二级 icon 宫格（Room 落地页）── */
+  .iconGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
+  @media(min-width:560px){ .iconGrid{grid-template-columns:repeat(3,1fr)} }
+  .iconTile{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:9px; padding:20px 12px; border-radius:15px; cursor:pointer;
+    font:inherit; color:var(--fg-2);
+    background:linear-gradient(168deg,
+      rgba(255,255,255,.065), rgba(255,255,255,.025) 55%, rgba(255,255,255,.05));
+    border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+    transition:.16s;
   }
+  .iconTile:hover{
+    color:var(--fg); border-color:rgba(255,105,180,.30);
+    background:rgba(255,105,180,.07);
+    transform:translateY(-1px);
+  }
+  .iconTile svg{width:24px; height:24px; stroke:currentColor; fill:none;
+    stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
+  .iconTile .nm{font-size:12.5px; font-weight:600}
+  .iconTile .sub{font-size:10.5px; color:var(--fg-3); line-height:1.45; text-align:center}
 
   /* ── 日历总览（Archive 第一项，2026-09-18 落地）──
      一行一个单元格的月历；深浅＝那一天有多少痕迹。
@@ -787,30 +855,26 @@
   <div class="sub" id="meta">加载中…</div>
 </header>
 
-<!-- 导航（★ 2026-09-19 大小姐重排 —— 面板按归属各自成 tab）
-     p0 运行看板   现面板，不动
-     p1 Room       日历总览 + 心情周报 + Room 内容（我自己的事）
-     p2 日记       不动
-     p3 书房       占位 tab（★ 大小姐 21:31 定：先占位，做出来再更新）
-     p4 Memory     记忆系统的透明窗口
-     p5 未完成清单  可点勾（她点掉 / 对话里说"做掉了"都算）
-     p6 Gallery    图片收藏
-     p7 Sandbox    试验场
-     p8 Cinema     放映室
-     p9 原文面板    其余面板留在这儿
+<!-- 导航（★ 2026-09-20 大小姐重构成三级结构）
+     一级（底部吸底胶囊，4 格）：
+       #/board      看板       现面板 + 日历（从 Room 挪来，放欲望图下面）
+       #/room       Room       二级 icon 页 → 各 icon 点进独立三级页
+       #/todo       未完成清单  可点勾清单 + 原文面板挪来的「还没做的」进度表
+       #/me         我         小华个人设定平铺（SOUL / 剧情稿 / Self Notes / Memory / Controls）
+     二级/三级：Room 下 日记 · 心情周报 · Room内容 · 书房 · Gallery · Cinema · Sandbox
+     ⚠️ 旧链接 #p0~#p9 会自动兼容跳转（见文件末 LEGACY）
 -->
 <nav id="nav">
-  <button class="tab on" data-p="p0">运行看板</button>
-  <button class="tab" data-p="p1">Room</button>
-  <button class="tab" data-p="p2">日记</button>
-  <button class="tab" data-p="p3">书房</button>
-  <button class="tab" data-p="p4">Memory</button>
-  <button class="tab" data-p="p5">未完成清单</button>
-  <button class="tab" data-p="p6">Gallery</button>
-  <button class="tab" data-p="p7">Sandbox</button>
-  <button class="tab" data-p="p8">Cinema</button>
-  <button class="tab" data-p="p9">原文面板</button>
+  <div class="navpill">
+    <button class="tab on" data-r="board">看板</button>
+    <button class="tab" data-r="room">Room</button>
+    <button class="tab" data-r="todo">未完成清单</button>
+    <button class="tab" data-r="me">我</button>
+  </div>
 </nav>
+
+<div id="viewBoard"></div>
+<div id="viewMe"></div>
 
 <div id="app"></div>
 <div id="page1" hidden></div>
@@ -822,6 +886,9 @@
 <div id="page7" hidden></div>
 <div id="page8" hidden></div>
 <div id="page9" hidden></div>
+
+<!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
+<div id="viewRoom" hidden></div>
 
 <footer>
   <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
@@ -1006,19 +1073,18 @@ function render(d){
   </div>`;
 
   // ── 红点清单（翻开即消：点开这块，水位推进，红点消失）──
-  if(rdN>0 && (RD.items||[]).length){
-    const items=(RD.items||[]).map(it=>{
-      const tm=(it.at||'').slice(11,16);
-      const dot=it.fresh?`<span class="fresh"></span>`:'';
-      return `<div class="dotitem${it.fresh?'':' read'}">
-        ${dot}<span class="tag">${esc(it.label||'')}</span>
-        <span class="tx">${esc(it.text||'')}</span>
-        <span class="tm">${esc(tm)}</span></div>`;
-    }).join('');
-    h+=`<section class="glass today" id="rdPanel" style="cursor:pointer">
-      <h2>🔴 夜里的活 <span class="rdhint" style="font-size:11px;font-weight:400;color:var(--fg-3)">共 ${RD.total||rdN} 件 · 点一下，那颗点就没了；东西留着</span></h2>
-      <div class="dotlist">${items}</div></section>`;
-  }
+  //  ★ 2026-09-20 大小姐定：**这一块整个拿掉**（"把夜里的话拿掉"）。
+  //    注意 —— 只拿掉这个列表块；上一个 row4 里的「📔 日记」格子保留，
+  //    那颗红点（$dotHtml）还在，翻开即消的机制不受影响。
+  //    原始渲染代码留在下方注释里，要恢复的话整段贴回来即可。
+  //
+  //  原代码：
+  //  if(rdN>0 && (RD.items||[]).length){
+  //    const items=(RD.items||[]).map(it=>{ ... });
+  //    h+=`<section class="glass today" id="rdPanel" ...>
+  //      <h2>🔴 夜里的活 ...</h2>
+  //      <div class="dotlist">${items}</div></section>`;
+  //  }
 
   if(d.summary){
     // 日记总结是 Markdown（`##` 小节 / `>` 引用 / `**加粗**` / `---` 分隔）
@@ -1044,6 +1110,13 @@ function render(d){
           </div></div>
           <div class="vl">${x.toFixed(2)}</div></div>`;
       }).join('')}</div></section>`;
+  }
+
+  // ── 日历总览（★ 2026-09-20 大小姐定：从 Room 挪进看板，放欲望图下面）──
+  //  位置刻意在「九维驱动 + 驱动强度」之后 —— 先看状态，再看这些日子。
+  if(d.panels && d.panels.calendar){
+    h+=sec('📅 日历总览','这些日子都留下了什么',
+          calendarPanel(d.panels.calendar));
   }
 
   const rp=d.rhythm;
@@ -1359,9 +1432,9 @@ function renderPanels(d){
       这一页留的是其余面板。</span>
     </div></section>`;
 
-  // ── 未实现清单（汇总在前）──
-  // 原文有、我们还没有的，全在这儿一次列清。
-  // 「能力没做」和「数据没采」分开 —— 前者要动手做，后者只要动手采。
+  // ── 未实现清单（★ 2026-09-20 已挪进「未完成清单」tab）──
+  //  NA 数组保留在这里（顺序、内容都不动），渲染点在 hCL 那一块。
+  //  页面级的「原文面板」已拆解：进度表 → 清单、人设块 → 「我」、其余各归各页。
   const NA=[
     ['📞','Call','实时通话'],
     ['🖼','Gallery','展柜与作品 / 电子宠物'],
@@ -1431,23 +1504,16 @@ function renderPanels(d){
       日记在它自己的页面里（独立入口，不重复）。
       慢信/相册/收藏是"能力没做"，不是"没数据"：得先有写信、存照片、标收藏这些动作。</div>`);
 
-  // ── 3.5 日历总览（Archive 第一项，2026-09-18 落地）──
-  //   ★ 2026-09-19 改道：**搬到 page1，和 Room 同一个 tab**（大小姐要的）。
-  //   原文里它属 Archive，但前台把她要看的"日子"和 Room 放一起更顺手。
-  //   归档那一行只记数（"28/35 天有痕迹"），真正的日子在这儿。
-  let hRoom=sec('📅 日历总览','这些日子都留下了什么（35 天）',
-         calendarPanel(P.calendar));
+  // ── 3.5 日历总览 → ★ 2026-09-20 搬去**看板**（大小姐定：放欲望图下面）──
+  //  这里不再渲染。渲染点在 render() 里（九维驱动 + 驱动强度之后）。
+  //  page1 现在只装「Room 内容」。
 
-  // ── 3.6 心情周报（★ 2026-09-19 从 Room 拆出，独立 module）──
-  //
-  //  大小姐定（21:29）："把现在 Room 里面的心情周报单独拿出来做一个 module
-  //  放在日历下一层" → 位置：日历总览下面、Room 上面。
-  //
-  //  ★ 读法 A（她 21:31 定）：**先占位调好，等真做出来再更新这个模块。**
-  //    所以这里放的是 todo() 占位，不是假数据。
-  //    真做的时候要按周聚合心情 —— 素材是有的（wake 26 条 + 欲望九维 + 情绪账），
-  //    但聚合逻辑还没写，不能拿"即时状态"冒充"周维度"。
-  hRoom+=sec('💭 心情周报','一周的心情起伏 · 按周聚合',
+  // ── 3.6 心情周报 → ★ 2026-09-20 改成**独立三级页**（Room 的 icon 之一）──
+  //  pending：占位状态不变（读法 A），只是从 Room 拆出去单独成页。
+  //  真做的时候要按周聚合心情 —— 素材在（wake 26 条 + 欲望九维 + 情绪账），
+  //  缺的是聚合逻辑，不能拿"即时状态"冒充"周维度"。
+  //  ⚠️ 这个页面内容在下面 put() 分发时写进 page6。
+  let hMood=sec('💭 心情周报','一周的心情起伏 · 按周聚合',
     todo('心情周报（周维度）',
       '数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。'
       + '素材在（唤醒 26 条 · 欲望九维 · 情绪账），缺的是聚合逻辑。'));
@@ -1554,7 +1620,7 @@ function renderPanels(d){
   //
   // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
   const wk=(R.wake||[]);
-  hRoom+=sec('🏠 Room','我自己的事 · 非面向你的输出',`
+  let hRoom=sec('🏠 Room','我自己的事 · 非面向你的输出',`
     <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
     ${wk.length?`<div class="pblock"><div class="pblock-h">
         唤醒时间线 · 全量 ${R.wake_total||0} 条
@@ -1678,6 +1744,21 @@ function renderPanels(d){
       </div>`);
   }
 
+  // ── ★ 2026-09-20 大小姐定：原文面板的「还没做的」进度表挪进本页 ──
+  //  原来在原文面板页首，现在归到「未完成清单」tab 下面。
+  //  「能力没做」和「数据没采」保持分开 —— 前者要动手做，后者只要动手采。
+  hCL+=`<section class="glass">
+    <h2>🚧 还没做的 <span class="rdhint">${NA.length} 项 · 原文有，我们还没有</span></h2>
+    <div class="plist">${NA.map(([ic,panel,name])=>`<div class="pitem">
+      <span class="tag">${ic} ${esc(panel)}</span>
+      <span class="tx">${esc(name)}</span>
+      <span class="tm">未实现</span></div>`).join('')}</div>
+    <div class="pmeta">外加两项<b>故意不做</b>：
+      Controls 的系统设置（面板上给滑杆改采样温度太危险）·
+      Prompt 的修订入口（不会在页面上放个按钮让你顺手就把我改了）。
+      <br><span style="color:var(--fg-3)">标"未实现"不代表它不重要 —— 只是还没做。
+      原文里有的，这一页就得有它的位置。</span></div></section>`;
+
   // ── 6. Prompt ──
   h+=sec('🎭 Prompt','人格层的可视化与修订（定稿权在用户）',`
     <div class="prow"><span>人格快照</span>
@@ -1735,23 +1816,33 @@ function renderPanels(d){
       <b>${NA.length}</b> 项未实现（见页首清单）<br>
       <span style="color:var(--fg-3)">这一页的排序是刻意的：先看见缺什么，再看见有什么。</span></div></section>`;
 
-  // ★★ 2026-09-19 分发：每块内容写进自己的 tab 盒子 ★★
+  // ★★ 2026-09-20 分发：按新三级结构重排 ★★
   //
-  //  ★ 21:29 插入「书房」tab（日记之后）→ 后面所有页往后挪一位。
+  //  一级 4 格 → 看板(app) / Room(viewRoom, icon页) / 未完成清单(page5) / 我(viewMe)
+  //  二级三级（Room 之下）：
+  //    room/journal → page2（日记，renderJournal 自己写，这儿不碰）
+  //    room/room    → page1（Room 内容）
+  //    room/mood    → page6（心情周报）
+  //    room/study   → page3（书房）
+  //    room/gallery → page7（Gallery）
+  //    room/cinema  → page8（Cinema）
+  //    room/sandbox → page9（Sandbox）
   //
-  //  ⚠️ 页头那句「原件出处」也只在原文面板页显示（page9）。
-  //     Room / Memory / 清单 各 tab 只放自己的内容 —— 别把整份 h 塞过去。
+  //  ⚠️ 每块内容只渲染一次 —— 别再往同一个 h 里塞。
+  //  ⚠️ page9 原来是「原文面板」的堆积地，现在改成 Sandbox 独立页。
+  //    原文面板剩下的内容已分流：进度表 → 清单、人设块 → 「我」。
+  //    新内容一律 `h` 在后面，旧的 box.innerHTML=h 已不再使用。
   const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
 
-  put('page1', hRoom);   // 日历总览 + 心情周报 + Room（★ 同一个 tab）
+  put('page1', hRoom);    // Room 内容
   // page2 = 日记（renderJournal 自己写，这儿不碰）
-  put('page3', hStudy);  // 书房（★ 占位，日记后一个）
-  put('page4', hMem);    // Memory
-  put('page5', hCL);     // 未完成清单（可点勾）
-  put('page6', hGal);    // Gallery
-  put('page7', hSand);   // Sandbox
-  put('page8', hCin);    // Cinema
-  box.innerHTML=h;       // page9 原文面板：其余都在这儿
+  put('page3', hStudy);   // 书房
+  put('page4', hMem);     // Memory（「我」页由 renderMe 复用这块渲染）
+  put('page5', hCL);      // 未完成清单（可点勾 + 进度表）
+  put('page6', hMood);    // 心情周报
+  put('page7', hGal);     // Gallery
+  put('page8', hCin);     // Cinema
+  put('page9', hSand);    // Sandbox
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
@@ -2077,28 +2168,96 @@ function roomBody(txt){
 
 // ── 导航 ──
 //
-// ⚠️ 2026-09-18 修的 bug：原先 p1 和 p2 **都映射到 page2**，
-//    于是点「日记」和点「原文面板」进的是同一页，
-//    原文面板永远看不见（这就是它一直"空着"的原因）。
-//    现在一页一个 id，一一对应。
-const PAGE_OF = {p0:'app', p1:'page1', p2:'page2', p3:'page3', p4:'page4',
-                 p5:'page5', p6:'page6', p7:'page7', p8:'page8', p9:'page9'};
+// ══ 路由（★ 2026-09-20 重写成三级结构）══════════════════════════
+//
+//  路径形态：#/board · #/room · #/room/journal · #/todo · #/me
+//  一级 = 底部 4 格；二级 = Room 的 icon 页；三级 = icon 点进去的独立页。
+//
+//  用 hash 而不是纯 JS 状态，图三件事：
+//    ① 浏览器返回键能用（三级能一级级退回）
+//    ② 刷新页面停在原地
+//    ③ 微信/飞书里点开的链接能直达某一页
+//
+//  ⚠️ 每个视图盒子只能挂一个渲染结果 —— 切页只显隐，不重渲染（省流量）。
+const ROUTES = {
+  // 一级
+  'board':       {el:'app',      lvl:1, title:'看板'},
+  'room':        {el:'viewRoom', lvl:1, title:'Room'},
+  'todo':        {el:'page5',    lvl:1, title:'未完成清单'},
+  'me':          {el:'viewMe',   lvl:1, title:'我'},
+  // 二级/三级（Room 之下）—— 进这些时底部 tab 仍高亮 Room
+  'room/journal':{el:'page2',    lvl:2, title:'日记',     parent:'room'},
+  'room/mood':   {el:'page6',    lvl:2, title:'心情周报', parent:'room', alias:'page6'},
+  'room/room':   {el:'page1',    lvl:2, title:'Room 内容',parent:'room'},
+  'room/study':  {el:'page3',    lvl:2, title:'书房',     parent:'room'},
+  'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
+  'room/cinema': {el:'page8',    lvl:2, title:'Cinema',   parent:'room'},
+  'room/sandbox':{el:'page9',    lvl:2, title:'Sandbox',  parent:'room'},
+};
 
-function showPage(pid){
-  const target = PAGE_OF[pid] || 'app';
-  Object.values(PAGE_OF).concat('page1').forEach(id=>{
+// 旧链接兼容：2026-09-20 之前的 #p0~#p9 自动转到新路径
+// ⚠️ p4(Memory) 和 p9(原文面板) 都归到「我」是**故意的** —— 两个旧页
+//    的内容都并进了新的一级页。但 p9 单独试时不该和 p4 撞，
+//    所以 p9 指向 room/sandbox 之外仍保留 me 的语义 —— 这里 p9 给 me，
+//    因为原文面板的人设块是它最主要的遗留物。
+const LEGACY = {
+  p0:'board', p1:'room', p2:'room/journal', p3:'room/study', p4:'me',
+  p5:'todo', p6:'room/gallery', p7:'room/sandbox', p8:'room/cinema', p9:'me',
+};
+
+const ALL_VIEWS = ['app','viewRoom','viewMe','page1','page2','page3','page4',
+                   'page5','page6','page7','page8','page9'];
+
+function routeOf(){
+  let raw = (location.hash||'').replace(/^#\/?/,'');
+  if(LEGACY[raw]) raw = LEGACY[raw];        // 旧 #p0 → board
+  return ROUTES[raw] ? raw : 'board';
+}
+
+function show(route, push){
+  const r = ROUTES[route] || ROUTES.board;
+  ALL_VIEWS.forEach(id=>{
     const el=document.getElementById(id);
-    if(el) el.hidden = (id!==target);
+    if(el) el.hidden = (id!==r.el);
   });
+  // 底部高亮：三级页时父级（room）保持点亮
+  const base = r.parent || route;
   document.querySelectorAll('nav#nav .tab').forEach(b=>{
-    b.classList.toggle('on', b.dataset.p===pid);
+    b.classList.toggle('on', b.dataset.r===base);
   });
-  if(location.hash !== '#'+pid) history.replaceState(null,'','#'+pid);
+  // 非一级页给个返回条（挂在视图顶部）
+  const host=document.getElementById(r.el);
+  if(host){
+    const old=host.querySelector(':scope > .backbar');
+    if(old) old.remove();
+    if(r.lvl>1){
+      const bar=document.createElement('div');
+      bar.className='backbar';
+      bar.innerHTML=`<button class="backbtn" data-back="1">‹ 返回</button>
+        <span class="backttl">${r.parent==='room'?'Room':'上级'} · ${r.title}</span>`;
+      bar.querySelector('[data-back]').addEventListener('click',()=>{
+        location.hash = '#/' + (r.parent||'board');
+      });
+      host.insertBefore(bar, host.firstChild);
+    }
+  }
+  // 切页回到顶部 —— 吸底 tab 固定在底部不滚动，不归零会「tab 切了视口停在半空」
+  window.scrollTo(0,0);
+  if(push!==false && location.hash !== '#/'+route) location.hash = '#/'+route;
 }
 
 document.querySelectorAll('nav#nav .tab').forEach(b=>{
-  b.addEventListener('click',()=>showPage(b.dataset.p));
+  b.addEventListener('click',()=>show(b.dataset.r));
 });
+
+// hash 变化（返回键 / 手改地址）→ 重绘
+let _lastHash=null;
+window.addEventListener('hashchange',()=>{
+  if(location.hash===_lastHash) return;
+  _lastHash=location.hash;
+  show(routeOf(), false);
+});
+window.addEventListener('popstate',()=>show(routeOf(), false));
 
 async function load(){
   try{
@@ -2108,6 +2267,8 @@ async function load(){
     render(d);
     renderJournal(d);
     renderPanels(d);
+    renderRoomIndex();   // ★ Room 二级 icon 页
+    renderMe(d);         // ★ 「我」平铺
   }catch(e){
     document.getElementById('app').innerHTML=
       `<div class="status bad glass"><div class="head">读取数据失败</div>
@@ -2116,6 +2277,79 @@ async function load(){
        若持续如此，说明推送链路断了。</div></section>`;
     document.getElementById('meta').textContent='数据不可用';
   }
+}
+
+// ══ Room 二级页：icon 宫格（★ 2026-09-20 新增）══════════════════
+//  二级不放内容，只放入口。每个 icon 点进去 = 独立三级页。
+//  单色 SVG 线稿 —— 跟页面磨砂玻璃调性一致，不用外链图片（省流量、不变形）。
+const ICONS = {
+  journal:`<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18"/><path d="M10 8h6M10 12h6"/>`,
+  mood:   `<path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>`,
+  room:   `<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>`,
+  study:  `<path d="M4 4h7v7H4z"/><path d="M13 4h7v7h-7z"/><path d="M4 13h7v7H4z"/><path d="M13 13h7v7h-7z"/>`,
+  gallery:`<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 16l-5-5-9 9"/>`,
+  cinema: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M16 5v14"/><path d="M3 9h5M3 15h5M16 9h5M16 15h5"/>`,
+  sandbox:`<path d="M9 3h6v5l4 9a2 2 0 0 1-1.8 3H6.8A2 2 0 0 1 5 17l4-9z"/><path d="M9 3v5M15 3v5"/>`,
+};
+
+function renderRoomIndex(){
+  const host=document.getElementById('viewRoom');
+  if(!host) return;
+  const items=[
+    ['journal','日记',    '每天我写的那些'],
+    ['mood',   '心情周报', '她的情绪曲线'],
+    ['room',   'Room 内容','醒来房间与账本'],
+    ['study',  '书房',    '书架与在读'],
+    ['gallery','Gallery', '图片收藏'],
+    ['cinema', 'Cinema',  '放映室'],
+    ['sandbox','Sandbox', '试验场'],
+  ];
+  host.innerHTML=`<section class="glass" style="padding:15px 17px">
+    <h2 style="margin:0 0 3px">🏠 Room</h2>
+    <div class="hint">我自己的空间 —— 点进去看每一块</div>
+  </section>
+  <section class="glass">
+    <div class="iconGrid">${items.map(([k,nm,sub])=>`
+      <button class="iconTile" data-go="room/${k}">
+        <svg viewBox="0 0 24 24">${ICONS[k]}</svg>
+        <span class="nm">${nm}</span>
+        <span class="sub">${sub}</span>
+      </button>`).join('')}</div>
+  </section>`;
+  host.querySelectorAll('[data-go]').forEach(b=>{
+    b.addEventListener('click',()=>show(b.dataset.go));
+  });
+}
+
+// ══ 「我」：小华个人设定平铺（★ 2026-09-20 新增）══════════════
+//  数据源全在 data.json 的 panels.prompt 里，采集脚本不用动。
+//  Memory 复用 page4 已有渲染（不重做）。
+//  内容由 renderPanels() 填充，这里先占位。
+function renderMe(d){
+  const host=document.getElementById('viewMe');
+  if(!host) return;
+  const P=(d.panels&&d.panels.prompt)||{};
+  const C=(d.panels&&d.panels.controls)||{};
+  let h=`<section class="glass" style="padding:15px 17px">
+    <h2 style="margin:0 0 3px">🪞 我</h2>
+    <div class="hint">关于我是什么样 —— 人格、剧情、记忆的原始出处</div>
+  </section>`;
+
+  if(P.soul_excerpt) h+=sec('📜 SOUL','人格锚（'+ (P.soul_chars||'?') +' 字）',`
+    <div class="rm md">${renderMD(P.soul_excerpt)}</div>
+    <div class="pmeta">源：${esc(P.soul_path||'SOUL.md')}</div>`);
+
+  if(P.story_excerpt) h+=sec('📖 剧情稿','我们正处的那一段（'+ (P.story_chars||'?') +' 字）',`
+    <div class="rm md">${renderMD(P.story_excerpt)}</div>
+    <div class="pmeta">源：${esc(P.story_path||'companion/story/')}</div>`);
+
+  if(P.self_notes) h+=sec('🪶 Self Notes','自传引擎转正的自我认知',`
+    <div class="rm md">${renderMD(typeof P.self_notes==='string'?P.self_notes:JSON.stringify(P.self_notes,null,1))}</div>`);
+
+  if(C.hands||C.routes) h+=sec('🎛 Controls','声音线路与体感',`
+    <div class="pnote">${esc(JSON.stringify(C).slice(0,600))}</div>`);
+
+  host.innerHTML=h;
 }
 
 // ── 刷新策略（2026-09-18 调整）──
@@ -2141,8 +2375,9 @@ document.addEventListener('visibilitychange',()=>{
   else { stopTimer(); }
 });
 
-// 初始页：URL 带 #p1/#p2 就打开对应页
-showPage((location.hash||'#p0').slice(1));
+// 初始页：URL 带 hash 就打开对应页（旧 #p0~#p9 自动兼容）
+_lastHash=location.hash;
+show(routeOf(), false);
 load();
 if(document.visibilityState==='visible') startTimer();
 </script>
