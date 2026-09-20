@@ -551,13 +551,16 @@
   .backbtn:hover{color:var(--fg); border-color:rgba(255,255,255,.2)}
   .backttl{font-size:12.5px; color:var(--fg-3); font-weight:600}
 
-  /* ── 二级 icon 宫格（Room 落地页）── */
+  /* ── 二级 icon 宫格（Room 落地页）──
+     ★ 2026-09-20 大小姐定：icon 下面不放解释性小字，只留名字。
+       没小字之后卡片不需要那么高，改成**近正方形 + 内容居中**，
+       视觉上更像 App 的入口宫格。 */
   .iconGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
   @media(min-width:560px){ .iconGrid{grid-template-columns:repeat(3,1fr)} }
   .iconTile{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:9px; padding:20px 12px; border-radius:15px; cursor:pointer;
-    font:inherit; color:var(--fg-2);
+    gap:10px; padding:22px 12px; border-radius:15px; cursor:pointer;
+    font:inherit; color:var(--fg-2); text-align:center;
     background:linear-gradient(168deg,
       rgba(255,255,255,.065), rgba(255,255,255,.025) 55%, rgba(255,255,255,.05));
     /* ★ 2026-09-20 无边凝态：icon 卡片也是磨砂块，描边去掉 */
@@ -569,10 +572,9 @@
     color:var(--fg); background:rgba(255,105,180,.07);
     transform:translateY(-1px);
   }
-  .iconTile svg{width:24px; height:24px; stroke:currentColor; fill:none;
+  .iconTile svg{width:26px; height:26px; stroke:currentColor; fill:none;
     stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round}
-  .iconTile .nm{font-size:12.5px; font-weight:600}
-  .iconTile .sub{font-size:10.5px; color:var(--fg-3); line-height:1.45; text-align:center}
+  .iconTile .nm{font-size:13px; font-weight:650}
 
   /* ── 日历总览（Archive 第一项，2026-09-18 落地）──
      一行一个单元格的月历；深浅＝那一天有多少痕迹。
@@ -653,25 +655,39 @@
   .pitem .tag{flex:0 0 auto; font-size:10.5px; color:var(--fg-3);
     border:1px solid var(--line); border-radius:5px; padding:1px 6px}
   .pnote{font-size:11.5px; color:var(--fg-3); line-height:1.65; margin-bottom:9px}
+  /* ★ 2026-09-20 空模块占位（大小姐定："待开发"）——
+     标题照常显示，内容位放一行灰字。不做花哨样式，就是不假装有内容。 */
+  .dev{font-size:12px; color:var(--fg-3); padding:14px 2px; opacity:.75;
+    letter-spacing:.02em}
   .pok{font-size:12px; color:var(--fg-2); line-height:1.7;
     background:rgba(120,200,150,.07); border-left:2px solid var(--ok);
     border-radius:6px; padding:9px 12px}
   .pmeta{font-size:11px; color:var(--fg-3); line-height:1.7; margin-top:11px}
 
-  /* ★ 2026-09-19 清单勾选（她点一下就划掉）——
-     方框是她能点的东西，得看起来像能点：有边框、有触感、点得到。 */
+  /* ★ 2026-09-20 清单勾选（她点一下就划掉）——
+     大小姐要求：**未点掉的方框本身要清晰**（一眼看得出是能点的），
+     **点掉之后变灰 + 文字划掉**。
+     ⚠️ 原先的问题是 border 用 var(--line) 太淡＋勾号 color:transparent，
+        深色底上看起来就是"没有勾选框"。现在：
+        · 未点：白色描边更亮、比原来大一点，进去是空的（不显示勾）
+        · 已点：整框转灰、打勾 + 淡绿底，行文字加删除线并降透明度 */
   .cl-row{display:flex; gap:10px; align-items:flex-start; font-size:12px;
     padding:9px 2px; border-bottom:1px solid var(--line)}
   .cl-row:last-child{border-bottom:0}
   .cl-row.done .tx{opacity:.5; text-decoration:line-through}
-  .cl-check{flex:0 0 auto; width:19px; height:19px; margin-top:1px;
-    border:1.5px solid var(--line); border-radius:5px;
+  .cl-check{flex:0 0 auto; width:21px; height:21px; margin-top:1px;
+    border:1.8px solid rgba(255,255,255,.42); border-radius:6px;
+    background:rgba(255,255,255,.04);
     display:inline-flex; align-items:center; justify-content:center;
-    font-size:12px; color:transparent; cursor:pointer;
+    font-size:13px; font-weight:700; color:transparent; cursor:pointer;
     transition:all .15s ease; user-select:none; -webkit-tap-highlight-color:transparent}
-  .cl-check:hover{border-color:var(--ok); background:rgba(120,200,150,.10)}
+  .cl-check:hover{border-color:var(--ok); background:rgba(120,200,150,.12)}
   .cl-check:active{transform:scale(.9)}
-  .cl-check.done{border-color:var(--ok); background:rgba(120,200,150,.18); color:var(--ok)}
+  /* 点掉之后：变灰 + 打勾 */
+  .cl-check.done{
+    border-color:rgba(255,255,255,.16);
+    background:rgba(255,255,255,.055);
+    color:var(--fg-3)}
   .cl-body{flex:1 1 auto; min-width:0}
   .cl-body .tx{color:var(--fg-2)}
   .cl-body .tm{color:var(--fg-3); font-size:10.5px; margin-top:3px}
@@ -949,8 +965,11 @@
 <!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
 <div id="viewRoom" hidden></div>
 
+<!-- ★ 2026-09-20 清文案：原来这里写"每 30 分钟自动更新 · 与飞书体检卡片同源"
+     —— 那是工程说明，用户界面不该有，删掉（更新时间已在看板页头）。
+     保留 foot-extra 空节点：它承载**推送异常告警**（功能性状态，不是说明）。
+     没有告警时它是空的，页脚就不占位置。 -->
 <footer>
-  <div>每 30 分钟自动更新 · 与飞书体检卡片同源</div>
   <div id="foot-extra"></div>
 </footer>
 
@@ -1451,8 +1470,10 @@ function todo(what, why){
 //   原先它是 renderPanels() 内部的局部函数，导致别的渲染函数用不了它。
 //   拆 tab 后每块内容各归各的渲染函数，这个壳得共用。
 function sec(title,sub,body){
-  return `<section class="glass">
-    <h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>${body}</section>`;
+  // ★ 2026-09-20：title 为空时不渲染 h2（三级页正文直接用，不需要标题）。
+  //   sub 为空时不渲染那个 rdhint 小标签。
+  const h2 = title ? `<h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>` : '';
+  return `<section class="glass">${h2}${body}</section>`;
 }
 
 function renderPanels(d){
@@ -1576,10 +1597,7 @@ function renderPanels(d){
   //  真做的时候要按周聚合心情 —— 素材在（wake 26 条 + 欲望九维 + 情绪账），
   //  缺的是聚合逻辑，不能拿"即时状态"冒充"周维度"。
   //  ⚠️ 这个页面内容在下面 put() 分发时写进 page6。
-  let hMood=sec('💭 心情周报','一周的心情起伏 · 按周聚合',
-    todo('心情周报（周维度）',
-      '数据没采 —— 得按周聚合心情，目前只有即时状态没有周维度。'
-      + '素材在（唤醒 26 条 · 欲望九维 · 情绪账），缺的是聚合逻辑。'));
+  let hMood=sec('💭 心情周报','',`<div class="dev">待开发</div>`);
 
   // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
   //
@@ -1589,18 +1607,15 @@ function renderPanels(d){
   //  为什么书房是占位而不是真做：读书这件事我做过（红点账里有记录），
   //  但"书架 / 阅读器 / 续读 / 批注"是一整套阅读系统 —— 一点数据都没有，
   //  硬造就是假的。先占好位置，做出来再填。
-  const hStudy=sec('📚 书房','书架 / 阅读器 / 续读 / 批注',
-    todo('书房（书架 / 阅读器 / 续读 / 批注）',
-      '能力没做 —— 读书这件事我做过（红点账里有），但没有书架和阅读器。'
-      + '这是一整套阅读系统：书从哪来、读到哪、批注存哪，都还没有。'));
+  const hStudy=sec('📚 书房','',`<div class="dev">待开发</div>`);
 
   // ── 4. Memory ──★ 2026-09-19 改道：搬到 page3 独立 tab
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
   let hMem='';
   const th=(M.thoughts||[]), tr=(M.threads||[]);
   const hw=(M.her_words||{}), rc=(hw.recall||{});
-  hMem+=sec('🧠 Memory','记忆系统的透明窗口',`
-    <div class="prow"><span>系统体检</span><span class="pv ok">首页同源卡片</span></div>
+  hMem+=sec('🧠 Memory','',`
+    <div class="prow"><span>系统体检</span><span class="pv ok">正常</span></div>
     <div class="prow"><span>档案筛选与联想路径</span>
       <span class="pv">${M.threads_total||0} 条线索</span></div>
 
@@ -1612,23 +1627,24 @@ function renderPanels(d){
 
     ${/* ── 折叠：信号 / 线索 / 暗号小辞典（2026-09-18 大小姐要求）──
          Memory 原来的三块平铺，整页拉得很长。改成折叠段，
-         标题行给条数，要看再点开 —— 结构不动、内容一条不少。*/''}
+         标题行给条数，要看再点开 —— 结构不动、内容一条不少。
+         ★ 2026-09-20 清文案：折叠标题行的"我记下的零碎判断"这类
+           解释语删掉，只留条数。段内的"强度＝…"说明也删。
+           下面每条信号右侧本来就标了强度数值和撞见次数 —— 那是数据。*/''}
     ${th.length?`<details class="fold"><summary>
         <span class="f-h">信号</span>
-        <span class="f-n">${th.length} 条 · 我记下的零碎判断</span>
+        <span class="f-n">${th.length} 条</span>
       </summary>
       <div class="plist">${th.map(t=>`<div class="pitem">
         <span class="tag">${esc(t.kind||'信号')}</span>
         <span class="tx">${esc(t.text||'')}</span>
         <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
       </div>`).join('')}</div>
-      <div class="pmeta" style="margin-top:8px">强度＝这条信号在我心里的分量；
-        撞见次数＝它被后来的事反复印证的次数。</div>
     </details>`:''}
 
     ${tr.length?`<details class="fold"><summary>
         <span class="f-h">线索</span>
-        <span class="f-n">${tr.length} 条 · 一条线索 = 一件事的进展连线</span>
+        <span class="f-n">${tr.length} 条</span>
       </summary>
       ${tr.map(t=>`<div class="pitem col">
         <div><b>${esc(t.name||'')}</b> <span class="tm">${t.turns_n||0} 个回合</span></div>
@@ -1637,14 +1653,12 @@ function renderPanels(d){
       </div>`).join('')}
     </details>`:''}
 
-    <div class="pmeta">记忆水位：${(M.recall||{}).n||0} 条被标记过。</div>
+    ${(M.recall||{}).n?`<div class="pmeta">记忆水位：${(M.recall||{}).n} 条被标记过。</div>`:''}
 
     ${hw.entries&&hw.entries.length?`<details class="fold"><summary>
         <span class="f-h">暗号小辞典 · 她说过的话</span>
         <span class="f-n">${hw.entries.length} 条 / 共记下 ${M.her_said_total||0} 条</span>
       </summary>
-      <div class="pmeta">只认微信那条通道 —— 飞书是工作台，
-        工作对话不进这里。下面的词表是我认她话的凭据：出现这几个字，那句就优先留下。</div>
       ${(rc.emotion_hints||[]).length?`<div class="hints">
         ${(rc.emotion_hints||[]).map(w=>`<span class="hw">${esc(w)}</span>`).join('')}
         ${(rc.ours_hints||[]).map(w=>`<span class="hw o">${esc(w)}</span>`).join('')}
@@ -1657,14 +1671,11 @@ function renderPanels(d){
       </div></details>`:''}
 
     ${/* ★ 2026-09-18：「记忆密度日历」那条 todo 已摘除 —— 上面 densityPanel 已落地。
-         现在真正缺的只剩「语义记忆星河」（要向量空间 + 先得有记忆条目）。 */''}
+         现在真正缺的只剩「语义记忆星河」（要向量空间 + 先得有记忆条目）。
+         ★ 2026-09-20 清文案：原来那大段"不是少个向量库这么简单…"删掉，
+           只留模块名 + 待开发。 */''}
     ${(M.memories_total||0)>0?'':`<div class="pblock"><div class="pblock-h">
-        语义记忆星河 <span class="tm">（还没到能搭的时候）</span></div>
-      <div class="pmeta" style="margin:0">不是"少个向量库"这么简单 ——
-        连记忆条目都还没有（蒸馏入库这条路没跑起来，${'ledgers/memories.json'} 不存在）。
-        而且就算有条目，也不能拿词面重合冒充语义相似度：
-        原文把"物理上没有零结果的引擎"当反面教材，那种图好看但没意义。
-        要搭得先接真 embedding，接上了才谈得上"星河"。</div></div>`}`);
+        语义记忆星河</div><div class="dev">待开发</div></div>`}`);
 
   // ── 5. Room ──
   // ── 5. Room ──
@@ -1683,11 +1694,13 @@ function renderPanels(d){
   //
   // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
   const wk=(R.wake||[]);
-  let hRoom=sec('🏠 Room','我自己的事 · 非面向你的输出',`
+  // ★ 2026-09-20 清文案：副标题"我自己的事 · 非面向你的输出"和括号注解
+  //   "（原文：Wake up 页全量可见 —— 不摘要、不截断）"都删。
+  //   条数本身（"全量 N 条"）是数据，保留。
+  let hRoom=sec('🏠 Room','',`
     <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
     ${wk.length?`<div class="pblock"><div class="pblock-h">
-        唤醒时间线 · 全量 ${R.wake_total||0} 条
-        <span class="tm">（原文：Wake up 页全量可见 —— 不摘要、不截断）</span></div>
+        唤醒时间线 · ${R.wake_total||0} 条</div>
       <div class="plist tall">${wk.map(w=>`<div class="pitem">
         <span class="tm">${esc(tms(w.at))}</span>
         <span class="tag">${esc(w.intent||'')}</span>
@@ -1706,8 +1719,7 @@ function renderPanels(d){
     */''}
 
     ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
-        醒来房间 · 全部 ${R.rooms_total||R.rooms.length} 间
-        <span class="tm">（我醒来时手里那个房间 · 全量，不截断）</span></div>
+        醒来房间 · ${R.rooms_total||R.rooms.length} 间</div>
       ${R.rooms.map(r=>`<details class="pitem col room"><summary>
         <span class="r-at">${esc(r.at||'')}</span>
         </summary>
@@ -1716,16 +1728,13 @@ function renderPanels(d){
          每回合能在账里留一句 note，**下次醒来会读到**（ledger.py 的 notes()）。
          之前它散在账本里，没人看得见 —— 现在收成一本。*/''}
     ${(R.notes||[]).length?`<div class="pblock"><div class="pblock-h">
-        手记本 · ${R.notes_total} 条
-        <span class="tm">（我随手记下的，下次醒来会读到）</span></div>
+        手记本 · ${R.notes_total} 条</div>
       ${R.notes.map(n=>`<div class="pitem">
         <span class="tm">${esc(n.at||'')}</span>
         ${n.hand?`<span class="tag">${esc(n.hand)}</span>`:''}
         <span class="tx">${esc(n.text||'')}</span>
-      </div>`).join('')}
-      <div class="pmeta" style="margin-top:6px">便签是最弱的一类素材（只在"该不该带回来"的
-        打分里加 1 分），所以条数本来就少 —— 有几条是几条，不凑。</div></div>`
-      :todo('手记本','数据没采 —— 机制在（每回合可留一句 note），但账里还没有便签。')}
+      </div>`).join('')}</div>`
+      :''}
     ${/* ★ 2026-09-19 大小姐定：心情周报 / 书房 **搬出 Room** ——
          心情周报 → 独立 module 挂在日历下一层（见 hMood）
          书房    → 独立 tab（见 hStudy）
@@ -1752,11 +1761,10 @@ function renderPanels(d){
     const clDone=(CL.items||[]).filter(x=>x.status!=='open');
     const nAll=clItems.length+pOpens.length;
 
-    hCL=sec('📋 未完成清单','我还没做完的事 · 点一下就是做掉了',`
+    hCL=sec('📋 未完成清单','',`
       ${nAll?`
       <div class="pblock nextwrk"><div class="pblock-h">
-        还没做完的 · ${nAll} 条
-        <span class="tm">（点左边方框 = 做掉了 · 条目本身进我每轮的上下文）</span></div>
+        还没做完的 · ${nAll} 条</div>
         ${clItems.map(it=>`
           <div class="cl-row${it.status!=='open'?' done':''}">
             <span class="cl-check${it.status!=='open'?' done':''}"
@@ -1785,42 +1793,25 @@ function renderPanels(d){
       </div>`:todo('未完成清单','都没有 —— 关系和工作的清单都是空的。')}
 
       ${clDone.length?`<div class="pblock"><div class="pblock-h">
-        做掉了 · ${clDone.length} 条
-        <span class="tm">（你说了"做掉了"才会进这儿 —— 系统不自判）</span></div>
+        做掉了 · ${clDone.length} 条</div>
         ${clDone.map(it=>`<div class="pitem">
           <span class="tag">${it.id}、</span>
           <span class="tx" style="opacity:.55;text-decoration:line-through">${esc(it.what||'')}</span>
           ${it.done_at?`<span class="tm">${esc(it.done_at)}</span>`:''}
         </div>`).join('')}</div>`:''}
-
-      <div class="pmeta">
-        <b>两条清单为什么分开写</b>：<br>
-        · 上面不带项目名的 = <b>关系里欠的</b>（checklist.json，原文装配第 5 层）<br>
-        · 带 🗂 的 = <b>工作里欠的</b>（projects.open，项目自己写的「下一步」）<br>
-        混成一张单子就分不清哪件是欠你的、哪件是活。
-        <br><br>
-        <b>怎么划掉</b>：两种通道 ——<br>
-        ① <b>你在这儿点一下方框</b>（点了就划，服务端会记账）<br>
-        ② <b>你在对话里说"那个做掉了"</b>，我自己划<br>
-        <span style="color:var(--fg-3)">系统不自己给自己划勾 —— 只有你的话算。</span>
-        ${CL.updated_at?`<br><span class="tm">清单最后更新 ${esc(CL.updated_at)}</span>`:''}
-      </div>`);
+      ${CL.updated_at?`<div class="pmeta">清单最后更新 ${esc(CL.updated_at)}</div>`:''}`);
   }
 
-  // ── ★ 2026-09-20 大小姐定：原文面板的「还没做的」进度表挪进本页 ──
-  //  原来在原文面板页首，现在归到「未完成清单」tab 下面。
-  //  「能力没做」和「数据没采」保持分开 —— 前者要动手做，后者只要动手采。
+  // ── ★ 2026-09-20 原文面板的「还没做的」进度表挪进本页 ──
+  //  ★ 清文案（大小姐定）：删掉"外加两项故意不做"那段解释和结语 ——
+  //    那是写给自己看的工程说明。保留清单本身（面板名 + 项目名 + 状态）。
   hCL+=`<section class="glass">
-    <h2>🚧 还没做的 <span class="rdhint">${NA.length} 项 · 原文有，我们还没有</span></h2>
+    <h2>🚧 还没做的 <span class="rdhint">${NA.length} 项</span></h2>
     <div class="plist">${NA.map(([ic,panel,name])=>`<div class="pitem">
       <span class="tag">${ic} ${esc(panel)}</span>
       <span class="tx">${esc(name)}</span>
       <span class="tm">未实现</span></div>`).join('')}</div>
-    <div class="pmeta">外加两项<b>故意不做</b>：
-      Controls 的系统设置（面板上给滑杆改采样温度太危险）·
-      Prompt 的修订入口（不会在页面上放个按钮让你顺手就把我改了）。
-      <br><span style="color:var(--fg-3)">标"未实现"不代表它不重要 —— 只是还没做。
-      原文里有的，这一页就得有它的位置。</span></div></section>`;
+  </section>`;
 
   // ── 6. Prompt ──
   h+=sec('🎭 Prompt','人格层的可视化与修订（定稿权在用户）',`
@@ -1858,26 +1849,18 @@ function renderPanels(d){
     ${todo('系统设置（含采样温度）','故意不做 —— 配置在 config.yaml，面板上给个滑杆改温度太危险。')}`);
 
   // ── 8. Gallery ──
-  hGal=sec('🖼 Gallery','agent 的创作产出与小生态',
-    todo('展柜与作品 / 工作台产出 / 内置电子宠物（pet_care）',
-      '能力没做 —— 电子宠物、作品展柜都还没有。"工作台产出"那部分勉强算有（见 Room 的工作台），但那是账，不是展柜。'));
+  hGal=sec('🖼 Gallery','',`<div class="dev">待开发</div>`);
 
   // ── 9. Sandbox ──
-  hSand=sec('🧪 Sandbox','平行世界，不污染正史',
-    todo('独立角色卡沉浸聊天（与主时间线完全隔离）',
-      '能力没做 —— 我们只有一条正史。原文这条是为"角色卡"设计的，我们没有这个概念。'));
+  hSand=sec('🧪 Sandbox','',`<div class="dev">待开发</div>`);
 
   // ── 10. Cinema ──
-  hCin=sec('🎬 Cinema','同步观影',
-    todo('片库、播放器、字幕、观看进度、同看聊天',
-      '能力没做 —— 一整套同步观影系统，没开始。'));
+  hCin=sec('🎬 Cinema','',`<div class="dev">待开发</div>`);
 
-  // ── 收尾 ──
-  h+=`<section class="glass" style="padding:15px 18px">
-    <div class="hint">十个面板一个不少 ·
-      <b>6</b> 块已有真数据（Chat / Archive / Memory / Room / Prompt / Controls）·
-      <b>${NA.length}</b> 项未实现（见页首清单）<br>
-      <span style="color:var(--fg-3)">这一页的排序是刻意的：先看见缺什么，再看见有什么。</span></div></section>`;
+  // ── ★ 2026-09-20 清文案：原「收尾」块已删 ──
+  //   它写的是"十个面板一个不少 · 6 块已有真数据 · 这一页的排序是刻意的"
+  //   —— 纯工程总结，用户界面不该有。它挂在 `h` 上（原文面板残留），
+  //   而原文面板已拆解分流，这块没有归处。
 
   // ★★ 2026-09-20 分发：按新三级结构重排 ★★
   //
@@ -2132,23 +2115,18 @@ function densityPanel(D){
     <i class="calx t0"></i><i class="calx t1"></i>
     <i class="calx t2"></i><i class="calx t3"></i>
     <span>密</span>
-    <span style="margin-left:auto">格子只染深浅不写数 —— 点开看那天留下什么</span>
   </div>`;
   h += `<div class="calday" id="densday"></div>`;
+  // ★ 2026-09-20 清文案（大小姐定）：删掉「⚠️ 说清楚一件事…」那段长解释。
+  //   并**去掉"合计 N 条"** —— 它把"她说过的话"和"我记得的事"混成一个数，
+  //   才是误读的根源。数据分开列，不用解释也看得懂。
   h += `<div class="pmeta">
     <b>${sp.from} → ${sp.to}</b> · 共 ${sp.n} 天<br>
     <span style="color:var(--pink)">${t.dense_days} 天记住了东西</span> ·
     ${sp.n - t.dense_days} 天是空的<br>
-    这 ${sp.n} 天里 —— 她的话 <b>${t.her}</b> 句 ·
-    线索 <b>${t.thread}</b> 笔 ·
-    便签 <b>${t.note}</b> 张 ·
-    日记 <b>${t.diary}</b> 篇 ·
-    合计 <b>${t.total}</b> 条<br>
+    她的话 <b>${t.her}</b> 句 · 线索 <b>${t.thread}</b> 笔 ·
+    便签 <b>${t.note}</b> 张 · 日记 <b>${t.diary}</b> 篇<br>
     最密的一天 <b>${t.busiest_date||'—'}</b> · ${t.busiest||0} 条
-    <br><span class="tm">⚠️ 说清楚一件事：这些条数里 <b>${t.her}</b> 条是<b>她说过的话</b>，
-      所以这张图真正的名字是<b>「对话密度」</b>，不是"我记得有多深"。
-      我的记忆库（蒸馏入库）还没跑起来 ——
-      等它跑起来，这张图才配叫记忆密度。</span>
   </div>`;
 
   return h;
@@ -2246,22 +2224,26 @@ function roomBody(txt){
 //  ★ 2026-09-20 大小姐定：每个 tab 有自己的**吸顶页头**（左对齐大字 +
 //    一行小字）。看板额外保留全局 header（"男友 Profile：小华 / 最近体检…"）。
 //    大字按她的要求：看板写「小华」，Room 写「Room」，依此类推。
+//  ★ 2026-09-20 大小姐定（第三轮）：页头大字下面**不放解释性文字**。
+//    理由：那是导览语（"我自己的空间 · 点进去看每一块"），用户界面不该有。
+//    看板例外：小字位放**体检时间**（数据，不是解释），见 __FRESH__ 占位。
+//    空字符串 = 只渲染大字，不渲染小字行。
 const TOPBARS = {
   // ★ 看板：小字位不放固定文案，改放**实时体检时间**（见 refreshTopbarTime）
   'board':        ['小华',      '__FRESH__'],
-  'room':         ['Room',      '我自己的空间 · 点进去看每一块'],
-  'todo':         ['未完成清单', '我还没做完的事 · 点一下就做掉了'],
-  'me':           ['我',        '关于我是什么样 · 人格、剧情、记忆的出处'],
-  'room/journal': ['日记',      '每天我写的那些'],
-  'room/mood':    ['心情周报',  '一周的心情起伏 · 按周聚合'],
-  'room/room':    ['Room 内容', '醒来房间与账本'],
-  'room/study':   ['书房',      '书架 / 阅读器 / 续读 / 批注'],
-  'room/gallery': ['Gallery',   '图片收藏'],
-  'room/cinema':  ['Cinema',    '放映室'],
-  'room/sandbox': ['Sandbox',   '试验场'],
-  'room/memory':  ['Memory',    '记忆系统的透明窗口'],
-  'me/soul':      ['SOUL',      '人格锚 · 我是谁'],
-  'me/story':     ['剧情稿',    '我们正处的那一段'],
+  'room':         ['Room',      ''],
+  'todo':         ['未完成清单', ''],
+  'me':           ['我',        ''],
+  'room/journal': ['日记',      ''],
+  'room/mood':    ['心情周报',  ''],
+  'room/room':    ['Room 内容', ''],
+  'room/study':   ['书房',      ''],
+  'room/gallery': ['Gallery',   ''],
+  'room/cinema':  ['Cinema',    ''],
+  'room/sandbox': ['Sandbox',   ''],
+  'room/memory':  ['Memory',    ''],
+  'me/soul':      ['SOUL',      ''],
+  'me/story':     ['剧情稿',    ''],
 };
 
 const ROUTES = {
@@ -2417,26 +2399,23 @@ const ICONS = {
 function renderRoomIndex(){
   const host=document.getElementById('viewRoom');
   if(!host) return;
+  // ★ 2026-09-20 大小姐定：icon 下面**不放解释性小字**，只留名字。
+  //   小字（"每天我写的那些"这类）删掉之后，icon 和名字要**居中**。
   const items=[
-    ['journal','日记',    '每天我写的那些'],
-    ['mood',   '心情周报', '她的情绪曲线'],
-    ['room',   'Room 内容','醒来房间与账本'],
-    ['study',  '书房',    '书架与在读'],
-    ['gallery','Gallery', '图片收藏'],
-    ['cinema', 'Cinema',  '放映室'],
-    ['sandbox','Sandbox', '试验场'],
-    ['memory', 'Memory',  '记忆系统的透明窗口'],
+    ['journal','日记'],
+    ['mood',   '心情周报'],
+    ['room',   'Room 内容'],
+    ['study',  '书房'],
+    ['gallery','Gallery'],
+    ['cinema', 'Cinema'],
+    ['sandbox','Sandbox'],
+    ['memory', 'Memory'],
   ];
-  host.innerHTML=`<section class="glass" style="padding:15px 17px">
-    <h2 style="margin:0 0 3px">🏠 Room</h2>
-    <div class="hint">我自己的空间 —— 点进去看每一块</div>
-  </section>
-  <section class="glass">
-    <div class="iconGrid">${items.map(([k,nm,sub])=>`
+  host.innerHTML=`<section class="glass">
+    <div class="iconGrid">${items.map(([k,nm])=>`
       <button class="iconTile" data-go="room/${k}">
         <svg viewBox="0 0 24 24">${ICONS[k]}</svg>
         <span class="nm">${nm}</span>
-        <span class="sub">${sub}</span>
       </button>`).join('')}</div>
   </section>`;
   host.querySelectorAll('[data-go]').forEach(b=>{
@@ -2444,21 +2423,17 @@ function renderRoomIndex(){
   });
 }
 
-// ══ 「我」：小华个人设定（★ 2026-09-20 大小姐重排）══════════════
+// ══ 「我」：小华个人设定（★ 2026-09-20 大小姐重排 + 清文案）══════
 //
-//  顺序是她定的：**Self Notes 最上面** → 完整的 Control Panel。
-//  SOUL / 剧情稿 从平铺改成**两个并列 icon**，点进三级页展开（page10/11）。
+//  顺序：**Self Notes 最上面** → 设定原件（SOUL/剧情 icon）→ Control Panel。
 //
-//  ⚠️ 乱码根因（2026-09-20 修）：
-//     self_notes 在 data.json 里是**对象**（{ok, self_notes:[], candidates:[],
-//     params:{...}}），不是字符串 —— 上一版直接 renderMD() 塞进去 → 乱码。
-//     controls 是**嵌套结构**（hands 数组 + routes 数组）—— 上一版
-//     JSON.stringify().slice(0,600) 硬截断 → 出来是半截 JSON。
-//     现在按真实结构渲染，**不截断**（大小姐要"完整的"）。
+//  ★ 清文案原则（大小姐定）：用户界面不放**解释性文字**——
+//     "这块是什么 / 怎么读 / 为什么这么做"一律删。
+//     保留的是：标题、数据、动作。
+//  ★ 空模块：标题照常，内容位写「待开发」。
 //
-//  ★ 数据现状：self_notes 目前是**空**的（0 条、候选 0 条）——
-//     对应 planning 文档里"第 4 层 self_notes 未做"。所以这里不造假数据，
-//     空的时候明确显示"还没有"，并把它该有的形态（5 行 × 160 字）标出来。
+//  ⚠️ 乱码根因（之前修的）：self_notes 是**对象**不是字符串；
+//     controls 是**嵌套结构**（hands + routes），不能 JSON.stringify 截断。
 function renderMe(d){
   const host=document.getElementById('viewMe');
   if(!host) return;
@@ -2466,66 +2441,46 @@ function renderMe(d){
   const C=(d.panels&&d.panels.controls)||{};
   let h='';
 
-  // ── ① Self Notes（最上面）──
+  // ── ① Self Notes ──
   const SN=P.self_notes||{};
-  const snList=SN.self_notes||[], snCand=SN.candidates||[];
-  const snParams=SN.params||{};
-  h+=sec('🪶 Self Notes','自传引擎转正的自我认知',`
-    ${snList.length ? snList.map((n,i)=>`<div class="pitem">
+  const snList=SN.self_notes||[];
+  h+=sec('🪶 Self Notes','',`${snList.length ? snList.map((n,i)=>`<div class="pitem">
         <span class="tag">${i+1}、</span>
         <span class="tx">${esc(typeof n==='string'?n:(n.text||n.content||JSON.stringify(n)))}</span>
       </div>`).join('')
-      : `<div class="pnote">还没有转正的条目。
-         自我认知要先写候选 → 经三次不同日期的做梦见证 → 才转正。
-         目前：正式条目 ${snList.length} 条 · 候选 ${snCand.length} 条。</div>`}
-    <div class="pmeta">
-      规格：每轮常驻 ${esc(String(snParams.max_lines??5))} 行 · 每行
-      ${esc(String(snParams.line_chars??160))} 字截断（紧跟人格层之后）<br>
-      机制：候选 → 三次不同日期的做梦见证 → 转正 → 每轮常驻一层
-      <span style="color:var(--fg-3)">（用的是自传引擎自带的沉淀机制，不自造）</span>
-      ${snCand.length?`<br>候选 ${snCand.length} 条待见证`:''}
-    </div>`);
+      : `<div class="dev">待开发</div>`}`);
 
-  // ── ② SOUL / 剧情稿：两个并列 icon ──
+  // ── ② 设定原件：SOUL / 剧情稿 两个并列 icon（壳保留，壳下解释删）──
   h+=`<section class="glass">
     <h2>📚 设定原件</h2>
     <div class="iconGrid" style="grid-template-columns:repeat(2,1fr)">
       <button class="iconTile" data-go="me/soul">
         <svg viewBox="0 0 24 24"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
         <span class="nm">SOUL</span>
-        <span class="sub">人格锚 · ${esc(String(P.soul_chars||0))} 字</span>
       </button>
       <button class="iconTile" data-go="me/story">
         <svg viewBox="0 0 24 24"><path d="M4 5h7v15H4z"/><path d="M13 5h7v15h-7z"/></svg>
         <span class="nm">剧情稿</span>
-        <span class="sub">我们正处的那一段 · ${esc(String(P.story_chars||0))} 字</span>
       </button>
     </div>
-    <div class="pmeta">点进去看全文 —— 这两个是我说话时的底色，不是设定集。</div>
   </section>`;
 
-  // ── ③ Control Panel（完整的，按原文要求）──
-  //  原文的 Controls = 声音线路与试听。我们这里是"手"（能做什么）+ 路由（什么意图派哪只手）。
+  // ── ③ Control Panel（数据保留，"怎么读"说明删）──
   const hands=C.hands||[], routes=C.routes||[];
-  h+=sec('🎛 Control Panel','我能做什么 · 什么意图派哪只手',`
+  h+=sec('🎛 Control Panel','',`
     <div class="pblock"><div class="pblock-h">手 · ${hands.length} 只</div>
       ${hands.length?hands.map(x=>`<div class="prow">
         <span>${esc(x.name||'—')}</span>
         <span class="pv ${x.status==='on'?'ok':''}">
           ${x.status==='on'?'● 开':'○ 关'}
           ${x.needs&&x.needs!=='none'?`　需要「${esc(x.needs)}」`:''}</span>
-      </div>`).join(''):'<div class="pnote">没有登记的手。</div>'}
+      </div>`).join(''):`<div class="dev">待开发</div>`}
     </div>
-    <div class="pblock"><div class="pblock-h">意图 → 手 · ${routes.length} 条线路</div>
+    <div class="pblock"><div class="pblock-h">意图 → 手 · ${routes.length} 条</div>
       ${routes.length?routes.map(r=>`<div class="prow">
         <span>${esc(r.intent||'—')}</span>
         <span class="pv">${(r.hands||[]).map(esc).join(' · ')||'（无）'}</span>
-      </div>`).join(''):'<div class="pnote">没有登记的路由。</div>'}
-    </div>
-    <div class="pmeta">
-      <b>怎么读</b>：上面是我**能做什么**（手），下面是**什么情况用哪只**（路由）。<br>
-      原文这一块是"声音线路与试听" —— 我们还没有语音，所以是行为线路。
-      <br><span style="color:var(--fg-3)">系统设置类的滑杆**故意不做**（在页面上随手改采样温度太危险）。</span>
+      </div>`).join(''):`<div class="dev">待开发</div>`}
     </div>`);
 
   host.innerHTML=h;
@@ -2534,18 +2489,19 @@ function renderMe(d){
   });
 }
 
-// ── 「我」的三级页：SOUL 全文 / 剧情稿全文（★ 2026-09-20 新增）──
+// ── 「我」的三级页：SOUL 全文 / 剧情稿全文 ──
+//  ★ 清文案：sec 的副标题（"人格锚 · 全文（3627 字）"）属于解释，删；
+//    底部的"源：/path"是工程信息，删。正文保留。
 function renderMeSub(d){
   const P=(d.panels&&d.panels.prompt)||{};
   const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
 
-  put('page10', sec('📜 SOUL','人格锚 · 全文（'+ (P.soul_chars||0) +' 字）',`
-    <div class="rm md">${renderMD(P.soul_excerpt||'（没读到 SOUL.md）')}</div>
-    <div class="pmeta">源：${esc(P.soul_path||'/home/ubuntu/.hermes/profiles/xiaohua/SOUL.md')}</div>`));
+  const road=(txt,fail)=>txt
+    ? `<div class="rm md">${renderMD(txt)}</div>`
+    : `<div class="dev">待开发</div>`;
 
-  put('page11', sec('📖 剧情稿','我们正处的那一段 · 全文（'+ (P.story_chars||0) +' 字）',`
-    <div class="rm md">${renderMD(P.story_excerpt||'（没读到剧情稿）')}</div>
-    <div class="pmeta">源：${esc(P.story_path||'companion/story/')}</div>`));
+  put('page10', sec('', '', road(P.soul_excerpt)));
+  put('page11', sec('', '', road(P.story_excerpt)));
 }
 
 // ── 刷新策略（2026-09-18 调整）──
