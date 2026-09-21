@@ -445,6 +445,12 @@
     font-size:11.5px; color:var(--fg-3);
     font-variant-numeric:tabular-nums; text-shadow:0 1px 6px rgba(0,0,0,.6);
   }
+  /* ★ 2026-09-21：这一维**还没有数据**（原文有、本地未接入）。
+     和「值为 0」必须能一眼分开 —— 0 是量出来就是零，这里是量不到。
+     做法：整行压暗 + 数值位显示「—」（见 render 的 noData 分支）。 */
+  .bar-row.nodata .nm,
+  .bar-row.nodata .vl{ opacity:.45; }
+  .bar-row.nodata .bar-track{ background:rgba(255,255,255,.045); }
   .bar-row.top .vl{color:var(--pink); font-weight:650}
 
   /* ── 清单 ── */
@@ -1403,6 +1409,11 @@ function radarSVG(dims,vals){
   const S=330,C=S/2,R=112,n=dims.length;
   const pt=(i,r)=>{const a=-Math.PI/2+i*2*Math.PI/n;
     return [C+Math.cos(a)*r,C+Math.sin(a)*r];};
+  // ★ 2026-09-21：值是 null = **这一维还没有数据**（原文有、本地未接入）。
+  //   它和「值是 0」是两回事 —— 0 要画到圆心，null 该**整格不画**。
+  //   ⛔ 别拿 0 兜底：那会多出一个实实在在的顶点，图就成了假的。
+  const has = i => !(vals[i]===null || vals[i]===undefined);
+  const val = i => Math.max(0,Math.min(1, Number(vals[i])||0));
   let g='';
   // 网格：5 圈（0.2/0.4/0.6/0.8/1.0）—— 照参考图
   for(let ring=1;ring<=5;ring++){
@@ -1413,12 +1424,20 @@ function radarSVG(dims,vals){
   dims.forEach((_,i)=>{const [x,y]=pt(i,R);
     g+=`<line x1="${C}" y1="${C}" x2="${x}" y2="${y}" stroke="rgba(255,255,255,.12)" stroke-width="1"/>`;});
   // 雷达填充/描边：粉 + 适度外发光（照参考图，别做成强霓虹）
-  g+=`<polygon points="${dims.map((_,i)=>pt(i,R*Math.max(0,Math.min(1,vals[i]||0))).join(',')).join(' ')}"
-    fill="rgba(255,159,197,.25)" stroke="#ffa3c8" stroke-width="2"
-    stroke-linejoin="round"
-    style="filter:drop-shadow(0 0 7px rgba(255,159,197,.7))"/>`;
-  dims.forEach((_,i)=>{
-    const [x,y]=pt(i,R*Math.max(0,Math.min(1,vals[i]||0)));
+  // ⚠️ 多边形**只连有数据的顶点** —— 缺一维时不能让它塌到圆心。
+  const known = dims.map((_,i)=>i).filter(has);
+  if(known.length >= 3){
+    g+=`<polygon points="${known.map(i=>pt(i,R*val(i)).join(',')).join(' ')}"
+      fill="rgba(255,159,197,.25)" stroke="#ffa3c8" stroke-width="2"
+      stroke-linejoin="round"
+      style="filter:drop-shadow(0 0 7px rgba(255,159,197,.7))"/>`;
+  }else if(known.length === 2 || known.length === 1){
+    // 顶点不够连成面 → 退成一条线 / 一个点，别画一个假的三角形
+    g+=`<polyline points="${known.map(i=>pt(i,R*val(i)).join(',')).join(' ')}"
+      fill="none" stroke="#ffa3c8" stroke-width="2" stroke-linejoin="round"/>`;
+  }
+  known.forEach(i=>{
+    const [x,y]=pt(i,R*val(i));
     g+=`<circle cx="${x}" cy="${y}" r="3.4" fill="#ff8fb8"
       style="filter:drop-shadow(0 0 6px rgba(255,159,197,.9))"/>`;
   });
@@ -1426,9 +1445,11 @@ function radarSVG(dims,vals){
     const [x,y]=pt(i,R+23);
     const anchor=Math.abs(x-C)<6?'middle':(x>C?'start':'end');
     const dy=y<C-6?-2:(y>C+6?9:4);
+    // ★ 没数据的维：标签后面标「—」而不是 0.00（见上方 has() 的说明）
+    const shown = has(i) ? val(i).toFixed(2) : '—';
     g+=`<text x="${x}" y="${y+dy}" fill="#bdb0b7" font-size="10.5" font-weight="500"
       text-anchor="${anchor}" font-family="inherit"
-      style="text-shadow:0 1px 6px rgba(0,0,0,.9)">${esc(nm)} ${(vals[i]||0).toFixed(2)}</text>`;
+      style="text-shadow:0 1px 6px rgba(0,0,0,.9)">${esc(nm)} ${shown}</text>`;
   });
   return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
 }
