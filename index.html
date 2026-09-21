@@ -1809,7 +1809,20 @@ function renderPanels(d){
       <div class="plist tall">${wk.map(w=>`<div class="pitem">
         <span class="tm">${esc(tms(w.at))}</span>
         <span class="tag">${esc(w.intent||'')}</span>
-        <span class="tx">${w.spoke?`说了：${esc(w.text||'')}`:`<i>没开口（${esc(w.choice||'')}）</i>`}</span>
+        <span class="tx">${
+          /* ★ 2026-09-21：**别再把三态压成两态**。
+             原来只判 `w.spoke`（真值），于是 `spoke=null`（投递未成／未记录）
+             一律渲染成「没开口」—— 面板上又看不出区别了。
+             现在按 `spoke_state` 分五种渲染。 */
+          (()=>{
+            const st = w.spoke_state || (w.spoke ? 'spoke' : 'unrecorded');
+            if (st==='spoke')           return `说了：${esc(w.text||'')}`;
+            if (st==='deliver_failed')  return `<i>说了没送到（${esc((w.spoke_reason||'').slice(0,28))}）</i>`;
+            if (st==='failed')          return `<i>模型调用失败（${esc((w.spoke_reason||'').slice(0,24))}）</i>`;
+            if (st==='silent')          return `<i>没开口（${esc((w.spoke_reason||w.choice||'').slice(0,24))}）</i>`;
+            return `<i>未记录（${esc(w.choice||'')}）</i>`;
+          })()
+        }</span>
         <span class="tm">${w.tokens?w.tokens+' tk':''}</span>
       </div>`).join('')}</div>`:''}
 
@@ -2576,8 +2589,9 @@ function renderMe(d){
     <div class="pblock"><div class="pblock-h">手 · ${hands.length} 只</div>
       ${hands.length?hands.map(x=>`<div class="prow">
         <span>${esc(x.name||'—')}</span>
-        <span class="pv ${x.status==='on'?'ok':''}">
+        <span class="pv ${x.status==='on'?(x.calls?'ok':'warn'):''}">
           ${x.status==='on'?'● 开':'○ 关'}
+          ${x.calls?`　跑过 ${x.calls} 次`:`　<i>零调用</i>`}
           ${x.needs&&x.needs!=='none'?`　需要「${esc(x.needs)}」`:''}</span>
       </div>`).join(''):`<div class="dev">待开发</div>`}
     </div>
