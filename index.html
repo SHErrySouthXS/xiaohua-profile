@@ -253,6 +253,19 @@
   .cell.bad  .v{color:var(--bad)}
   .cell.accent .v{color:var(--pink)}
 
+  /* ── ★ Next Move（大小姐 2026-09-21）──
+     顶部那排补上第 4 格，和下面四格逻辑对齐（手机上一行四格）。
+     ⚠️ 这格主行是**时间**（HH:MM），比别处的主行字小一号 ——
+        那一排是 4 列，字号不压就会换行，对齐就破了。 */
+  .cell.nm .v.nm-time{
+    font-size:13px; font-weight:700; letter-spacing:.02em;
+  }
+  /* 副行 = 句式句：「好奇「xxx」，想去查查」
+     11px 在 390 宽 / 4 列下会折 3 行 —— 折行可以，但不能溢出去。 */
+  .cell.nm .v.sm{ font-size:10.5px; line-height:1.45; }
+  /* 句子的「维」略微提亮，和后面的动作词分开 —— 一眼看出是哪个维在推 */
+  .cell.nm .dim{ color:var(--pink); font-weight:650; }
+
   /* 欲望判定的强度条（照卡片的 ▰▱ 形态） */
   .bar-line{
     margin-top:7px; font-family:ui-monospace,monospace;
@@ -990,6 +1003,14 @@ const READ_ENDPOINT = '';
 //      这个端点只是个便利通道，丢了我会在下次对话里问她。
 const CL_ENDPOINT = '';
 
+// ★ 2026-09-21 Next Move 的**实时**取值端点（只读 GET）。
+//   为什么这块必须实时：见 renderNextMove 上方那段。
+//   留空 = 停在快照值（本地预览就是这个状态，属正常，不是故障）。
+//   ⚠️ 这条是**只读**的 —— 永远不要在这条路上写任何东西。
+//   ⚠️ 收到 CORS：它是给「手机从公网打开这个页面」用的，
+//      所以要么端点带 Access-Control-Allow-Origin，要么走同源反代。
+const NM_ENDPOINT = '';
+
 function esc(s){
   return String(s==null?'':s).replace(/[&<>"']/g, c =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -1119,7 +1140,7 @@ function render(d){
   const heartState=d.bad?'bad':(d.warn?'warn':'ok');
   const v=d.verdict||{};
 
-  h+=`<div class="row3">
+  h+=`<div class="row4">
     <div ${G('cell '+heartState)}><div class="k">心跳状态</div>
       <div class="v">${esc(heartTitle)}</div>
       <div class="v sm">${esc(heartDetail)}</div></div>
@@ -1131,6 +1152,9 @@ function render(d){
       <div class="v">${esc(v.intent_emoji||'')} ${esc(v.intent_human||'—')}</div>
       <div class="v sm"><code>${esc(v.intent_key||'')}</code></div>
       <div class="v sm">${esc((v.outlet||'').replace(/\*\*/g,''))}</div></div>
+    <div ${G('cell nm')} id="nmCell"><div class="k">→ Next Move</div>
+      <div class="v nm-time" id="nmTime">—</div>
+      <div class="v sm" id="nmLine"></div></div>
   </div>`;
 
   const A=d.anchor||{},L=d.ledger||{},J=d.journal||{};
@@ -1183,14 +1207,20 @@ function render(d){
     h+=`<section class="glass"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
     h+=`<section class="glass"><h2>驱动强度</h2><div class="bars">${
       dims.map((n,i)=>{
-        const x=Math.max(0,Math.min(1,vals[i]||0));
+        // ★ 2026-09-21：值是 null = **这一维还没有数据**（原文有、本地未接入），
+        //   和「值是 0」是两回事 —— 0 是「量出来就是零」，null 是「量不到」。
+        //   ⛔ 别拿 0 兜底：那会画出一条实实在在的 0，读的人会当成真数据。
+        const raw = vals[i];
+        const noData = (raw === null || raw === undefined);
+        const x = noData ? 0 : Math.max(0, Math.min(1, Number(raw)||0));
         // data-v 用来标记"有值"——发光只挂在有值的条上（0 值不该发光）
-        const hasV = x > 0.001 ? ' data-v="1"' : '';
-        return `<div class="bar-row${x>=0.8?' top':''}"${hasV}><div class="nm">${esc(n)}</div>
+        const hasV = (!noData && x > 0.001) ? ' data-v="1"' : '';
+        return `<div class="bar-row${(!noData&&x>=0.8)?' top':''}${noData?' nodata':''}"${hasV}>
+          <div class="nm">${esc(n)}</div>
           <div class="bar-track"><div class="bar-inner">
             <div class="bar-fill" style="width:${(x*100).toFixed(1)}%;position:relative"></div>
           </div></div>
-          <div class="vl">${x.toFixed(2)}</div></div>`;
+          <div class="vl">${noData?'—':x.toFixed(2)}</div></div>`;
       }).join('')}</div></section>`;
   }
 
@@ -1309,10 +1339,64 @@ function render(d){
     if(rdCell)  rdCell.addEventListener('click',onRead);
   }
 
+  // ── ★ Next Move（大小姐 2026-09-21）──────────────────────────────
+  //  ① 先用快照里那份把格子填上（保证页面不空）；
+  //  ② 再打实时端点取**此刻**的下一跳，回来就覆盖。
+  //
+  //  ⚠️ 为什么必须实时：采集脚本 30 分钟才跑一次，而唤醒倒计时
+  //     40~90 分钟随机滚一次 —— 快照里的"下一次"到点早可能已经过期，
+  //     拿它当"下一次"就是错的。所以这里是**两级**：快照兜底 + 实时覆盖。
+  //
+  //  ⚠️ 实时端点拿不到（本地预览 / 端点没开）→ 静默停在快照值，
+  //     **不报错、不留占位**。这块不是告警位，缺了不该惊动她。
+  renderNextMove(d.next_move||{});
+  refreshNextMove();
+
   if(stale){
     document.getElementById('foot-extra').innerHTML=
       '<span class="stale">⚠️ 超过 75 分钟未更新，推送链路可能异常</span>';
   }
+}
+
+// 把一条 next_move 渲染进第 4 格。
+// ⚠️ 句式句里的「维」单独包一层 <span class="dim"> 提亮 —— 但**只用已知的
+//    维名列表**去匹配，别用正则瞎切（念头里也可能有逗号/引号）。
+const NM_DIMS = ['好奇','手艺','责任','表达','漫游','依恋','疲劳','压力','性欲'];
+
+function renderNextMove(nm){
+  const t=document.getElementById('nmTime');
+  const l=document.getElementById('nmLine');
+  if(!t||!l) return;
+
+  // 主行 = 时间。追问线/唤醒线给 HH:MM；安静时段/做梦那类没有时间 → 显示「—」
+  const at=(nm.at||'').trim();
+  const left=(nm.in||'').trim();
+  t.textContent = at ? at : (nm.source==='quiet' ? '静默' : '—');
+
+  // 副行 = 句式句。维名提亮（前缀匹配，命中才包 span）
+  let line=(nm.line||'').trim() || '—';
+  let dim='';
+  for(const d of NM_DIMS){
+    if(line.startsWith(d)){ dim=d; break; }
+  }
+  const rest = dim ? line.slice(dim.length) : line;
+  l.innerHTML = (dim?`<span class="dim">${esc(dim)}</span>`:'') + esc(rest);
+
+  // 剩余时间挂进 tip，不占版面（4 列窄，多一行就破对齐）
+  const cell=document.getElementById('nmCell');
+  if(cell) cell.title = left ? `还有 ${left}` : '';
+}
+
+// 打实时端点（本机只读）拿此刻的下一跳。
+// 端点为空 = 没开这条路 → 直接返回，页面停在快照值。
+async function refreshNextMove(){
+  if(typeof NM_ENDPOINT!=='string' || !NM_ENDPOINT) return;
+  try{
+    const r=await fetch(NM_ENDPOINT+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok) return;
+    const j=await r.json();
+    if(j && typeof j==='object') renderNextMove(j);
+  }catch(e){ /* 拿不到就停在快照值，不是告警 */ }
 }
 
 function radarSVG(dims,vals){
