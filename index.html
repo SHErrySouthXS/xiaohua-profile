@@ -1726,72 +1726,74 @@ function renderPanels(d){
   //  page1 现在只装「Room 内容」。
 
   // ── 3.6 感受（Feel/Sense/Grow）→ ★ 2026-09-20 独立三级页（Room 的 icon 之一）──
-  //  ★ 2026-09-22 落地，同日**返工过一次**，经过记在下面：
+  //  ★ 2026-09-22 落地，同日**返工两次**，经过记在下面（别再走回去）：
   //
-  //  ⚠️ 第一版做错了（别再犯）：
-  //     做的是"心情周报"，数据源用 `memories.json` 的 `affect` 字段。
-  //     但 `affect` 是**记忆带的情绪**（召回打分公式 `affectBoost` 的输入，
+  //  ⚠️ 第一版：做"心情周报"，数据源用 `memories.json` 的 `affect` 字段。
+  //     错。`affect` 是**记忆带的情绪**（召回打分 `affectBoost` 的输入，
   //     原文 01:50 / 01:119），**是记忆的属性，不是人的状态**。
-  //     而记忆里讲的多数是**大小姐**的事 —— 所以页面看起来在描述她的情绪。
-  //     ⇒ 大小姐当晚指出："这个不是小华的情绪吗 但感觉好像是在描述我的情绪"。
-  //        一句话点中要害。**名字里都有"情绪"，指的不是一个东西。**
+  //     记忆里讲的多数是**大小姐**的事 —— 所以页面看起来在描述她的情绪。
+  //     ⇒ 大小姐当晚一句点中："这个不是小华的情绪吗 但感觉好像是在描述我的情绪"。
   //
-  //  ★ 现在的口径（原文依据）：
-  //     · `06:14` 「感受账（Feel/Sense/Grow）| agent 自主记录的情绪、感知、成长，
-  //       走私有通道 | **只属于 agent**；入库口有剥离闸，私有内容不进可召回池」
-  //     · `06:15` 「Room 面板的 Mood 周报 / Desire / Feel |
-  //       **用户可见状态投影**，但它是**投影不是控制台**」
-  //     → 数据源＝ ledgers/feel.jsonl（feel.py），三类：情绪 / 感知 / 成长。
+  //  ⚠️ 第二版：自己新建 `ledgers/feel.jsonl`。
+  //     也错 —— **日记本早就是这条通道了**：
+  //       · SOUL.md §三「通道教学」明写「里有三条私有通道…日记本写的就是这三样」
+  //       · `daily_checkup_card.py:97` 已按私有处理：「只报今天有没有写、
+  //         几点了、多长，**不给原文**（私有通道）」
+  //     自造一张表 = 重复造一个更差的（原文 13 的教训：
+  //     「**先盘第三方已有的机制再自造**」）。
   //
-  //  ★ 呈现：这是**私有通道**，所以只出结构（这周写了几条、分几类），
-  //     明细由账里每条自己的 visibility 决定（默认一条都不出）。
+  //  ★ 现在（正确）：数据源＝ `companion/journal/<date>.md`。
+  //     原文依据：
+  //       · `06:14` 「感受账（Feel/Sense/Grow）| agent 自主记录的情绪、感知、成长，
+  //         走私有通道 | **只属于 agent**；入库口有剥离闸，私有内容不进可召回池」
+  //       · `06:15` 「Room 面板的 Mood 周报 / Desire / Feel |
+  //         **用户可见状态投影**，但它是**投影不是控制台**」
+  //     → 三类的划分与"日记本写的就是这三样"是同一件事，不再另立三类。
+  //
+  //  ★ 私有口径：**只出元信息**（写了几篇、哪几天、每篇多长）。
+  //     正文一个字都不出 —— 与 daily_checkup_card 的既有做法一致。
   let hMood='';
   {
     const fp=(d.panels||{}).feel||{};
-    const ks=fp.kinds||[];
+    const es=fp.entries||[];
     let b='';
 
     if(fp.error){
       b=`<div class="dev">这块暂时读不到（${esc(String(fp.error).slice(0,60))}）</div>`;
     } else if(!fp.total_all){
-      // 账已建好、但**还没写过一条** —— 照实说。
-      // ⚠️ 不用「待开发」：那是"功能没做"的意思，这里功能是做了、是空的。
-      //   两者要能一眼分开（同 .bar-row.nodata 那条纪律：
-      //   「0 是量出来就是零，量不到是另一回事」）。
+      // 日记本还是空的 —— 照实说。
+      // ⚠️ 不用「待开发」：那是"功能没做"，这里是功能在做、只是还没写过。
       b=`<div class="dev">还没写下过感受</div>`;
     } else {
       b+=`<div class="mrow"><span class="mk">近一周</span>
         <span class="mv">${esc(fp.week_label||'')}</span>
-        <span class="ms">写下 ${fp.total} 条 · 累计 ${fp.total_all} 条</span></div>`;
+        <span class="ms">写下 ${fp.total} 篇 · 累计 ${fp.total_all} 篇</span></div>`;
 
-      // 三类：情绪 / 感知 / 成长（原文 06:14 逐字）
-      b+=`<div class="bars">${ks.map(k=>{
-        const n=Number(k.n)||0;
-        const total=ks.reduce((s,x)=>s+(Number(x.n)||0),0);
-        const r=total?Math.max(0,Math.min(1,n/total)):0;
-        const hasV=r>0.001?' data-v="1"':'';
-        return `<div class="bar-row${r>=0.8?' top':''}"${hasV}>
-          <div class="nm">${esc(k.name)}</div>
-          <div class="bar-track"><div class="bar-inner">
-            <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
-          </div></div>
-          <div class="vl">${n}</div></div>`;
-      }).join('')}</div>`;
-
-      // 明细：只列**允许被看见**的（默认 0 条）。为 0 就照实说明。
-      if(fp.visible>0){
-        b+=`<div class="msep"></div>`;
-        ks.forEach(k=>{
-          (k.items||[]).forEach(it=>{
-            const at=String(it.at||'').slice(5,10).replace('-','/');
-            b+=`<div class="mnote">${at} · ${esc(k.name)}｜${esc(it.text)}</div>`;
-          });
-        });
-      } else if(fp.total>0){
-        // ⚠️ 前面要有分隔线 —— 否则这行会孤零零浮在空白里（渲染实测抓到的）
-        b+=`<div class="msep"></div>
-          <div class="mnote">明细未公开</div>`;
+      // 逐篇只出「日期 + 字数」—— 正文不出（私有通道）。
+      // 用条形按字数排开，视觉与驱动强度/作息同一套。
+      // ⚠️ 不带 `top` 类（渲染实测发现）：`.bar-row.top` 的粉色强调
+      //    是为「接近满格 = 状态强」设计的，这里条形比的是**字数**，
+      //    "哪个数字大"没有强调意义 —— 加上去只会让读者以为
+      //    被标粉的那天有特殊含义（09/21 恰好 1.0、09/20 是 0.842，纯巧合）。
+      if(es.length){
+        const mx=Math.max(...es.map(e=>Number(e.chars)||0))||1;
+        b+=`<div class="bars">${es.map(e=>{
+          const c=Number(e.chars)||0;
+          const r=Math.max(0,Math.min(1,c/mx));
+          const hasV=r>0.001?' data-v="1"':'';
+          const dt=String(e.date||'');
+          const lab=dt.slice(5).replace('-','/');       // MM/DD
+          return `<div class="bar-row"${hasV}>
+            <div class="nm">${lab}</div>
+            <div class="bar-track"><div class="bar-inner">
+              <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
+            </div></div>
+            <div class="vl">${c}</div></div>`;
+        }).join('')}</div>`;
       }
+
+      b+=`<div class="msep"></div>
+        <div class="mnote">${fp.total} 篇 · 共 ${fp.chars} 字 · 正文未公开</div>`;
     }
 
     hMood=sec('💭 感受','',b);
