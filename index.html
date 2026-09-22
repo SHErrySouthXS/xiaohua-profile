@@ -915,6 +915,12 @@
     background:rgba(0,0,0,.16); border-radius:6px;
     padding:11px 13px; max-height:300px; overflow:auto;
   }
+  /* ★ 2026-09-22：房间正文按需加载的失败/缺失提示。
+     调性跟页面一致（暗、小、不抢眼）；**不清空内容**，只追加一行。 */
+  .rm-miss{
+    margin-top:7px; padding-top:7px; font-size:11px; color:var(--fg-3);
+    border-top:1px dashed rgba(255,255,255,.09);
+  }
   /* ⚠️⚠️ 2026-09-18 大小姐指出：SOUL.md / 剧情.md 展开后的文字
      「会随着我手滑动，没有 fix 边距」。
      根因：这两块是 `<pre class="rm">`，而 `<pre>` 的默认 `white-space:pre`
@@ -2251,7 +2257,8 @@ function renderPanels(d){
 
     ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
         醒来房间 · ${R.rooms_total||R.rooms.length} 间</div>
-      ${R.rooms.map(r=>`<details class="pitem col room"><summary>
+      ${R.rooms.map(r=>`<details class="pitem col room" data-at="${esc(r.at||'')}"
+        data-date="${esc(r.date||'')}" data-more="${r.has_more?1:0}"><summary>
         <span class="r-at">${esc(r.at||'')}</span>
         </summary>
         <div class="rm md">${renderMD(roomBody(r.text||''))}</div></details>`).join('')}</div>`:''}
@@ -2737,6 +2744,77 @@ function roomBody(txt){
   // 去掉首行 "# 醒来房间 <时间>"（时间在标题行已经有了，别重复）
   return String(txt).replace(/^#\s*醒来房间[^\n]*\n+/,'').trim();
 }
+
+// ══ 房间正文按需加载（★ 2026-09-22）════════════════════════════════
+//
+// 背景：房间正文原来是**全量内联**在 data.json 里（300KB，rooms 占 204KB），
+//       每 30 分钟推一次，增长在加速（9/21 一天 74KB）。
+//       同一天已经咬过一次：取 sha 拉 400KB 被连接掐断。
+//
+// 现在：data.json 里每条只留**摘要**（前 150 字），正文拆到
+//       rooms/<日期>.json（一天一个文件），**点开才拉**。
+//
+// 设计约束（别改坏）：
+//   · **首屏零延迟** —— 列表和摘要本来就在 data.json 里，立即渲染，
+//     不放 spinner、不做骨架屏。只有点开单条才发一次请求。
+//   · **同一天只拉一次** —— _roomCache[date] 缓存整份，同一天的多条共用。
+//     （一天可能十几条房间，不去重就是十几次请求。）
+//   · **失败不留白** —— 拉不到就保留摘要 + 一行提示，绝不把内容清空。
+//   · **明细档每次覆盖**（同一天多次采集写同一个文件）→ 不能永久缓存，
+//     但也不能每次都拉。折中：**每个会话缓存一次**（页面刷新即失效），
+//     这对"看几眼"的用法足够。
+const _roomCache = {};        // date → {at: text}
+const _roomPending = {};      // date → Promise（并发去重）
+
+async function loadRoomDetail(date){
+  if(_roomCache[date]) return _roomCache[date];
+  if(_roomPending[date]) return _roomPending[date];
+  _roomPending[date] = (async ()=>{
+    try{
+      const r = await fetch('rooms/'+encodeURIComponent(date)+'.json');
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const d = await r.json();
+      const map = {};
+      (d.rooms||[]).forEach(x=>{ map[x.at] = x.text || ''; });
+      _roomCache[date] = map;
+      return map;
+    }catch(e){
+      throw e;
+    }finally{
+      delete _roomPending[date];
+    }
+  })();
+  return _roomPending[date];
+}
+
+// 点开某条房间 → 若正文没在上面，按需拉一次
+document.addEventListener('toggle', async (ev)=>{
+  const el = ev.target;
+  if(!el || el.tagName !== 'DETAILS' || !el.open) return;
+  if(!el.classList || !el.classList.contains('room')) return;
+  if(el.dataset.more !== '1') return;          // 摘要已是全文，不用拉
+  const at = el.dataset.at, date = el.dataset.date;
+  if(!at || !date) return;
+  if(el.dataset.loaded === '1') return;
+  const host = el.querySelector('.rm');
+  if(!host) return;
+  try{
+    const map = await loadRoomDetail(date);
+    const full = map[at];
+    if(full === undefined){
+      // 明细档里没有这一条 —— **如实说**，不假装是空的
+      host.insertAdjacentHTML('beforeend',
+        `<div class="rm-miss">（这条的正文不在明细档里 · ${esc(date)}）</div>`);
+    }else{
+      host.innerHTML = renderMD(roomBody(full));
+    }
+    el.dataset.loaded = '1';
+  }catch(e){
+    // 失败保留摘要，加一行提示 —— 绝不清空
+    host.insertAdjacentHTML('beforeend',
+      `<div class="rm-miss">正文加载失败（${esc(e.message)}）· 上面是摘要，稍后再试</div>`);
+  }
+}, true);
 
 // ── 导航 ──
 //
