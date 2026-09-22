@@ -508,6 +508,27 @@
     margin-top:4px; font-size:10.5px; color:var(--fg-4);
     font-variant-numeric:tabular-nums;
   }
+  /* ── 情绪关键词胶囊（2026-09-22）──
+     ★ 这是他自己写感受时打的词，是本页的**主体**，给足视觉重量。
+     配色取 --pink 系，不引新色。 */
+  .mtags{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin:2px 0 10px;
+  }
+  .mtag{
+    display:inline-flex; align-items:center; gap:4px;
+    padding:4px 10px; border-radius:999px;
+    font-size:12px; line-height:1.2;
+    color:var(--pink-line);
+    background:var(--pink-fill);
+    border:1px solid var(--pink-line);
+  }
+  .mtag i{
+    font-style:normal; font-size:9.5px;
+    color:var(--fg-4); opacity:.85;
+  }
+  /* 落在条目卡里的胶囊行：与卡内其它行贴紧一点 */
+  .mtags-in{margin:7px 0 0}
 
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
@@ -1796,57 +1817,52 @@ function renderPanels(d){
     } else if(!fp.total_all){
       b=`<div class="dev">还没留下过感受</div>`;
     } else {
+      const many = Number(fp.total) > 1;   // 多条的才需要"汇总 + 明细"两层
       b+=`<div class="mrow"><span class="mk">近一周</span>
         <span class="mv">${esc(fp.week_label||'')}</span>
-        <span class="ms">留下 ${fp.total} 条 · 累计 ${fp.total_all} 条</span></div>`;
+        <span class="ms">${many?`留下 ${fp.total} 条 · 累计 ${fp.total_all} 条`
+                            :`累计 ${fp.total_all} 条`}</span></div>`;
 
-      // ── 情绪读数：valence / arousal（引擎的结构化情绪字段）──
-      // ⚠️ 措辞带**样本数前提**（2026-09-22 渲染实测发现）：
-      //   原来只写「这一周 偏暖 · 有波动」—— 只有 1 条时说"有波动"是**过度解读**。
-      //   一条数据没有"波动"可言，波动是条与条之间的差。
-      //   ⇒ 条目 <2 条时只描述状态，不描述趋势。
-      if(fp.valence_avg!==null && fp.valence_avg!==undefined){
+      // ── 情绪关键词 —— 他自己写感受时打的那几个词 ──
+      // ★ 2026-09-22 大小姐一句点醒：「不应该是情绪的关键词吗」。
+      //   对 —— 关键词是这条通道的**主体**（他自己的话），
+      //   valence/arousal 只是同一份记录的数值伴生项。
+      //   ⚠️ 引擎侧事实：feel 分支**不走 LLM 打标**（对比 hold/grow 会调
+      //      dehydrator.analyze 产出 10~15 个 tags），feel 只塞 `__feel__`。
+      //      ⇒ 这些词**只能是他写的时候自己给的**，引擎不会替他标。
+      //         这正是原文「自主记录」的落地。
+      //
+      // ⚠️ 只有 1 条时**不出**这排胶囊（渲染实测指出的冗余）：
+      //    一条数据下，"近一周汇总"和"那条明细"说的是同一件事，
+      //    同一排词会出现两次。⇒ 只有 ≥2 条才做聚合展示。
+      const tt=fp.top_tags||[];
+      if(tt.length && many){
+        b+=`<div class="mtags">${tt.map(([k,n])=>
+          `<span class="mtag">${esc(k)}${n>1?`<i>${n}</i>`:''}</span>`
+        ).join('')}</div>`;
+      }
+
+      // ── 情绪读数（数值伴生项，轻处理）──
+      // ⚠️ 只有 1 条时不出汇总行 —— 那条明细里已经有一模一样的数值了
+      //    （渲染实测指出的重复）。
+      if(many && fp.valence_avg!==null && fp.valence_avg!==undefined){
         const v=Number(fp.valence_avg), a=fp.arousal_avg;
         const n=Number(fp.total)||0;
-        // 色调映射成词：0 消极 / 0.5 中性 / 1 积极（引擎口径）
         const vw = v>=0.7?'偏暖' : v>=0.55?'温和' : v>=0.45?'平' : v>=0.3?'偏沉' : '沉';
-        // 强度词只在样本够时才用（≥2 条才有"波动"可讲）
-        const aw = (a===null||a===undefined||n<2)?''
+        const aw = (a===null||a===undefined)?''
                  : (a>=0.66?'起伏大' : a>=0.4?'有波动' : '很平');
-        b+=`<div class="bars">
-          <div class="bar-row" data-v="1">
-            <div class="nm">色调</div>
-            <div class="bar-track"><div class="bar-inner">
-              <div class="bar-fill" style="width:${(v*100).toFixed(1)}%;position:relative"></div>
-            </div></div>
-            <div class="vl">${v.toFixed(2)}</div></div>
-          ${(a===null||a===undefined)?'':`<div class="bar-row" data-v="1">
-            <div class="nm">强度</div>
-            <div class="bar-track"><div class="bar-inner">
-              <div class="bar-fill" style="width:${(a*100).toFixed(1)}%;position:relative"></div>
-            </div></div>
-            <div class="vl">${a.toFixed(2)}</div></div>`}
-        </div>
-        <div class="mnote">${vw}${aw?' · '+aw:''}${n<2?'（1 条，仅状态）':''}</div>`;
+        b+=`<div class="mnote">色调 ${v.toFixed(2)} · 强度 ${(a===null||a===undefined)?'—':Number(a).toFixed(2)} → ${vw}${aw?' · '+aw:''}</div>`;
       }
 
-      // ── 情绪关键词（tags 词频）──
-      // ⚠️ 只有 1 条时不出这行：它跟下面条目卡的标签**完全重复**
-      //    （渲染实测发现）。词频统计的价值在"哪几个反复出现"，
-      //    一条数据没有词频可言 ⇒ ≥2 条才出。
-      const tt=fp.top_tags||[];
-      if(tt.length && Number(fp.total)>=2){
-        b+=`<div class="msep"></div>
-          <div class="mrow"><span class="mk">关键词</span>
-          <span class="ms">${tt.map(([k,n])=>`${esc(k)}${n>1?' '+n:''}`).join(' · ')}</span></div>`;
-      }
-
-      // ── 逐条：日期 / 标题 / 关键词 / 关联 ──
+      // ── 逐条：日期 / 标题 / 关键词 / 情绪 / 关联 ──
+      // ⚠️ 冗余规则（渲染实测反复调过，别走回去）：
+      //   · ≥2 条：顶部出**汇总胶囊**（词频），条目卡里就不再重复整排词
+      //   · =1 条：顶部不出汇总，**关键词落在条目卡里**（不然就没地方看了）
       if(es.length){
         b+=`<div class="msep"></div>`;
         es.forEach(e=>{
           const dt=String(e.date||'').slice(5).replace('-','/');
-          const tg=(e.tags||[]).map(x=>esc(x)).join(' · ');
+          const tags=e.tags||[];
           const v=e.valence===null||e.valence===undefined?'':`色调 ${Number(e.valence).toFixed(2)}`;
           const a=e.arousal===null||e.arousal===undefined?'':`强度 ${Number(e.arousal).toFixed(2)}`;
           const meta=[v,a].filter(Boolean).join(' · ');
@@ -1854,10 +1870,13 @@ function renderPanels(d){
           // ⚠️ 不写 `↳` 那种隐晦符号（渲染实测被读成"含义不明"）——
           //    直接标「源记忆」三个字，一眼知道它挂在哪条记忆上。
           const ref=e.ref?`源记忆 ${esc(String(e.ref).slice(0,8))}`:'未挂源记忆';
+          const t=String(e.title||'').trim();
           b+=`<div class="mfeel">
             <div class="mf-top"><span class="mf-d">${dt}</span>
-              <span class="mf-t">${esc(e.title||'')}</span></div>
-            ${tg?`<div class="mf-tag">${tg}</div>`:''}
+              ${t?`<span class="mf-t">${esc(t)}</span>`:''}</div>
+            ${(!many && tags.length)?`<div class="mtags mtags-in">${tags.map(x=>
+              `<span class="mtag">${esc(x)}</span>`).join('')}</div>`:''}
+            ${(many && t && tags.length)?`<div class="mf-tag">${tags.map(x=>esc(x)).join(' · ')}</div>`:''}
             <div class="mf-meta">${meta}${meta&&ref?' · ':''}${ref}</div>
           </div>`;
         });
