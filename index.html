@@ -98,13 +98,28 @@
 
   html,body{height:100%}
   html{
-    /* ⚠️ 2026-09-20 关键修复：overflow-x 从 body 挪到 html。
-       原因：iOS 全屏 PWA（apple-mobile-web-app-capable=yes）下，
-       body 带 overflow 会新建滚动上下文，position:fixed 的底部导航
-       会相对**那个容器**而不是视口定位 —— 表现就是"菜单栏没吸底、
-       要滑到底才看得见"。html 上写不影响 fixed 定位。
-       实测：挪到 html 后各页 scrollWidth 仍等于视口宽，无横向滚动。 */
-    overflow-x:hidden;
+    /* ⚠️⚠️ 2026-09-22 二次修复（真机 iPhone 16 上，大小姐报「菜单栏位置变了、
+       和别的页面不一样，你看 room tab 以及打开周报那个页面」）。
+
+       ★ 上一次（2026-09-20）的结论**是错的**，别再照它做：
+         那次写「body 带 overflow 会新建滚动上下文，fixed 会相对那个容器定位；
+         html 上写不影响 fixed 定位」→ 于是把 overflow-x 挪到了 html。
+         **但 html 上的 overflow 同样会让 html 变成 fixed 的包含块**，
+         iOS Safari 上一样破坏 `position:fixed`。
+         上次之所以"看着好了"，是因为只在一级页上验 —— 一级页内容比屏幕高、
+         页面真的在滚，差异被滚动掩盖；而**内容不足一屏的二级页（感受/心情周报）
+         不滚，漂移当场可见**。这就是"同样是底部导航，周报页跟别的页不一样"的成因。
+
+       ★ 正解：横向裁切改用 `clip`。
+         · `overflow-x:hidden` → 新建滚动上下文 → **破坏 fixed**（上一版踩的坑）
+         · `overflow-x:clip`   → **不新建滚动上下文**、不影响 fixed 定位，
+                                 仍然按需裁掉横向溢出（Safari 16+ 支持）
+         ⚠️ 实测（2026-09-22）：五个路由的 `scrollWidth == clientWidth`、
+            **零超宽元素** —— 横向裁切本来就是防御性遗留，不必再为它牺牲吸底。
+
+       ★ 凡是动这两条的，必须**在内容不足一屏的二级页上验**（感受页就是那个探针），
+         只在一级页验会漏 —— 这是上次漏掉的根本原因。 */
+    overflow-x:clip;
     /* ★ 2026-09-20 大小姐定：锁死下拉回弹。
        iOS 上内容已到顶后继续下拉，整页会跟着走、露出底色 —— 观感像
        "页面离开了屏幕边缘"。关掉纵向 overscroll 的橡皮筋即可：
@@ -140,7 +155,9 @@
     max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
     position:relative; min-height:100%;
-    /* ⚠️ 这里**不能**再写 overflow-x:hidden —— 会把 fixed 搞坏，见 html 那条 */
+    /* ⚠️ 这里**不能**写 overflow（任何轴）—— 会把 fixed 搞坏。
+       横向裁切统一由 html 上的 `overflow-x:clip` 负责（见 html 那条注释，
+       2026-09-22 二次修复：`hidden` 换成了不破坏 fixed 的 `clip`）。 */
     /* ★ 2026-09-20 下拉回弹：body 也关一份（部分 WebView 认 body 不认 html） */
     overscroll-behavior:none;
     overscroll-behavior-y:none;
@@ -529,6 +546,72 @@
   }
   /* 落在条目卡里的胶囊行：与卡内其它行贴紧一点 */
   .mtags-in{margin:7px 0 0}
+
+  /* ══ 感受页：一屏约束 + 走势图（2026-09-22）══════════════════════
+     大小姐要求（逐字）：
+       · 「我的手机是 iphone16 你把心情周报高度做的符合手机一屏高度吧」
+       · 「色调和强度可以做可视化图表 放周报最上面」
+
+     iPhone 16 逻辑分辨率 **393 × 852**（CSS px）。
+     一屏预算（扣掉顶部大标题/返回条 + 底部吸底导航 + 安全区）：
+       852 − 顶部约 150 − 底部约 130 = **约 570px** 是卡片可用的高度。
+     取 --mood-h:568px，并让**条目列表自己滚**（.mfeel-list），
+     这样无论他写了几条，整页高度都不变、永远一屏。
+
+     ⚠️ 用 `dvh` 而非 `vh`：iOS Safari 的地址栏会吃 vh，
+        而 `100dvh` 跟着实际可视高度走。写成
+        min(568px, calc(100dvh - 300px)) —— 小屏机更矮时也不会溢出。 */
+  .mood-card{
+    height:min(568px, calc(100dvh - 300px));
+    display:flex; flex-direction:column;
+    /* 卡片内不加 overflow —— 交给内部的 .mfeel-list 滚 */
+  }
+  .mfeel-list{
+    flex:1 1 auto; min-height:0;          /* min-height:0 是 flex 子项能滚的前提 */
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding-right:2px; margin-top:9px;
+  }
+  /* 列表滚动条：细一点、别抢视线 */
+  .mfeel-list::-webkit-scrollbar{width:3px}
+  .mfeel-list::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.14); border-radius:3px}
+
+  /* ── 走势图 ── */
+  .feelchart{
+    margin:2px 0 10px; padding:10px 8px 8px;
+    border-radius:14px;
+    background:rgba(255,255,255,.028);
+    position:relative;
+  }
+  /* 环境漫射：跟 radar-wrap 同一个做法（让粉光"照亮"面板） */
+  .feelchart::before{
+    content:""; position:absolute; inset:-4% -2%;
+    background:radial-gradient(ellipse 40% 46% at 34% 44%,
+      rgba(255,159,197,.10), transparent 72%);
+    pointer-events:none;
+  }
+  .feelchart .fc-legend{
+    display:flex; gap:12px; align-items:baseline;
+    padding:0 4px 6px; position:relative;
+  }
+  .feelchart .fc-k{
+    font-size:11px; font-weight:600;
+    font-variant-numeric:tabular-nums;
+  }
+  .feelchart .fc-v{color:#ffa3c8}
+  .feelchart .fc-a{color:#aebfff}
+  .feelchart .fc-k b{font-weight:700}
+  .feelchart .fc-when{
+    margin-left:auto; font-size:10px; color:var(--fg-4);
+  }
+  .feelchart .fc-svg{
+    width:100%; height:auto; display:block;
+    overflow:visible; position:relative;
+  }
+  .feelchart .fc-hint{
+    font-size:10.5px; color:var(--fg-4);
+    padding:5px 4px 0; line-height:1.6;
+  }
 
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
@@ -1531,6 +1614,111 @@ function radarSVG(dims,vals){
   return `<div class="radar-wrap"><svg class="radar" viewBox="0 0 ${S} ${S}">${g}</svg></div>`;
 }
 
+// ── 感受走势图（色调 / 强度 双线）── 2026-09-22
+//
+// 大小姐要求：色调和强度做成可视化图表，放在心情周报最上面。
+//
+// ⚠️ 原文依据的边界（先说清楚）：**原文对"周报怎么画"没有规定**。
+//    全库搜「可视化/图表/曲线/折线」只命中一处（`03` Prompt 面板的
+//    「人格层的可视化」），与心情周报无关。Room 只有一句
+//    `03:13`「心情周报、欲望与感受、唤醒时间线…」。
+//    ⇒ 照**本页已有的图表语言**来（不发明新图表）：
+//      · 唯一真图表 = `radarSVG()`（九维驱动）
+//      · 走势先例   = `sparkSVG()`（异常项数）
+//      本函数与两者同源：同一套粉、同一套发光、同为 SVG。
+//
+// ★ 为什么是走势而不是两根均值条：
+//   色调/强度是**两个维度、且随时间变**。均值条看不出"这周怎么走"，
+//   而"周报"的语义就是一段时间的走势。
+//
+// ★ 为什么 y 轴画三条参考线（0 / 0.5 / 1）：
+//   引擎口径 valence「0 消极 / 0.5 中性 / 1 积极」、arousal「0 平静 / 1 激动」，
+//   没有刻度线的曲线**读者无法判断高低**（渲染实测反复提过"缺解释"）。
+//   三条线把"中位"标出来，才不用在图例里写一堆字。
+function feelChart(es, vals, aros){
+  const W=560, H=150, padL=26, padR=8, padT=12, padB=26;
+  const iw=W-padL-padR, ih=H-padT-padB;
+  const n=es.length;
+  const x=i=> n>1 ? padL + iw*(i/(n-1)) : padL + iw/2;
+  const y=v=> padT + ih*(1-Math.max(0,Math.min(1,v)));
+
+  const line=(arr,color,glow,isLast)=>{
+    const pts=arr.map((v,i)=>[x(i),y(v)]);
+    const d=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+    // ⚠️ 最后一个点（最新那条）**放大 + 加光晕** ——
+    //    渲染实测指出："用户分不清哪个点是最近一条"。
+    //    图例写着"最近一条"，图上就该有对应的那个点。
+    const dots=pts.map((p,i)=>{
+      const last = isLast && i===pts.length-1;
+      const r = last?4.2:2.6;
+      return `<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${r}"
+        fill="${color}" stroke="${last?'rgba(255,255,255,.55)':'none'}"
+        stroke-width="${last?1.2:0}"
+        style="filter:drop-shadow(0 0 ${last?9:5}px ${glow})"/>`;
+    }).join('');
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2"
+      stroke-linejoin="round" stroke-linecap="round"
+      style="filter:drop-shadow(0 0 6px ${glow})"/>${dots}`;
+  };
+
+  // 三条参考线：1 / 0.5 / 0
+  const grid=[1,0.5,0].map(v=>{
+    const yy=y(v).toFixed(1);
+    const op = v===0.5 ? '.20' : '.10';
+    return `<line x1="${padL}" y1="${yy}" x2="${W-padR}" y2="${yy}"
+      stroke="rgba(255,255,255,${op})" stroke-width="1"
+      ${v===0.5?'stroke-dasharray="3 4"':''}/>`;
+  }).join('');
+
+  // 刻度字（左侧）
+  const ticks=[[1,'1'],[0.5,'0.5'],[0,'0']].map(([v,t])=>
+    `<text x="${padL-7}" y="${(y(v)+3.5).toFixed(1)}" text-anchor="end"
+      font-size="9" fill="rgba(255,255,255,.42)"
+      font-family="ui-monospace,monospace">${t}</text>`).join('');
+
+  // 日期轴（首 / 末）
+  // ⚠️ 2026-09-22 渲染实测抓到的 bug：两条感受在同一天时，
+  //    首末日期**一模一样**，轴上出现两个相同的 "09/22" ——
+  //    看起来像画错了（而其实是那天只写了两条）。
+  //    修法：首末同日期 → 只出一个，居中。
+  const dFirst=String(es[0].date||'').slice(5).replace('-','/');
+  const dLast =String(es[n-1].date||'').slice(5).replace('-','/');
+  let dl='';
+  if(dFirst===dLast){
+    dl=`<text x="${(padL+ (W-padR))/2}" y="${H-8}" text-anchor="middle"
+      font-size="9" fill="rgba(255,255,255,.42)"
+      font-family="ui-monospace,monospace">${dFirst}</text>`;
+  } else {
+    dl=`<text x="${padL}" y="${H-8}" text-anchor="start" font-size="9"
+        fill="rgba(255,255,255,.42)"
+        font-family="ui-monospace,monospace">${dFirst}</text>`
+      +`<text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="9"
+        fill="rgba(255,255,255,.42)"
+        font-family="ui-monospace,monospace">${dLast}</text>`;
+  }
+
+  // 末点数值（最近一条，最有参考意义）
+  // ⚠️ 标签必须写"最近一条" —— 渲染实测指出的误读：
+  //    读者会以为这两个数是**周均值**（页面上别处确实是均值口径）。
+  //    实际这里标的是**曲线上最后一个点**（最近写的那条）。
+  const lv=vals[vals.length-1], la=aros.length?aros[aros.length-1]:null;
+
+  return `<div class="feelchart">
+    <div class="fc-legend">
+      <span class="fc-k fc-v">色调 <b>${lv.toFixed(2)}</b></span>
+      ${la===null?'':`<span class="fc-k fc-a">强度 <b>${la.toFixed(2)}</b></span>`}
+      <span class="fc-when">最近一条</span>
+    </div>
+    <svg class="fc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+      ${grid}${ticks}
+      ${line(vals,'#ffa3c8','rgba(255,159,197,.55)',true)}
+      ${la===null?'':line(aros,'#aebfff','rgba(174,191,255,.6)',true)}
+      ${dl}
+    </svg>
+    <div class="fc-hint">纵轴 0 → 1：色调 0 沉 / 0.5 平 / 1 暖，强度 0 静 / 1 激动</div>
+  </div>`;
+}
+
 function sparkSVG(hist){
   const W=800,H=42,pad=3;
   const bad=hist.map(x=>x.bad||0);
@@ -1651,11 +1839,14 @@ function todo(what, why){
 // 面板外壳 —— ★ 2026-09-19 从 renderPanels 提成全局。
 //   原先它是 renderPanels() 内部的局部函数，导致别的渲染函数用不了它。
 //   拆 tab 后每块内容各归各的渲染函数，这个壳得共用。
-function sec(title,sub,body){
+function sec(title,sub,body,cls){
   // ★ 2026-09-20：title 为空时不渲染 h2（三级页正文直接用，不需要标题）。
   //   sub 为空时不渲染那个 rdhint 小标签。
+  // ★ 2026-09-22：加第 4 个可选参数 `cls` —— 个别页需要 section 带自己的类
+  //   （感受页的「一屏约束」就是靠 .mood-card 定的高，见 CSS）。
+  //   不传时行为与原来完全一致。
   const h2 = title ? `<h2>${title}${sub?` <span class="rdhint">${sub}</span>`:''}</h2>` : '';
-  return `<section class="glass">${h2}${body}</section>`;
+  return `<section class="glass${cls?' '+cls:''}">${h2}${body}</section>`;
 }
 
 function renderPanels(d){
@@ -1818,6 +2009,28 @@ function renderPanels(d){
       b=`<div class="dev">还没留下过感受</div>`;
     } else {
       const many = Number(fp.total) > 1;   // 多条的才需要"汇总 + 明细"两层
+
+      // ── ★★ 最上面：色调 / 强度 走势（大小姐 2026-09-22 要求）──
+      //
+      //  ⚠️ **原文依据的边界**：原文对"心情周报怎么画"**没有规定**。
+      //     全库搜「可视化/图表/曲线/折线/柱状/条形」只有一处命中
+      //     （`03` Prompt 面板的「人格层的可视化」），与心情周报无关。
+      //     原文对 Room 只有一句：`03:13`「心情周报、欲望与感受、唤醒时间线…」
+      //     → **画法照本页已有的做法来，不发明新图表**：
+      //       · 这套看板唯一的真图表是 `radarSVG()`（九维驱动）
+      //       · 走势线先例是 `sparkSVG()`（异常项数）
+      //       这里「双线走势 + 明确刻度」与两者同源（同一套粉 + 发光 + SVG）。
+      //
+      //  ★ 为什么是走势而不是两根均值条：色调/强度是**两个维度、且随时间变**。
+      //    均值条看不出"这周怎么走"，而"周报"的语义就是一段时间的走势。
+      if(es.length){
+        const vals=es.map(e=>Number(e.valence)).filter(v=>!isNaN(v));
+        const aros=es.map(e=>Number(e.arousal)).filter(v=>!isNaN(v));
+        if(vals.length){
+          b+=feelChart(es, vals, aros);
+        }
+      }
+
       b+=`<div class="mrow"><span class="mk">近一周</span>
         <span class="mv">${esc(fp.week_label||'')}</span>
         <span class="ms">${many?`留下 ${fp.total} 条 · 累计 ${fp.total_all} 条`
@@ -1831,10 +2044,8 @@ function renderPanels(d){
       //      dehydrator.analyze 产出 10~15 个 tags），feel 只塞 `__feel__`。
       //      ⇒ 这些词**只能是他写的时候自己给的**，引擎不会替他标。
       //         这正是原文「自主记录」的落地。
-      //
-      // ⚠️ 只有 1 条时**不出**这排胶囊（渲染实测指出的冗余）：
-      //    一条数据下，"近一周汇总"和"那条明细"说的是同一件事，
-      //    同一排词会出现两次。⇒ 只有 ≥2 条才做聚合展示。
+      // ⚠️ 只有 1 条时不出这排胶囊（渲染实测的冗余）：
+      //    一条数据下"周汇总"和"那条明细"是同一件事，词会出现两次。
       const tt=fp.top_tags||[];
       if(tt.length && many){
         b+=`<div class="mtags">${tt.map(([k,n])=>
@@ -1842,24 +2053,14 @@ function renderPanels(d){
         ).join('')}</div>`;
       }
 
-      // ── 情绪读数（数值伴生项，轻处理）──
-      // ⚠️ 只有 1 条时不出汇总行 —— 那条明细里已经有一模一样的数值了
-      //    （渲染实测指出的重复）。
-      if(many && fp.valence_avg!==null && fp.valence_avg!==undefined){
-        const v=Number(fp.valence_avg), a=fp.arousal_avg;
-        const n=Number(fp.total)||0;
-        const vw = v>=0.7?'偏暖' : v>=0.55?'温和' : v>=0.45?'平' : v>=0.3?'偏沉' : '沉';
-        const aw = (a===null||a===undefined)?''
-                 : (a>=0.66?'起伏大' : a>=0.4?'有波动' : '很平');
-        b+=`<div class="mnote">色调 ${v.toFixed(2)} · 强度 ${(a===null||a===undefined)?'—':Number(a).toFixed(2)} → ${vw}${aw?' · '+aw:''}</div>`;
-      }
-
       // ── 逐条：日期 / 标题 / 关键词 / 情绪 / 关联 ──
       // ⚠️ 冗余规则（渲染实测反复调过，别走回去）：
       //   · ≥2 条：顶部出**汇总胶囊**（词频），条目卡里就不再重复整排词
-      //   · =1 条：顶部不出汇总，**关键词落在条目卡里**（不然就没地方看了）
+      //   · =1 条：顶部不出汇总，**关键词落在条目卡里**（不然没地方看）
       if(es.length){
-        b+=`<div class="msep"></div>`;
+        // ★ 一屏约束（iPhone 16 = 393×852）：条目列表放进**自带滚动的容器**，
+        //   整页高度不随条目数增长。卡片总高由 CSS 的 --mood-h 控。
+        b+=`<div class="mfeel-list">`;
         es.forEach(e=>{
           const dt=String(e.date||'').slice(5).replace('-','/');
           const tags=e.tags||[];
@@ -1880,13 +2081,14 @@ function renderPanels(d){
             <div class="mf-meta">${meta}${meta&&ref?' · ':''}${ref}</div>
           </div>`;
         });
+        b+=`</div>`;
         if(fp.refs<fp.total){
           b+=`<div class="mnote">${fp.refs} / ${fp.total} 条挂了源记忆</div>`;
         }
       }
     }
 
-    hMood=sec('💭 感受','',b);
+    hMood=sec('💭 感受','',b,'mood-card');
   }
 
   // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
