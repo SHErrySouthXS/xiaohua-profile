@@ -453,10 +453,11 @@
   .bar-row.nodata .bar-track{ background:rgba(255,255,255,.045); }
   .bar-row.top .vl{color:var(--pink); font-weight:650}
 
-  /* ── 心情周报（2026-09-22）──
+  /* ── 感受（Feel/Sense/Grow）投影（2026-09-22）──
      ★ 配色全部取现有变量，**不引新色**（--pink 系是大小姐锁死的）。
      ★ 条形沿用 .bar-row / .bar-track / .bar-fill，与驱动强度同一套视觉。
-     说明的方式：点标签展开**他自己的原话**，不写解释性文案。 */
+     ★ 这是**私有通道**的投影：只出结构与计数，明细默认一条不出
+       （由账里每条的 visibility 决定）。 */
   .mrow{
     display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
     margin:2px 0 12px;
@@ -478,44 +479,6 @@
   .msep{
     height:1px; margin:16px 0 12px;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
-  }
-  /* 情绪行：默认只出条形；带原话的可以点开。
-     ★ 2026-09-22 三轮修正（都记着，别再走回去）：
-       ① 原用「?」圆圈 → 实测可点感太弱（灰、小、像装饰）。
-       ② 改成每行挂「原话」胶囊 → **把 52px 标签列挤成上下两行**，杂乱。
-       ③ 加虚线下划线提示 → 渲染实测又被读成"多余的边框/占位辅助线"，
-          与玻璃调性不合。
-       ④ 现在：**只用颜色**做信号 —— 可点的词取 --pink（浅粉），
-          悬停/展开时提到 --pink-hot 并轻微发光。轻，不新增任何装饰元素。 */
-  .moodrow .nm{cursor:default}
-  .moodrow[data-q] .nm{
-    cursor:pointer; color:var(--pink);
-    transition:color .18s ease, text-shadow .18s ease;
-  }
-  .moodrow[data-q]:hover .nm{
-    color:var(--pink-hot);
-    text-shadow:0 0 8px var(--pink-glow);
-  }
-  /* 原话默认折叠 */
-  .mq{display:none}
-  .moodrow.open .mq{
-    display:block; margin:7px 0 12px 62px;
-    font-size:11.5px; line-height:1.85; color:var(--fg-3);
-    border-left:2px solid var(--pink-fill); padding-left:10px;
-    word-break:break-word;
-  }
-  .moodrow.open .nm{color:var(--pink-hot); text-shadow:0 0 8px var(--pink-glow)}
-  /* 总开关胶囊（挂在统计行末尾） */
-  .mbtn{
-    font:inherit; font-size:10px; line-height:1;
-    padding:4px 8px; margin-left:auto; border-radius:7px;
-    color:var(--fg-3); border:1px solid rgba(255,255,255,.20);
-    background:rgba(255,255,255,.04); cursor:pointer;
-    white-space:nowrap;
-  }
-  .mbtn:hover,.mbtn.on{
-    color:var(--pink); border-color:var(--pink-line);
-    background:var(--pink-fill);
   }
 
   /* ── 清单 ── */
@@ -1018,7 +981,7 @@
        #/room       Room       二级 icon 页 → 各 icon 点进独立三级页
        #/todo       未完成清单  可点勾清单 + 原文面板挪来的「还没做的」进度表
        #/me         我         小华个人设定平铺（SOUL / 剧情稿 / Self Notes / Memory / Controls）
-     二级/三级：Room 下 日记 · 心情周报 · Room内容 · 书房 · Gallery · Cinema · Sandbox
+     二级/三级：Room 下 日记 · 感受 · Room内容 · 书房 · Gallery · Cinema · Sandbox
      ⚠️ 旧链接 #p0~#p9 会自动兼容跳转（见文件末 LEGACY）
 -->
 <nav id="nav">
@@ -1702,7 +1665,7 @@ function renderPanels(d){
     //   「记忆密度日历」→ 已做成 Memory 里的密度带 + 网格
     //   注意：**不能连语义记忆星河一起摘** —— 那个是真没有（缺向量空间）。
     ['🧠','Memory','语义记忆星河（要向量空间）'],
-    ['🏠','Room','心情周报'],
+    ['🏠','Room','感受'],
     ['🏠','Room','手记本'],
     ['🏠','Room','书房（书架 / 阅读器 / 续读 / 批注）'],
     ['🎛','Controls','声音线路与试听'],
@@ -1762,64 +1725,76 @@ function renderPanels(d){
   //  这里不再渲染。渲染点在 render() 里（九维驱动 + 驱动强度之后）。
   //  page1 现在只装「Room 内容」。
 
-  // ── 3.6 心情周报 → ★ 2026-09-20 改成**独立三级页**（Room 的 icon 之一）──
-  //  ★ 2026-09-22 落地。口径与原文依据见 collect.py 的 _mood_weekly()。
+  // ── 3.6 感受（Feel/Sense/Grow）→ ★ 2026-09-20 独立三级页（Room 的 icon 之一）──
+  //  ★ 2026-09-22 落地，同日**返工过一次**，经过记在下面：
   //
-  //  原文两条（都很短，但定性）：
-  //    · `03:13` Room 是「agent 的自主生活空间，非面向用户的输出」
-  //      → 对照面是"用户"，不是"他自己"。所以这不是他的日记。
-  //    · `06:15` 「用户可见状态投影，但它是投影不是控制台」
-  //      → 看得到，改不了。落点＝读数。
-  //    · `03:20` 「正式事实以服务端账本为准，各面板是它们的投影」
+  //  ⚠️ 第一版做错了（别再犯）：
+  //     做的是"心情周报"，数据源用 `memories.json` 的 `affect` 字段。
+  //     但 `affect` 是**记忆带的情绪**（召回打分公式 `affectBoost` 的输入，
+  //     原文 01:50 / 01:119），**是记忆的属性，不是人的状态**。
+  //     而记忆里讲的多数是**大小姐**的事 —— 所以页面看起来在描述她的情绪。
+  //     ⇒ 大小姐当晚指出："这个不是小华的情绪吗 但感觉好像是在描述我的情绪"。
+  //        一句话点中要害。**名字里都有"情绪"，指的不是一个东西。**
   //
-  //  ★ 呈现口径（大小姐 2026-09-21）：界面只留「标题 / 数据 / 动作」，
-  //    不加解释性文案。所以「怕」是什么意思 —— **用他自己的原话当注释**，
-  //    点标签展开，不是写一段说明。
+  //  ★ 现在的口径（原文依据）：
+  //     · `06:14` 「感受账（Feel/Sense/Grow）| agent 自主记录的情绪、感知、成长，
+  //       走私有通道 | **只属于 agent**；入库口有剥离闸，私有内容不进可召回池」
+  //     · `06:15` 「Room 面板的 Mood 周报 / Desire / Feel |
+  //       **用户可见状态投影**，但它是**投影不是控制台**」
+  //     → 数据源＝ ledgers/feel.jsonl（feel.py），三类：情绪 / 感知 / 成长。
   //
-  //  ⛔ 不显示实时 drives：它是瞬时值，放进"周"维度就是拿此刻冒充整周。
+  //  ★ 呈现：这是**私有通道**，所以只出结构（这周写了几条、分几类），
+  //     明细由账里每条自己的 visibility 决定（默认一条都不出）。
   let hMood='';
   {
-    const mw=(d.panels||{}).mood_weekly||{};
-    const gs=mw.groups||[];
+    const fp=(d.panels||{}).feel||{};
+    const ks=fp.kinds||[];
     let b='';
 
-    if(mw.error){
-      b=`<div class="dev">这块暂时读不到（${esc(String(mw.error).slice(0,60))}）</div>`;
-    } else if(mw.empty||!gs.length){
-      // 空周照实为空 —— 不补零、不插值、不假装有
-      b=`<div class="dev">这一周没有留下的情绪痕迹</div>`;
+    if(fp.error){
+      b=`<div class="dev">这块暂时读不到（${esc(String(fp.error).slice(0,60))}）</div>`;
+    } else if(!fp.total_all){
+      // 账已建好、但**还没写过一条** —— 照实说。
+      // ⚠️ 不用「待开发」：那是"功能没做"的意思，这里功能是做了、是空的。
+      //   两者要能一眼分开（同 .bar-row.nodata 那条纪律：
+      //   「0 是量出来就是零，量不到是另一回事」）。
+      b=`<div class="dev">还没写下过感受</div>`;
     } else {
-      // ── 情绪谱（主干）── 沿用 .bar-row，与驱动强度/作息同一套视觉
-      b+=`<div class="mrow"><span class="mk">这一周</span>
-        <span class="mv">${esc(mw.week_label||'')}</span>
-        <span class="ms">情绪痕迹 ${mw.marked} 条 · 峰值 ${Number(mw.peak_intensity||0).toFixed(2)}</span>
-        ${gs.some(g=>(g.quotes||[]).length)?'<button class="mbtn" data-mall>看原话</button>':''}</div>`;
-      b+=`<div class="bars">${gs.map(g=>{
-        const r=Math.max(0,Math.min(1,Number(g.ratio)||0));
+      b+=`<div class="mrow"><span class="mk">近一周</span>
+        <span class="mv">${esc(fp.week_label||'')}</span>
+        <span class="ms">写下 ${fp.total} 条 · 累计 ${fp.total_all} 条</span></div>`;
+
+      // 三类：情绪 / 感知 / 成长（原文 06:14 逐字）
+      b+=`<div class="bars">${ks.map(k=>{
+        const n=Number(k.n)||0;
+        const total=ks.reduce((s,x)=>s+(Number(x.n)||0),0);
+        const r=total?Math.max(0,Math.min(1,n/total)):0;
         const hasV=r>0.001?' data-v="1"':'';
-        const hasQ=(g.quotes||[]).length;
-        return `<div class="moodrow"${hasQ?' data-q="1"':''}>
-          <div class="bar-row${r>=0.8?' top':''}"${hasV}>
-            <div class="nm">${esc(g.name)}</div>
-            <div class="bar-track"><div class="bar-inner">
-              <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
-            </div></div>
-            <div class="vl">${g.n}</div>
-          </div>
-          ${hasQ?`<div class="mq">${(g.quotes||[]).map(q=>`「${esc(q)}」`).join('<br>')}</div>`:''}
-        </div>`;
+        return `<div class="bar-row${r>=0.8?' top':''}"${hasV}>
+          <div class="nm">${esc(k.name)}</div>
+          <div class="bar-track"><div class="bar-inner">
+            <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
+          </div></div>
+          <div class="vl">${n}</div></div>`;
       }).join('')}</div>`;
 
-      // ── 佐证：唤醒行为（行为量，**不是心情** —— 并排，不合成）──
-      const it=Object.entries(mw.intent||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ');
-      b+=`<div class="msep"></div>
-        <div class="mrow"><span class="mk">同一周</span>
-        <span class="mv">醒 ${mw.wakes||0} 次</span>
-        <span class="ms">说了 ${mw.spoke||0} 次${mw.unsent?` · 未送出 ${mw.unsent} 次`:''}</span></div>
-        ${it?`<div class="mnote">${it}</div>`:''}`;
+      // 明细：只列**允许被看见**的（默认 0 条）。为 0 就照实说明。
+      if(fp.visible>0){
+        b+=`<div class="msep"></div>`;
+        ks.forEach(k=>{
+          (k.items||[]).forEach(it=>{
+            const at=String(it.at||'').slice(5,10).replace('-','/');
+            b+=`<div class="mnote">${at} · ${esc(k.name)}｜${esc(it.text)}</div>`;
+          });
+        });
+      } else if(fp.total>0){
+        // ⚠️ 前面要有分隔线 —— 否则这行会孤零零浮在空白里（渲染实测抓到的）
+        b+=`<div class="msep"></div>
+          <div class="mnote">明细未公开</div>`;
+      }
     }
 
-    hMood=sec('💭 心情周报','',b);
+    hMood=sec('💭 感受','',b);
   }
 
   // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
@@ -2121,14 +2096,13 @@ function renderPanels(d){
   put('page3', hStudy);   // 书房
   put('page4', hMem);     // Memory（「我」页由 renderMe 复用这块渲染）
   put('page5', hCL);      // 未完成清单（可点勾 + 进度表）
-  put('page6', hMood);    // 心情周报
+  put('page6', hMood);    // 感受（Feel/Sense/Grow）
   put('page7', hGal);     // Gallery
   put('page8', hCin);     // Cinema
   put('page9', hSand);    // Sandbox
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
-  bindMoodQuotes();       // 心情周报：点情绪行展开原话
 }
 
 
@@ -2140,42 +2114,6 @@ function renderPanels(d){
 //  ⚠️ 这个前端**不改服务端账本** —— 看板是投影。
 //     点击只是**本地视觉** + 给后端发一条"她要划掉第 N 条"的信号。
 //     真正的划掉由服务端记账（她的话是权威，前端不是）。
-function bindMoodQuotes(){
-  // 心情周报（page6）：点情绪词展开**他自己的原话**。
-  // ★ 纯本地视觉，不碰任何账本 —— 看板是投影（原文 §3 设计原则）。
-  //   折叠默认收起：一个词单独摆着没人懂，但它对应的原话一展开就懂了 ——
-  //   这是"改呈现"，不是"加说明"（大小姐 2026-09-21 定）。
-  //
-  // ★ 两轮修正（2026-09-22 实测）：
-  //   ①「?」圆圈 → 可点感太弱；
-  //   ② 每行挂「原话」胶囊 → 把 52px 标签列挤成两行，杂乱。
-  //   现在：点词本身单开；末尾「看原话」总开关全开/全收。
-  const page=document.getElementById('page6');
-  if(!page) return;
-  const rows=[...page.querySelectorAll('.moodrow[data-q]')];
-  rows.forEach(row=>{
-    const nm=row.querySelector('.nm');
-    if(nm) nm.addEventListener('click',(e)=>{
-      e.stopPropagation();
-      row.classList.toggle('open');
-      syncAll();
-    });
-  });
-  const all=page.querySelector('[data-mall]');
-  function syncAll(){
-    if(!all) return;
-    const on=rows.length>0 && rows.every(r=>r.classList.contains('open'));
-    all.classList.toggle('on',on);
-    all.textContent=on?'收起':'看原话';
-  }
-  if(all) all.addEventListener('click',()=>{
-    const on=rows.length>0 && rows.every(r=>r.classList.contains('open'));
-    rows.forEach(r=>r.classList.toggle('open',!on));
-    syncAll();
-  });
-  syncAll();
-}
-
 function bindChecklistToggle(){
   document.querySelectorAll('#page4 .cl-check').forEach(el=>{
     el.addEventListener('click', async ()=>{
@@ -2508,7 +2446,7 @@ const TOPBARS = {
   'todo':         ['未完成清单', ''],
   'me':           ['我',        ''],
   'room/journal': ['日记',      ''],
-  'room/mood':    ['心情周报',  ''],
+  'room/mood':    ['感受',  ''],
   'room/room':    ['Room 内容', ''],
   'room/study':   ['书房',      ''],
   'room/gallery': ['Gallery',   ''],
@@ -2527,7 +2465,7 @@ const ROUTES = {
   'me':          {el:'viewMe',   lvl:1, title:'我'},
   // 二级/三级（Room 之下）—— 进这些时底部 tab 仍高亮 Room
   'room/journal':{el:'page2',    lvl:2, title:'日记',     parent:'room'},
-  'room/mood':   {el:'page6',    lvl:2, title:'心情周报', parent:'room', alias:'page6'},
+  'room/mood':   {el:'page6',    lvl:2, title:'感受', parent:'room', alias:'page6'},
   'room/room':   {el:'page1',    lvl:2, title:'Room 内容',parent:'room'},
   'room/study':  {el:'page3',    lvl:2, title:'书房',     parent:'room'},
   'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
@@ -2676,7 +2614,7 @@ function renderRoomIndex(){
   //   小字（"每天我写的那些"这类）删掉之后，icon 和名字要**居中**。
   const items=[
     ['journal','日记'],
-    ['mood',   '心情周报'],
+    ['mood',   '感受'],
     ['room',   'Room 内容'],
     ['study',  '书房'],
     ['gallery','Gallery'],
