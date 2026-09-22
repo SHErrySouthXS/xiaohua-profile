@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>小华看板 · 真机自检</title>
+<style>
+  html{overflow-x:clip; overscroll-behavior:none}
+  body{
+    margin:0; background:#14121c; color:#e8e5f0;
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",system-ui,sans-serif;
+    padding:16px 14px calc(150px + env(safe-area-inset-bottom));
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:20px; margin:0 0 4px}
+  .sub{font-size:12px; color:#8b8699; margin-bottom:16px}
+  .card{
+    background:rgba(255,255,255,.05); border-radius:14px;
+    padding:14px; margin-bottom:12px;
+  }
+  .row{display:flex; justify-content:space-between; align-items:baseline;
+       padding:7px 0; border-bottom:1px solid rgba(255,255,255,.07); font-size:13px}
+  .row:last-child{border-bottom:none}
+  .k{color:#8b8699}
+  .v{font-variant-numeric:tabular-nums; font-weight:600}
+  .ok{color:#5ddba0} .bad{color:#ff7b8a}
+  .note{font-size:11.5px; color:#8b8699; line-height:1.75; margin-top:9px}
+  .big{font-size:15px; font-weight:700; text-align:center; padding:12px;
+       border-radius:12px; margin-bottom:12px}
+  .big.ok{background:rgba(93,219,160,.13); color:#5ddba0}
+  .big.bad{background:rgba(255,123,138,.13); color:#ff7b8a}
+  .nav{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    padding:0 12px calc(10px + env(safe-area-inset-bottom));
+  }
+  .pill{
+    display:flex; gap:5px; padding:7px; border-radius:20px;
+    background:linear-gradient(168deg,rgba(38,34,52,.92),rgba(26,23,38,.95));
+    backdrop-filter:blur(20px);
+  }
+  .tab{flex:1; text-align:center; font-size:11.5px; font-weight:600;
+       padding:8px 6px; border-radius:15px; color:#8b8699}
+  .tab.on{color:#ff69b4; background:rgba(255,105,180,.13);
+          border:1px solid rgba(255,105,180,.34)}
+  /* 故意做一个超宽元素，验证横向裁切还在生效 */
+  .wide{width:2000px; height:1px; position:absolute; left:0; top:0}
+</style>
+</head>
+<body>
+
+<h1>真机自检</h1>
+<div class="sub" id="env">读取环境…</div>
+
+<div class="big" id="verdict">检测中…</div>
+
+<div class="card">
+  <div class="row"><span class="k">视口 innerHeight</span><span class="v" id="ih">—</span></div>
+  <div class="row"><span class="k">文档 scrollHeight</span><span class="v" id="sh">—</span></div>
+  <div class="row"><span class="k">页面是否在滚动位</span><span class="v" id="sy">—</span></div>
+  <div class="row"><span class="k">导航栏 top（应 ≈ 视口高 − 58）</span><span class="v" id="nt">—</span></div>
+  <div class="row"><span class="k">导航栏 bottom（应 = 视口高）</span><span class="v" id="nb">—</span></div>
+  <div class="row"><span class="k">横向裁切生效</span><span class="v" id="ov">—</span></div>
+  <div class="note">
+    <b>怎么读：</b>下面那条胶囊导航就是看板里同款。<br>
+    1）<b>不要滚动</b> → 记下「导航栏 bottom」的数。<br>
+    2）<b>往上滑到底</b> → 看数字有没有变、胶囊有没有跟着动。<br>
+    数字不变、胶囊不动 = 吸底正常。<br>
+    数字变了或胶囊跟着走 = 没吸底（截图发我）。
+  </div>
+</div>
+
+<div class="card">
+  <div class="row"><span class="k">overflow-x 支持 clip</span><span class="v" id="clip">—</span></div>
+  <div class="row"><span class="k">实际生效值</span><span class="v" id="ox">—</span></div>
+  <div class="note">clip 不支持会回退成 visible，横向可能能拖动。</div>
+</div>
+
+<div class="card">
+  <div class="row"><span class="k">屏幕 CSS 宽度</span><span class="v" id="sw">—</span></div>
+  <div class="row"><span class="k">设备像素比 DPR</span><span class="v" id="dpr">—</span></div>
+  <div class="row"><span class="k">安全区底部</span><span class="v" id="sab">—</span></div>
+</div>
+
+<nav class="nav"><div class="pill">
+  <div class="tab">看板</div><div class="tab on">Room</div>
+  <div class="tab">未完成清单</div><div class="tab">我</div>
+</div></nav>
+
+<script>
+function probe(tag){
+  const nav=document.querySelector('nav');
+  const de=document.documentElement;
+  const rn=nav.getBoundingClientRect();
+  const ih=window.innerHeight;
+  const nb=Math.round(rn.bottom);
+  const nt=Math.round(rn.top);
+  const dh=de.scrollHeight;
+  const sy=Math.round(window.scrollY);
+  // ★ 横向是否被裁住 —— 判据说明（2026-09-22 实测 + 规范核对，别再写错）
+  //
+  //   ⛔ 不能用 `scrollWidth > clientWidth`：`overflow-x:clip` **不改布局**，
+  //      scrollWidth 照样是 3000（它裁的是绘制）。实测确认。
+  //   ⛔ 也不能用程序化 `scrollTo(9999)`：那是**脚本滚动**，
+  //      桌面 Chromium 在 clip 下照样能滚（规范说 clip 应禁止一切滚动，
+  //      iOS Safari 遵守、桌面实现有差异）→ 在桌面测会得出错误结论。
+  //
+  //   ✅ 真正要验的是**吸底有没有被破坏** —— 它跟横向裁切是同一件事的两面：
+  //      规范（CSS Overflow 3）：`clip` 是 non-scrollable 值，
+  //      **不建立滚动容器**；而 `hidden` 会。
+  //      只有祖先成了滚动容器，`position:fixed` 才会脱离 viewport。
+  //      → 所以只要 nav 的 bottom 贴着视口底，就说明 fixed 没被破坏。
+  const nearBottom=Math.abs(nb-ih)<=2;
+  // over 仅作参考：用 CSS 计算值判断裁切到底有没有被浏览器认下来
+  const over = getComputedStyle(de).overflowX === 'visible';
+  return {tag,ih,nt,nb,dh,sy,over,nearBottom,
+          ovx:getComputedStyle(de).overflowX,
+          ok: nearBottom && !over};
+}
+const env=document.getElementById('env');
+const ua=navigator.userAgent;
+env.textContent = (ua.includes('iPhone')?'iPhone':'非 iPhone')
+  + ' · ' + (navigator.standalone?'已加到主屏(PWA)':'浏览器标签页');
+
+const de=document.documentElement;
+document.getElementById('clip').textContent =
+  CSS.supports('overflow-x','clip') ? '支持' : '不支持';
+document.getElementById('clip').className='v '+(CSS.supports('overflow-x','clip')?'ok':'bad');
+document.getElementById('ox').textContent = getComputedStyle(de).overflowX;
+document.getElementById('sw').textContent = de.clientWidth + ' px';
+document.getElementById('dpr').textContent = window.devicePixelRatio;
+document.getElementById('sab').textContent =
+  (getComputedStyle(de).getPropertyValue('--sab')||'').trim()
+  || (function(){const d=document.createElement('div');
+      d.style.cssText='height:env(safe-area-inset-bottom)';
+      document.body.appendChild(d);
+      const h=getComputedStyle(d).height; d.remove(); return h;})();
+
+function render(){
+  const p=probe();
+  document.getElementById('ih').textContent=p.ih+' px';
+  document.getElementById('sh').textContent=p.dh+' px';
+  document.getElementById('sy').textContent=p.sy+' px';
+  document.getElementById('nt').textContent=p.nt+' px';
+  document.getElementById('nb').textContent=p.nb+' px';
+  const ov=document.getElementById('ov');
+  ov.textContent = p.ovx==='visible' ? '未生效（能左右拖）' : p.ovx;
+  ov.className='v '+(p.ovx==='visible'?'bad':'ok');
+  const v=document.getElementById('verdict');
+  if(p.ok){ v.className='big ok'; v.textContent='✅ 吸底正常（滚动中位置不变）'; }
+  else { v.className='big bad';
+         v.textContent='⚠️ 有偏差：bottom='+p.nb+'，视口高='+p.ih; }
+}
+render();
+window.addEventListener('scroll',render,{passive:true});
+window.addEventListener('resize',render);
+setInterval(render,1500);
+</script>
+</body>
+</html>
