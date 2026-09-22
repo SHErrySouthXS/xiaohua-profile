@@ -480,6 +480,34 @@
     height:1px; margin:16px 0 12px;
     background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
   }
+  /* ── 感受条目卡（2026-09-22）──
+     每条出「日期 / 标题 / 情绪关键词 / 关联」，**正文不出**（私有通道）。
+     配色全取现有变量，不引新色。 */
+  .mfeel{
+    padding:10px 12px; margin-bottom:8px;
+    border-radius:12px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .mfeel .mf-top{
+    display:flex; align-items:baseline; gap:8px;
+  }
+  .mfeel .mf-d{
+    font-size:10.5px; color:var(--fg-4);
+    font-variant-numeric:tabular-nums; letter-spacing:.04em;
+  }
+  .mfeel .mf-t{
+    font-size:12.5px; font-weight:600; color:var(--fg-2);
+    text-shadow:0 1px 6px rgba(0,0,0,.5);
+  }
+  .mfeel .mf-tag{
+    margin-top:5px; font-size:10.5px; color:var(--pink-line);
+    letter-spacing:.02em;
+  }
+  .mfeel .mf-meta{
+    margin-top:4px; font-size:10.5px; color:var(--fg-4);
+    font-variant-numeric:tabular-nums;
+  }
 
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
@@ -1726,32 +1754,37 @@ function renderPanels(d){
   //  page1 现在只装「Room 内容」。
 
   // ── 3.6 感受（Feel/Sense/Grow）→ ★ 2026-09-20 独立三级页（Room 的 icon 之一）──
-  //  ★ 2026-09-22 落地，同日**返工两次**，经过记在下面（别再走回去）：
+  //  ★ 2026-09-22 落地，同日**返工三次**，经过全记在下面（别再走回去）：
   //
-  //  ⚠️ 第一版：做"心情周报"，数据源用 `memories.json` 的 `affect` 字段。
-  //     错。`affect` 是**记忆带的情绪**（召回打分 `affectBoost` 的输入，
+  //  ⚠️ ① 做"心情周报"，数据源用 `memories.json` 的 `affect` 字段 → 错。
+  //     `affect` 是**记忆带的情绪**（召回打分 `affectBoost` 的输入，
   //     原文 01:50 / 01:119），**是记忆的属性，不是人的状态**。
-  //     记忆里讲的多数是**大小姐**的事 —— 所以页面看起来在描述她的情绪。
-  //     ⇒ 大小姐当晚一句点中："这个不是小华的情绪吗 但感觉好像是在描述我的情绪"。
+  //     记忆里讲的多数是**大小姐**的事 → 页面看起来在描述她的情绪。
+  //     ⇒ 大小姐一句点中："这个不是小华的情绪吗 但感觉好像是在描述我的情绪"。
   //
-  //  ⚠️ 第二版：自己新建 `ledgers/feel.jsonl`。
-  //     也错 —— **日记本早就是这条通道了**：
-  //       · SOUL.md §三「通道教学」明写「里有三条私有通道…日记本写的就是这三样」
-  //       · `daily_checkup_card.py:97` 已按私有处理：「只报今天有没有写、
-  //         几点了、多长，**不给原文**（私有通道）」
-  //     自造一张表 = 重复造一个更差的（原文 13 的教训：
-  //     「**先盘第三方已有的机制再自造**」）。
+  //  ⚠️ ② 自建 `ledgers/feel.jsonl` → 也错。
+  //     **feel 是 Ombre 引擎的桶类型**（`bucket_manager.py:409`
+  //     与 dynamic/permanent 并列），标准入口是 `hold(feel=True)`。
+  //     ⇒ 大小姐："你应该按照原文把本地该有的建了"。
   //
-  //  ★ 现在（正确）：数据源＝ `companion/journal/<date>.md`。
-  //     原文依据：
-  //       · `06:14` 「感受账（Feel/Sense/Grow）| agent 自主记录的情绪、感知、成长，
-  //         走私有通道 | **只属于 agent**；入库口有剥离闸，私有内容不进可召回池」
-  //       · `06:15` 「Room 面板的 Mood 周报 / Desire / Feel |
-  //         **用户可见状态投影**，但它是**投影不是控制台**」
-  //     → 三类的划分与"日记本写的就是这三样"是同一件事，不再另立三类。
+  //  ⚠️ ③ 改投「日记的日期+字数」→ 还是不对：只有抽象数字。
+  //     ⇒ 大小姐："你这里没有情绪关键词和关联 ref 诶"。
   //
-  //  ★ 私有口径：**只出元信息**（写了几篇、哪几天、每篇多长）。
-  //     正文一个字都不出 —— 与 daily_checkup_card 的既有做法一致。
+  //  ★ 现在（正确）：投 **Ombre feel 桶的结构化字段**：
+  //     · `tags`         → 情绪关键词（如 被记住 / 暖 / 关系）
+  //     · `valence`      → 情绪色调（0 消极 / 0.5 中性 / 1 积极）
+  //     · `arousal`      → 情绪强度（0 平静 / 1 激动）
+  //     · `triggered_by` → 关联 ref（挂在哪条源记忆桶上）
+  //
+  //  原文依据：
+  //     · `06:14` 「感受账（Feel/Sense/Grow）| agent 自主记录的情绪、感知、成长，
+  //       走私有通道 | **只属于 agent**；入库口有剥离闸，私有内容不进可召回池」
+  //     · `06:15` 「Room 面板的 Mood 周报 / Desire / Feel |
+  //       **用户可见状态投影**，但它是**投影不是控制台**」
+  //     · `A-工具全景清单`：feel 是**引擎提供的工具**（16 只自传工具之一）。
+  //
+  //  ★ 私有口径：feel 桶**不参与普通浮现**（引擎层已保证），
+  //     投影**只出结构化元信息**，正文不出。
   let hMood='';
   {
     const fp=(d.panels||{}).feel||{};
@@ -1761,39 +1794,77 @@ function renderPanels(d){
     if(fp.error){
       b=`<div class="dev">这块暂时读不到（${esc(String(fp.error).slice(0,60))}）</div>`;
     } else if(!fp.total_all){
-      // 日记本还是空的 —— 照实说。
-      // ⚠️ 不用「待开发」：那是"功能没做"，这里是功能在做、只是还没写过。
-      b=`<div class="dev">还没写下过感受</div>`;
+      b=`<div class="dev">还没留下过感受</div>`;
     } else {
       b+=`<div class="mrow"><span class="mk">近一周</span>
         <span class="mv">${esc(fp.week_label||'')}</span>
-        <span class="ms">写下 ${fp.total} 篇 · 累计 ${fp.total_all} 篇</span></div>`;
+        <span class="ms">留下 ${fp.total} 条 · 累计 ${fp.total_all} 条</span></div>`;
 
-      // 逐篇只出「日期 + 字数」—— 正文不出（私有通道）。
-      // 用条形按字数排开，视觉与驱动强度/作息同一套。
-      // ⚠️ 不带 `top` 类（渲染实测发现）：`.bar-row.top` 的粉色强调
-      //    是为「接近满格 = 状态强」设计的，这里条形比的是**字数**，
-      //    "哪个数字大"没有强调意义 —— 加上去只会让读者以为
-      //    被标粉的那天有特殊含义（09/21 恰好 1.0、09/20 是 0.842，纯巧合）。
-      if(es.length){
-        const mx=Math.max(...es.map(e=>Number(e.chars)||0))||1;
-        b+=`<div class="bars">${es.map(e=>{
-          const c=Number(e.chars)||0;
-          const r=Math.max(0,Math.min(1,c/mx));
-          const hasV=r>0.001?' data-v="1"':'';
-          const dt=String(e.date||'');
-          const lab=dt.slice(5).replace('-','/');       // MM/DD
-          return `<div class="bar-row"${hasV}>
-            <div class="nm">${lab}</div>
+      // ── 情绪读数：valence / arousal（引擎的结构化情绪字段）──
+      // ⚠️ 措辞带**样本数前提**（2026-09-22 渲染实测发现）：
+      //   原来只写「这一周 偏暖 · 有波动」—— 只有 1 条时说"有波动"是**过度解读**。
+      //   一条数据没有"波动"可言，波动是条与条之间的差。
+      //   ⇒ 条目 <2 条时只描述状态，不描述趋势。
+      if(fp.valence_avg!==null && fp.valence_avg!==undefined){
+        const v=Number(fp.valence_avg), a=fp.arousal_avg;
+        const n=Number(fp.total)||0;
+        // 色调映射成词：0 消极 / 0.5 中性 / 1 积极（引擎口径）
+        const vw = v>=0.7?'偏暖' : v>=0.55?'温和' : v>=0.45?'平' : v>=0.3?'偏沉' : '沉';
+        // 强度词只在样本够时才用（≥2 条才有"波动"可讲）
+        const aw = (a===null||a===undefined||n<2)?''
+                 : (a>=0.66?'起伏大' : a>=0.4?'有波动' : '很平');
+        b+=`<div class="bars">
+          <div class="bar-row" data-v="1">
+            <div class="nm">色调</div>
             <div class="bar-track"><div class="bar-inner">
-              <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
+              <div class="bar-fill" style="width:${(v*100).toFixed(1)}%;position:relative"></div>
             </div></div>
-            <div class="vl">${c}</div></div>`;
-        }).join('')}</div>`;
+            <div class="vl">${v.toFixed(2)}</div></div>
+          ${(a===null||a===undefined)?'':`<div class="bar-row" data-v="1">
+            <div class="nm">强度</div>
+            <div class="bar-track"><div class="bar-inner">
+              <div class="bar-fill" style="width:${(a*100).toFixed(1)}%;position:relative"></div>
+            </div></div>
+            <div class="vl">${a.toFixed(2)}</div></div>`}
+        </div>
+        <div class="mnote">${vw}${aw?' · '+aw:''}${n<2?'（1 条，仅状态）':''}</div>`;
       }
 
-      b+=`<div class="msep"></div>
-        <div class="mnote">${fp.total} 篇 · 共 ${fp.chars} 字 · 正文未公开</div>`;
+      // ── 情绪关键词（tags 词频）──
+      // ⚠️ 只有 1 条时不出这行：它跟下面条目卡的标签**完全重复**
+      //    （渲染实测发现）。词频统计的价值在"哪几个反复出现"，
+      //    一条数据没有词频可言 ⇒ ≥2 条才出。
+      const tt=fp.top_tags||[];
+      if(tt.length && Number(fp.total)>=2){
+        b+=`<div class="msep"></div>
+          <div class="mrow"><span class="mk">关键词</span>
+          <span class="ms">${tt.map(([k,n])=>`${esc(k)}${n>1?' '+n:''}`).join(' · ')}</span></div>`;
+      }
+
+      // ── 逐条：日期 / 标题 / 关键词 / 关联 ──
+      if(es.length){
+        b+=`<div class="msep"></div>`;
+        es.forEach(e=>{
+          const dt=String(e.date||'').slice(5).replace('-','/');
+          const tg=(e.tags||[]).map(x=>esc(x)).join(' · ');
+          const v=e.valence===null||e.valence===undefined?'':`色调 ${Number(e.valence).toFixed(2)}`;
+          const a=e.arousal===null||e.arousal===undefined?'':`强度 ${Number(e.arousal).toFixed(2)}`;
+          const meta=[v,a].filter(Boolean).join(' · ');
+          // 关联 ref：源记忆桶 id。
+          // ⚠️ 不写 `↳` 那种隐晦符号（渲染实测被读成"含义不明"）——
+          //    直接标「源记忆」三个字，一眼知道它挂在哪条记忆上。
+          const ref=e.ref?`源记忆 ${esc(String(e.ref).slice(0,8))}`:'未挂源记忆';
+          b+=`<div class="mfeel">
+            <div class="mf-top"><span class="mf-d">${dt}</span>
+              <span class="mf-t">${esc(e.title||'')}</span></div>
+            ${tg?`<div class="mf-tag">${tg}</div>`:''}
+            <div class="mf-meta">${meta}${meta&&ref?' · ':''}${ref}</div>
+          </div>`;
+        });
+        if(fp.refs<fp.total){
+          b+=`<div class="mnote">${fp.refs} / ${fp.total} 条挂了源记忆</div>`;
+        }
+      }
     }
 
     hMood=sec('💭 感受','',b);
