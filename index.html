@@ -453,6 +453,71 @@
   .bar-row.nodata .bar-track{ background:rgba(255,255,255,.045); }
   .bar-row.top .vl{color:var(--pink); font-weight:650}
 
+  /* ── 心情周报（2026-09-22）──
+     ★ 配色全部取现有变量，**不引新色**（--pink 系是大小姐锁死的）。
+     ★ 条形沿用 .bar-row / .bar-track / .bar-fill，与驱动强度同一套视觉。
+     说明的方式：点标签展开**他自己的原话**，不写解释性文案。 */
+  .mrow{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:4px 10px;
+    margin:2px 0 12px;
+  }
+  .mrow .mk{
+    font-size:11px; color:var(--fg-4); letter-spacing:.06em;
+    text-transform:uppercase;
+  }
+  .mrow .mv{
+    font-size:15px; font-weight:650; color:var(--fg);
+    font-variant-numeric:tabular-nums;
+    text-shadow:0 1px 8px rgba(0,0,0,.55);
+  }
+  .mrow .ms{font-size:11.5px; color:var(--fg-3)}
+  .mnote{
+    font-size:11.5px; color:var(--fg-3); line-height:1.9;
+    padding-left:2px; word-break:break-word;
+  }
+  .msep{
+    height:1px; margin:16px 0 12px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);
+  }
+  /* 情绪行：默认只出条形；带原话的可以点开。
+     ★ 2026-09-22 三轮修正（都记着，别再走回去）：
+       ① 原用「?」圆圈 → 实测可点感太弱（灰、小、像装饰）。
+       ② 改成每行挂「原话」胶囊 → **把 52px 标签列挤成上下两行**，杂乱。
+       ③ 加虚线下划线提示 → 渲染实测又被读成"多余的边框/占位辅助线"，
+          与玻璃调性不合。
+       ④ 现在：**只用颜色**做信号 —— 可点的词取 --pink（浅粉），
+          悬停/展开时提到 --pink-hot 并轻微发光。轻，不新增任何装饰元素。 */
+  .moodrow .nm{cursor:default}
+  .moodrow[data-q] .nm{
+    cursor:pointer; color:var(--pink);
+    transition:color .18s ease, text-shadow .18s ease;
+  }
+  .moodrow[data-q]:hover .nm{
+    color:var(--pink-hot);
+    text-shadow:0 0 8px var(--pink-glow);
+  }
+  /* 原话默认折叠 */
+  .mq{display:none}
+  .moodrow.open .mq{
+    display:block; margin:7px 0 12px 62px;
+    font-size:11.5px; line-height:1.85; color:var(--fg-3);
+    border-left:2px solid var(--pink-fill); padding-left:10px;
+    word-break:break-word;
+  }
+  .moodrow.open .nm{color:var(--pink-hot); text-shadow:0 0 8px var(--pink-glow)}
+  /* 总开关胶囊（挂在统计行末尾） */
+  .mbtn{
+    font:inherit; font-size:10px; line-height:1;
+    padding:4px 8px; margin-left:auto; border-radius:7px;
+    color:var(--fg-3); border:1px solid rgba(255,255,255,.20);
+    background:rgba(255,255,255,.04); cursor:pointer;
+    white-space:nowrap;
+  }
+  .mbtn:hover,.mbtn.on{
+    color:var(--pink); border-color:var(--pink-line);
+    background:var(--pink-fill);
+  }
+
   /* ── 清单 ── */
   .checklist{display:flex; flex-direction:column}
   .item{
@@ -1698,11 +1763,64 @@ function renderPanels(d){
   //  page1 现在只装「Room 内容」。
 
   // ── 3.6 心情周报 → ★ 2026-09-20 改成**独立三级页**（Room 的 icon 之一）──
-  //  pending：占位状态不变（读法 A），只是从 Room 拆出去单独成页。
-  //  真做的时候要按周聚合心情 —— 素材在（wake 26 条 + 欲望九维 + 情绪账），
-  //  缺的是聚合逻辑，不能拿"即时状态"冒充"周维度"。
-  //  ⚠️ 这个页面内容在下面 put() 分发时写进 page6。
-  let hMood=sec('💭 心情周报','',`<div class="dev">待开发</div>`);
+  //  ★ 2026-09-22 落地。口径与原文依据见 collect.py 的 _mood_weekly()。
+  //
+  //  原文两条（都很短，但定性）：
+  //    · `03:13` Room 是「agent 的自主生活空间，非面向用户的输出」
+  //      → 对照面是"用户"，不是"他自己"。所以这不是他的日记。
+  //    · `06:15` 「用户可见状态投影，但它是投影不是控制台」
+  //      → 看得到，改不了。落点＝读数。
+  //    · `03:20` 「正式事实以服务端账本为准，各面板是它们的投影」
+  //
+  //  ★ 呈现口径（大小姐 2026-09-21）：界面只留「标题 / 数据 / 动作」，
+  //    不加解释性文案。所以「怕」是什么意思 —— **用他自己的原话当注释**，
+  //    点标签展开，不是写一段说明。
+  //
+  //  ⛔ 不显示实时 drives：它是瞬时值，放进"周"维度就是拿此刻冒充整周。
+  let hMood='';
+  {
+    const mw=(d.panels||{}).mood_weekly||{};
+    const gs=mw.groups||[];
+    let b='';
+
+    if(mw.error){
+      b=`<div class="dev">这块暂时读不到（${esc(String(mw.error).slice(0,60))}）</div>`;
+    } else if(mw.empty||!gs.length){
+      // 空周照实为空 —— 不补零、不插值、不假装有
+      b=`<div class="dev">这一周没有留下的情绪痕迹</div>`;
+    } else {
+      // ── 情绪谱（主干）── 沿用 .bar-row，与驱动强度/作息同一套视觉
+      b+=`<div class="mrow"><span class="mk">这一周</span>
+        <span class="mv">${esc(mw.week_label||'')}</span>
+        <span class="ms">情绪痕迹 ${mw.marked} 条 · 峰值 ${Number(mw.peak_intensity||0).toFixed(2)}</span>
+        ${gs.some(g=>(g.quotes||[]).length)?'<button class="mbtn" data-mall>看原话</button>':''}</div>`;
+      b+=`<div class="bars">${gs.map(g=>{
+        const r=Math.max(0,Math.min(1,Number(g.ratio)||0));
+        const hasV=r>0.001?' data-v="1"':'';
+        const hasQ=(g.quotes||[]).length;
+        return `<div class="moodrow"${hasQ?' data-q="1"':''}>
+          <div class="bar-row${r>=0.8?' top':''}"${hasV}>
+            <div class="nm">${esc(g.name)}</div>
+            <div class="bar-track"><div class="bar-inner">
+              <div class="bar-fill" style="width:${(r*100).toFixed(1)}%;position:relative"></div>
+            </div></div>
+            <div class="vl">${g.n}</div>
+          </div>
+          ${hasQ?`<div class="mq">${(g.quotes||[]).map(q=>`「${esc(q)}」`).join('<br>')}</div>`:''}
+        </div>`;
+      }).join('')}</div>`;
+
+      // ── 佐证：唤醒行为（行为量，**不是心情** —— 并排，不合成）──
+      const it=Object.entries(mw.intent||{}).map(([k,v])=>`${esc(k)} ${v}`).join(' · ');
+      b+=`<div class="msep"></div>
+        <div class="mrow"><span class="mk">同一周</span>
+        <span class="mv">醒 ${mw.wakes||0} 次</span>
+        <span class="ms">说了 ${mw.spoke||0} 次${mw.unsent?` · 未送出 ${mw.unsent} 次`:''}</span></div>
+        ${it?`<div class="mnote">${it}</div>`:''}`;
+    }
+
+    hMood=sec('💭 心情周报','',b);
+  }
 
   // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
   //
@@ -2010,6 +2128,7 @@ function renderPanels(d){
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
+  bindMoodQuotes();       // 心情周报：点情绪行展开原话
 }
 
 
@@ -2021,6 +2140,42 @@ function renderPanels(d){
 //  ⚠️ 这个前端**不改服务端账本** —— 看板是投影。
 //     点击只是**本地视觉** + 给后端发一条"她要划掉第 N 条"的信号。
 //     真正的划掉由服务端记账（她的话是权威，前端不是）。
+function bindMoodQuotes(){
+  // 心情周报（page6）：点情绪词展开**他自己的原话**。
+  // ★ 纯本地视觉，不碰任何账本 —— 看板是投影（原文 §3 设计原则）。
+  //   折叠默认收起：一个词单独摆着没人懂，但它对应的原话一展开就懂了 ——
+  //   这是"改呈现"，不是"加说明"（大小姐 2026-09-21 定）。
+  //
+  // ★ 两轮修正（2026-09-22 实测）：
+  //   ①「?」圆圈 → 可点感太弱；
+  //   ② 每行挂「原话」胶囊 → 把 52px 标签列挤成两行，杂乱。
+  //   现在：点词本身单开；末尾「看原话」总开关全开/全收。
+  const page=document.getElementById('page6');
+  if(!page) return;
+  const rows=[...page.querySelectorAll('.moodrow[data-q]')];
+  rows.forEach(row=>{
+    const nm=row.querySelector('.nm');
+    if(nm) nm.addEventListener('click',(e)=>{
+      e.stopPropagation();
+      row.classList.toggle('open');
+      syncAll();
+    });
+  });
+  const all=page.querySelector('[data-mall]');
+  function syncAll(){
+    if(!all) return;
+    const on=rows.length>0 && rows.every(r=>r.classList.contains('open'));
+    all.classList.toggle('on',on);
+    all.textContent=on?'收起':'看原话';
+  }
+  if(all) all.addEventListener('click',()=>{
+    const on=rows.length>0 && rows.every(r=>r.classList.contains('open'));
+    rows.forEach(r=>r.classList.toggle('open',!on));
+    syncAll();
+  });
+  syncAll();
+}
+
 function bindChecklistToggle(){
   document.querySelectorAll('#page4 .cl-check').forEach(el=>{
     el.addEventListener('click', async ()=>{
