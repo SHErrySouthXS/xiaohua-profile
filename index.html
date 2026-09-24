@@ -2263,15 +2263,45 @@ function renderPanels(d){
         <span class="r-at">${esc(r.at||'')}</span>
         </summary>
         <div class="rm md">${renderMD(roomBody(r.text||''))}</div></details>`).join('')}</div>`:''}
-    ${/* ── 手记本（①）──
-         每回合能在账里留一句 note，**下次醒来会读到**（ledger.py 的 notes()）。
-         之前它散在账本里，没人看得见 —— 现在收成一本。*/''}
-    ${(R.notes||[]).length?`<div class="pblock"><div class="pblock-h">
-        手记本 · ${R.notes_total} 条</div>
-      ${R.notes.map(n=>`<div class="pitem">
-        <span class="tm">${esc(n.at||'')}</span>
-        ${n.hand?`<span class="tag">${esc(n.hand)}</span>`:''}
-        <span class="tx">${esc(n.text||'')}</span>
+    ${/* ── 手记本（①）—— ★★ 2026-09-24 大小姐定：**整块删除** ★★
+         ══════════════════════════════════════════════════════════════
+         原来这里渲染 `R.notes`（采集自 `wake_ledger.jsonl` 的 note 字段），
+         标题也写着「手记本」。删掉的两个理由：
+
+         ① **它是重复显示。** notes 的来源就是 `wake_ledger` ——
+            和**同一页上面的「唤醒时间线」是同一份数据**。
+            内容样本：「自己做事：explore｜explore｜540字」
+                      「醒着，自己说了一句」
+            那是每回合的动作摘要，时间线里已经逐条列了（含 spoke 五态）。
+
+         ② **名字用错了。** `ledger.py:92` 自己写的定义是
+            「note：本回合给自己的**便签**」。而原文 Room 七项
+            （`architecture/03:13`）**只有「手记本」，没有「便签」** ——
+            把动作摘要叫成手记本，正是 `architecture/07:4` 那条纪律
+            （「**不同机制不许在工具说明里共用一个名词**」）要挡的形状。
+
+         ★ 手记本的**正确落点**：Room 的 `#/room/notebook` 三级页
+           （page12，见 `renderNotebook()`）—— 读 `notebook.json`，
+           即原文 `A-工具全景清单:25` 的手记本三件（notebook_put/look/toss）。
+
+         ⚠️ **采集侧不动**：`panels.room.notes` / `notes_total` 仍然照采
+            （唤醒时间线那块还要用 `wake`，两者同源；留着字段不影响）。
+            本次只撤**页面上这一块渲染**。
+         ══════════════════════════════════════════════════════════════ */''}
+    ${/* ── 工作台产出（③）—— ★ 2026-09-24 新增 ──
+         原文 `architecture/03:16` Gallery「展柜与作品、**工作台产出**」；
+         配套 `06:21`「整理成文件放在工作台」。
+
+         ⚠️ 我们的合并：原文在 Gallery，我们并进 Room（没有 Gallery 实体页）。
+         ⚠️ 只显示标题+日期，**不显示正文** —— 正文最长 4000 字，
+            塞进 data.json 会撞 verify.sh 的轻档上限（150KB）。
+            要看全文是 GitHub Pages 上直接翻文件的事。
+         ⚠️ 排序：**时间从近到远**（采集侧已按目录名倒序）。*/''}
+    ${(R.workbench||[]).length?`<div class="pblock"><div class="pblock-h">
+        工作台产出 · ${R.workbench_total||R.workbench.length} 份</div>
+      ${R.workbench.map(w=>`<div class="pitem">
+        <span class="tm">${esc(w.day||'')}</span>
+        <span class="tx">${esc(w.title||'')}</span>
       </div>`).join('')}</div>`
       :''}
     ${/* ★ 2026-09-19 大小姐定：心情周报 / 书房 **搬出 Room** ——
