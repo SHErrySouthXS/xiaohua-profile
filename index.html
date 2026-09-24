@@ -2288,22 +2288,17 @@ function renderPanels(d){
             （唤醒时间线那块还要用 `wake`，两者同源；留着字段不影响）。
             本次只撤**页面上这一块渲染**。
          ══════════════════════════════════════════════════════════════ */''}
-    ${/* ── 工作台产出（③）—— ★ 2026-09-24 新增 ──
-         原文 `architecture/03:16` Gallery「展柜与作品、**工作台产出**」；
-         配套 `06:21`「整理成文件放在工作台」。
+    ${/* ── 工作台产出（③）—— ★ 2026-09-24 大小姐定：**放 Gallery，不放这里** ──
+         它曾短暂挂在这里（Room），当天就按原文挪走了。理由：
 
-         ⚠️ 我们的合并：原文在 Gallery，我们并进 Room（没有 Gallery 实体页）。
-         ⚠️ 只显示标题+日期，**不显示正文** —— 正文最长 4000 字，
-            塞进 data.json 会撞 verify.sh 的轻档上限（150KB）。
-            要看全文是 GitHub Pages 上直接翻文件的事。
-         ⚠️ 排序：**时间从近到远**（采集侧已按目录名倒序）。*/''}
-    ${(R.workbench||[]).length?`<div class="pblock"><div class="pblock-h">
-        工作台产出 · ${R.workbench_total||R.workbench.length} 份</div>
-      ${R.workbench.map(w=>`<div class="pitem">
-        <span class="tm">${esc(w.day||'')}</span>
-        <span class="tx">${esc(w.title||'')}</span>
-      </div>`).join('')}</div>`
-      :''}
+         原文 `architecture/03:16` 的 Gallery 面板逐字写着
+         「展柜与作品、**工作台产出**、内置电子宠物」
+         —— 产出**明确属于 Gallery**，不属于 Room。
+         （Room 的七项见 `03:13`：心情周报/欲望与感受/唤醒时间线/
+           手记本/工作台/未完成清单/书房 —— 那里是「工作台」＝**项目账**，
+           不是「工作台产出」。原文把二者分在两处，是有意的。）
+
+         ★ 现在的落点：`#/room/gallery`（page7，见 `renderGallery()`）。*/''}
     ${/* ★ 2026-09-19 大小姐定：心情周报 / 书房 **搬出 Room** ——
          心情周报 → 独立 module 挂在日历下一层（见 hMood）
          书房    → 独立 tab（见 hStudy）
@@ -2418,7 +2413,34 @@ function renderPanels(d){
     ${todo('系统设置（含采样温度）','故意不做 —— 配置在 config.yaml，面板上给个滑杆改温度太危险。')}`);
 
   // ── 8. Gallery ──
-  hGal=sec('🖼 Gallery','',`<div class="dev">待开发</div>`);
+  //
+  //  ★★ 2026-09-24 大小姐定：**工作台产出落到这里**（此前是「待开发」空壳）★★
+  //
+  //  原文 `architecture/03:16` 逐字：
+  //    「**Gallery** | 展柜与作品、**工作台产出**、内置宠物 | 创作产出与小生态」
+  //  ⇒ 产出明确属于 Gallery。配套 `06:21`「整理成文件放在工作台」。
+  //
+  //  ⚠️ 只显示标题+日期，**不显示正文** —— 正文最长 4000 字，
+  //     塞进 data.json 会撞 verify.sh 的轻档上限（150KB，硬门）。
+  //     要看全文是 GitHub Pages 上直接翻文件的事。
+  //  ⚠️ 排序：**时间从近到远**（采集侧按目录名倒序，这里再排一次防御）。
+  //
+  //  ⚠️ 原文这一行还提到「展柜与作品」「内置电子宠物」两项 ——
+  //     **我们都没有**（没有作品系统、没有 pet_care 工具）。
+  //     不拿占位糊上去：没有就是没有，只列真有的那一项。
+  {
+    const wb=(R.workbench||[]).slice();
+    wb.sort((a,b)=>String(b.day||'').localeCompare(String(a.day||'')));
+    const total=R.workbench_total||wb.length;
+    hGal=sec('🖼 Gallery','',`
+      ${wb.length?`<div class="pblock"><div class="pblock-h">
+        工作台产出 · ${total} 份</div>
+        ${wb.map(w=>`<div class="pitem">
+          <span class="tm">${esc(w.day||'')}</span>
+          <span class="tx">${esc(w.title||'')}</span>
+        </div>`).join('')}</div>`
+      :`<div class="dev">工作台还没有产出 —— 他还没攒下什么。</div>`}`);
+  }
 
   // ── 9. Sandbox ──
   hSand=sec('🧪 Sandbox','',`<div class="dev">待开发</div>`);
