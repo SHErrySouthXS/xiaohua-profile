@@ -1172,6 +1172,7 @@
 <div id="page9" hidden></div>
 <div id="page10" hidden></div>
 <div id="page11" hidden></div>
+<div id="page12" hidden></div>
 
 <!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
 <div id="viewRoom" hidden></div>
@@ -2845,7 +2846,8 @@ const TOPBARS = {
   'me':           ['我',        ''],
   'room/journal': ['日记',      ''],
   'room/mood':    ['感受',  ''],
-  'room/room':    ['Room 内容', ''],
+  'room/room':   ['Room 内容', ''],
+  'room/notebook':['手记本',  ''],   // ★ 2026-09-24 新增
   'room/study':   ['书房',      ''],
   'room/gallery': ['Gallery',   ''],
   'room/cinema':  ['Cinema',    ''],
@@ -2865,6 +2867,8 @@ const ROUTES = {
   'room/journal':{el:'page2',    lvl:2, title:'日记',     parent:'room'},
   'room/mood':   {el:'page6',    lvl:2, title:'感受', parent:'room', alias:'page6'},
   'room/room':   {el:'page1',    lvl:2, title:'Room 内容',parent:'room'},
+  // ★ 2026-09-24 新增：手记本（原文 Room 七项之一；三级页 = page12）
+  'room/notebook':{el:'page12',  lvl:2, title:'手记本',   parent:'room'},
   'room/study':  {el:'page3',    lvl:2, title:'书房',     parent:'room'},
   'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
   'room/cinema': {el:'page8',    lvl:2, title:'Cinema',   parent:'room'},
@@ -2888,7 +2892,8 @@ const LEGACY = {
 };
 
 const ALL_VIEWS = ['app','viewRoom','viewMe','page1','page2','page3','page4',
-                   'page5','page6','page7','page8','page9','page10','page11'];
+                   'page5','page6','page7','page8','page9','page10','page11',
+                   'page12'];
 
 function routeOf(){
   let raw = (location.hash||'').replace(/^#\/?/,'');
@@ -2976,6 +2981,7 @@ async function load(){
     renderRoomIndex();   // ★ Room 二级 icon 页
     renderMe(d);         // ★ 「我」平铺
     renderMeSub(d);      // ★ 「我」三级页：SOUL / 剧情稿全文
+    renderNotebook(d);   // ★ Room 三级页：手记本（2026-09-24 新增）
     // ★ 2026-09-20 补：数据到位后重跑一次路由 —— 修「直接访问三级 URL 时
     //   返回条不出现」。原因：初始 show() 跑在 load 之前，那时视图盒子里
     //   还是空的，插返回条没意义。数据渲染完再插一次才稳。
@@ -3003,6 +3009,9 @@ const ICONS = {
   cinema: `<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v14M16 5v14"/><path d="M3 9h5M3 15h5M16 9h5M16 15h5"/>`,
   sandbox:`<path d="M9 3h6v5l4 9a2 2 0 0 1-1.8 3H6.8A2 2 0 0 1 5 17l4-9z"/><path d="M9 3v5M15 3v5"/>`,
   memory: `<path d="M9 3a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 2 5 3 3 0 0 0 3 3 3 3 0 0 0 3-2V5a3 3 0 0 0-3-2z"/><path d="M15 3a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-2 5 3 3 0 0 1-3 3 3 3 0 0 1-3-2"/>`,
+  // ★ 2026-09-24 新增：手记本（一本摊开的册子 + 一行字）
+  //   与 gallery/memory 的线稿同调（stroke:currentColor，24 网格）
+  notebook:`<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7z"/><path d="M7 3v18"/><path d="M10.5 8h5M10.5 12h5"/>`,
 };
 
 function renderRoomIndex(){
@@ -3014,6 +3023,7 @@ function renderRoomIndex(){
     ['journal','日记'],
     ['mood',   '感受'],
     ['room',   'Room 内容'],
+    ['notebook','手记本'],   // ★ 2026-09-24 新增（原文 Room 七项之一）
     ['study',  '书房'],
     ['gallery','Gallery'],
     ['cinema', 'Cinema'],
@@ -3112,6 +3122,46 @@ function renderMeSub(d){
 
   put('page10', sec('', '', road(P.soul_excerpt)));
   put('page11', sec('', '', road(P.story_excerpt)));
+}
+
+// ── 手记本三级页（★ 2026-09-24 新增）──
+//
+//  ★ 原文依据：`A-工具全景清单.md:25` 手记本三件；
+//    `architecture/03:13` Room 面板七项之一叫「手记本」。
+//
+//  ★ 读哪：`data.json` → `panels.room.notebook`（由采集器从
+//    `ledgers/notebook.json` 采，**已按时间从近到远排好**）。
+//
+//  ⚠️ 与 page1 的「Room 内容」里那块 notes **不是一回事**：
+//    · page1 的 notes  = wake_ledger 的 note，**系统写的动作摘要**
+//    · 这一页          = notebook.json，**他自己写给自己的一句话**
+//    原文 Room 里只有「手记本」（本页）；动作摘要另立一块、各叫各的名。
+//    （纪律出处：`architecture/07:4`「不同机制不许…共用一个名词」）
+//
+//  ⚠️ 排序纪律：**时间从近到远**（新→旧）。采集器已倒序，
+//    这里**再排一次**是防御 —— 万一将来有人改了采集侧的顺序，
+//    页面这层仍然对。两处都排是故意的，不删。
+function renderNotebook(d){
+  const el=document.getElementById('page12');
+  if(!el) return;
+  const R=(d.panels&&d.panels.room)||{};
+  const items=(R.notebook||[]).slice();
+  // 时间从近到远（新→旧）；at 是 "YYYY-MM-DD HH:MM"，字典序 = 时间序
+  items.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+
+  const head=`手记本 · ${R.notebook_total||0} 条`;
+  if(!items.length){
+    // 空 == 正常态（他还没写过），不是"待开发"
+    el.innerHTML=sec('', '', `<div class="dev">他还没往本子上写什么。</div>`);
+    return;
+  }
+  const rows=items.map(n=>`
+    <div class="pitem">
+      <span class="tm">${esc(n.at||'')}</span>
+      ${n.source?`<span class="tag">${esc(n.source)}</span>`:''}
+      <span class="tx">${esc(n.text||'')}</span>
+    </div>`).join('');
+  el.innerHTML=sec('', head, `<div class="pblock">${rows}</div>`);
 }
 
 // ── 刷新策略（2026-09-18 调整）──
