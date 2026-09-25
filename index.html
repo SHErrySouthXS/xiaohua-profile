@@ -420,7 +420,12 @@
      改法：把发光挪到轨道本身（.bar-track 有 box-shadow 不会被自己裁），
           并用伪元素做条端的高光核 —— 这样光能溢出到卡片上。 */
   .bars{display:flex; flex-direction:column; gap:12px}
-  .bar-row{display:grid; grid-template-columns:52px 1fr 40px; align-items:center; gap:10px}
+  .bar-row{display:grid; grid-template-columns:52px 1fr 40px auto; align-items:center; gap:10px}
+  /* ⚠️ 第四列 `auto` 是给执念加成徽章（`.bstag`）留的格子。
+     ⚠️ 网格里没有第 4 列时，`.bstag` 会**掉到下一行**（实测：
+        只写 `52px 1fr 40px` 三列，徽章被挤到「依恋」行下方单独成行，
+        看着像一条批注、不像那一维的加成）。
+     ⚠️ 徽章缺席时该列宽为 0（`auto`），所以没有加成的行**排版与改前完全一致**。 */
   .bar-row .nm{
     font-size:11.5px; color:var(--fg-2); text-align:right;
     text-shadow:0 1px 6px rgba(0,0,0,.6);
@@ -469,6 +474,18 @@
   .bar-row.nodata .vl{ opacity:.45; }
   .bar-row.nodata .bar-track{ background:rgba(255,255,255,.045); }
   .bar-row.top .vl{color:var(--pink); font-weight:650}
+
+  /* ★ 2026-09-25：执念加成标记（驱动强度那一行右侧）
+     原文 `docs/02:18`：score = 驱动条值 + 关联执念加成。
+     只在真 >0 时出现 —— 每维都挂个 +0.00 是噪音不是数据。
+     配色沿用 --pink 系，不引新色。 */
+  .bar-row .bstag{ justify-self:start;
+    margin-left:6px; padding:1px 6px; border-radius:999px;
+    font-size:10px; font-weight:650; letter-spacing:.02em;
+    color:var(--pink-hot); background:rgba(255,159,197,.13);
+    border:1px solid rgba(255,159,197,.32);
+    text-shadow:0 0 8px var(--pink-glow); white-space:nowrap;
+  }
 
   /* ── 感受（Feel/Sense/Grow）投影（2026-09-22）──
      ★ 配色全部取现有变量，**不引新色**（--pink 系是大小姐锁死的）。
@@ -1402,9 +1419,22 @@ function render(d){
   }
 
   const dims=d.dimensions||[],vals=d.drives||[];
+  // ★★ 2026-09-25 加：执念加成（`boost`）与 score（`dims_score`）★★
+  //
+  //   原文 `docs/02:18` 仲裁公式逐字：`score = 驱动条值 + 关联执念加成`。
+  //   ⇒ 加成是 score 的一个加数；只画裸值，画出来的不是账上那个数
+  //     （违背原文 `03:20`「正式事实以服务端账本为准」）。
+  //   实测（09-25 清池前）：好奇裸值 0.126 排第 6，却因为 +0.15 执念加成
+  //   当上第一名 —— 页面上一个字都没写那 0.15 从哪来。
+  //   ⚠️ 三个数都缺时（旧 data.json）整块不渲染，不拿 0 冒充。
+  const boosts=Array.isArray(d.boost)?d.boost:null;
+  const hasBoost = !!(boosts && boosts.length===dims.length &&
+                      boosts.some(b=>b!==null && b!==undefined && Number(b)>0));
   if(dims.length&&vals.length===dims.length){
     h+=`<section class="glass"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
-    h+=`<section class="glass"><h2>驱动强度</h2><div class="bars">${
+    h+=`<section class="glass"><h2>驱动强度</h2>
+      ${hasBoost?`<div class="pmeta">执念加成：某一维被执念顶着时，仲裁按「驱动条值 + 加成」比（原文 score 公式）。</div>`:''}
+      <div class="bars">${
       dims.map((n,i)=>{
         // ★ 2026-09-21：值是 null = **这一维还没有数据**（原文有、本地未接入），
         //   和「值是 0」是两回事 —— 0 是「量出来就是零」，null 是「量不到」。
@@ -1414,12 +1444,21 @@ function render(d){
         const x = noData ? 0 : Math.max(0, Math.min(1, Number(raw)||0));
         // data-v 用来标记"有值"——发光只挂在有值的条上（0 值不该发光）
         const hasV = (!noData && x > 0.001) ? ' data-v="1"' : '';
+        // 加成：只有真 >0 才显示，别给每一维都挂个 +0.00（那是噪音不是数据）
+        let bTag='';
+        if(hasBoost){
+          const b=boosts[i];
+          if(b!==null&&b!==undefined&&Number(b)>0){
+            bTag=`<span class="bstag">+${Number(b).toFixed(2)} 执念</span>`;
+          }
+        }
         return `<div class="bar-row${(!noData&&x>=0.8)?' top':''}${noData?' nodata':''}"${hasV}>
           <div class="nm">${esc(n)}</div>
           <div class="bar-track"><div class="bar-inner">
             <div class="bar-fill" style="width:${(x*100).toFixed(1)}%;position:relative"></div>
           </div></div>
-          <div class="vl">${noData?'—':x.toFixed(2)}</div></div>`;
+          <div class="vl">${noData?'—':x.toFixed(2)}</div>
+          ${bTag}</div>`;
       }).join('')}</div></section>`;
   }
 
@@ -2150,22 +2189,58 @@ function renderPanels(d){
             两块都留着，因为问的是两件事。 */''}
     ${densityPanel(P.density)}
 
-    ${/* ── 折叠：信号 / 线索 / 暗号小辞典（2026-09-18 大小姐要求）──
-         Memory 原来的三块平铺，整页拉得很长。改成折叠段，
-         标题行给条数，要看再点开 —— 结构不动、内容一条不少。
-         ★ 2026-09-20 清文案：折叠标题行的"我记下的零碎判断"这类
-           解释语删掉，只留条数。段内的"强度＝…"说明也删。
-           下面每条信号右侧本来就标了强度数值和撞见次数 —— 那是数据。*/''}
-    ${th.length?`<details class="fold"><summary>
-        <span class="f-h">信号</span>
-        <span class="f-n">${th.length} 条</span>
-      </summary>
-      <div class="plist">${th.map(t=>`<div class="pitem">
-        <span class="tag">${esc(t.kind||'信号')}</span>
-        <span class="tx">${esc(t.text||'')}</span>
-        <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
-      </div>`).join('')}</div>
-    </details>`:''}
+    ${/* ── 折叠：闪念 / 执念 / 线索 / 暗号小辞典 ──
+         ★ 2026-09-25：**「信号」拆成「闪念」+「执念」**（大小姐拍板）
+         原文依据：
+           · `docs/02:142` 状态机右列：「执念 fixation ── **持续给对应 drive +0.15**」
+             闪念会衰减、执念不衰减且供养某一维 —— **是两个机制**。
+           · `architecture/13` 纪律：「**不同机制不许共用一个名词**」
+             （软记事退役那次的原话，7.4）。原来两者共用一个「信号」标签，
+             正是这条点名的形状。
+         ★ 不再截尾：改前 collect 只取 `items[-15:]`，执念按 created_at 排在
+           数组前部 ⇒ **一条都映不上**（实测：池里 10 条 fixation，页面 0 条）。
+           而「哪一维正被执念顶着」正是 09-25 事故唯一要看的东西。
+           现按账全量映，靠折叠收长度（原文 07:26：Wake up 页「全量可见」）。
+         ⚠️ 跳过时不许打绿勾 —— 这里没有"跳过"，只有条数。*/''}
+    ${(()=>{
+      const fx=th.filter(t=>t.kind==='fixation');
+      const fl=th.filter(t=>t.kind!=='fixation'&&t.kind!=='__more__');
+      const more=th.find(t=>t.kind==='__more__');
+      const kindN=(M.thoughts_kind||{}) ;
+      // ⚠️ 条数标签一律用 `thoughts_kind`（**全量**），不用本段长度 ——
+      //    否则池子 90 条而轻档映 60 条时，会显示成"闪念 60 条"（不诚实）。
+      let out='';
+      if(fx.length){
+        out+=`<details class="fold"><summary>
+          <span class="f-h">执念</span>
+          <span class="f-n">${kindN.fixation!=null?kindN.fixation:fx.length} 条</span>
+        </summary>
+        <div class="plist">${fx.map(t=>`<div class="pitem">
+          <span class="tag">执念</span>
+          <span class="tx">${esc(t.text||'')}</span>
+          <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''}${t.hits?` · 撞见 ${t.hits} 次`:''}${(t.fed!=null&&t.fed!=='')?` · 喂 ${t.fed}/8`:''}</span>
+        </div>`).join('')}</div>
+        <div class="pmeta">执念不衰减，会一直给对应那一维加成，直到喂够 8 次了却出池（原文状态机）。</div>
+      </details>`;
+      }
+      if(fl.length){
+        out+=`<details class="fold"><summary>
+          <span class="f-h">闪念</span>
+          <span class="f-n">${kindN.flit!=null?kindN.flit:fl.length} 条</span>
+        </summary>
+        <div class="plist">${fl.map(t=>`<div class="pitem">
+          <span class="tag">${esc(t.source||'闪念')}</span>
+          <span class="tx">${esc(t.text||'')}</span>
+          <span class="tm">${t.strength!=null?(+t.strength).toFixed(2):''} ${t.hits?`· 撞见 ${t.hits} 次`:''}</span>
+        </div>`).join('')}</div>
+      </details>`;
+      }
+      // 轻档体积门决定了数组会短于池子 —— 如实报"还有 N 条"，不假装这就是全部
+      if(more){
+        out+=`<div class="pmeta">另有 ${more.n} 条未在轻档内（池子共 ${more.total} 条）。</div>`;
+      }
+      return out;
+    })()}
 
     ${tr.length?`<details class="fold"><summary>
         <span class="f-h">线索</span>
