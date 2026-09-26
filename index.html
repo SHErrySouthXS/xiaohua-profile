@@ -1753,33 +1753,40 @@ function feelChart(es, vals, aros){
   //    首末日期**一模一样**，轴上出现两个相同的 "09/22" ——
   //    看起来像画错了（而其实是那天只写了两条）。
   //    修法：首末同日期 → 只出一个，居中。
-  const dFirst=String(es[0].date||'').slice(5).replace('-','/');
-  const dLast =String(es[n-1].date||'').slice(5).replace('-','/');
+  //
+  // ★ 2026-09-26 改：**es 已改为倒序（新→旧）**，所以
+  //    · 轴上**左边 = 最新**（es[0]）、**右边 = 最早**（es[n-1]）。
+  //    两个变量名保持不变（dFirst / dLast 仅指\"轴上左/右\"），
+  //    但取值的语义反了 —— 注释这里写明白，免得下次有人照名字读。
+  const dLeft =String(es[0].date||'').slice(5).replace('-','/');      // 轴上最左 = 最新
+  const dRight=String(es[n-1].date||'').slice(5).replace('-','/');    // 轴上最右 = 最早
   let dl='';
-  if(dFirst===dLast){
+  if(dLeft===dRight){
     dl=`<text x="${(padL+ (W-padR))/2}" y="${H-8}" text-anchor="middle"
       font-size="9" fill="rgba(255,255,255,.42)"
-      font-family="ui-monospace,monospace">${dFirst}</text>`;
+      font-family="ui-monospace,monospace">${dLeft}</text>`;
   } else {
     dl=`<text x="${padL}" y="${H-8}" text-anchor="start" font-size="9"
         fill="rgba(255,255,255,.42)"
-        font-family="ui-monospace,monospace">${dFirst}</text>`
+        font-family="ui-monospace,monospace">${dLeft}</text>`
       +`<text x="${W-padR}" y="${H-8}" text-anchor="end" font-size="9"
         fill="rgba(255,255,255,.42)"
-        font-family="ui-monospace,monospace">${dLast}</text>`;
+        font-family="ui-monospace,monospace">${dRight}</text>`;
   }
 
-  // 末点数值（最近一条，最有参考意义）
-  // ⚠️ 标签必须写"最近一条" —— 渲染实测指出的误读：
+  // 末点数值
+  // ⚠️ 标签必须写清它标的是**哪个点** —— 渲染实测指出的误读：
   //    读者会以为这两个数是**周均值**（页面上别处确实是均值口径）。
-  //    实际这里标的是**曲线上最后一个点**（最近写的那条）。
+  //    实际这里标的是**曲线上画光晕的那个点**（被放大 + 加白描边）。
+  // ★ 2026-09-26：es 改成倒序后，那个点从\"最近一条\"变成\"**最早一条**\"。
+  //   文案跟着改 —— 图上标的是哪个点，字面就得是哪个点。
   const lv=vals[vals.length-1], la=aros.length?aros[aros.length-1]:null;
 
   return `<div class="feelchart">
     <div class="fc-legend">
       <span class="fc-k fc-v">色调 <b>${lv.toFixed(2)}</b></span>
       ${la===null?'':`<span class="fc-k fc-a">强度 <b>${la.toFixed(2)}</b></span>`}
-      <span class="fc-when">最近一条</span>
+      <span class="fc-when">最早一条</span>
     </div>
     <svg class="fc-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
       ${grid}${ticks}
@@ -1859,6 +1866,9 @@ function inline(s){
 function renderJournal(d){
   const box=document.getElementById('page2');
   const list=(d.journal_entries||[]).filter(e=>!e.error);
+  // ★ 2026-09-26：采集侧已是倒序（近→远）；这里再排一次做防御（同 notebook/workbench）★
+  //   主键 date（YYYY-MM-DD 字符串，字典序 = 时间序）。排副本，不动原数组。
+  list.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
   if(!list.length){
     box.innerHTML=`<section class="glass"><h2>📔 日记</h2>
       <div class="jempty">本子还空着。</div></section>`;
@@ -2072,7 +2082,16 @@ function renderPanels(d){
   let hMood='';
   {
     const fp=(d.panels||{}).feel||{};
-    const es=fp.entries||[];
+    // ★★ 2026-09-26 大小姐定：**全站 by-day / by-time 一律时间从近到远** ★★
+    //   ⚠️ 这一块**排序方向变了，走势图跟着变**，读图口径要一起改：
+    //     · 改前：升序（旧→新）⇒ 曲线首点最旧、末点最新，向右是时间前进。
+    //     · 改后：倒序（新→旧）⇒ **首点是最新那条，向右是时间倒退**。
+    //       所以 feelChart 图例里那句「最近一条」必须改成「最早一条」
+    //       （它指的一直是**曲线末点**那个被放大加光晕的点），
+    //       首末日期轴的左右也必须跟着换，否则图上标的是反的。
+    //   ⚠️ 排的是副本；下面 fp.total / fp.total_all 用的是原对象上的值。
+    const es=(fp.entries||[]).slice();
+    es.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
     let b='';
 
     if(fp.error){
@@ -2176,7 +2195,17 @@ function renderPanels(d){
   // ── 4. Memory ──★ 2026-09-19 改道：搬到 page3 独立 tab
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
   let hMem='';
-  const th=(M.thoughts||[]), tr=(M.threads||[]);
+  const thAll=(M.thoughts||[]);
+  // ★ 2026-09-26 大小姐定：**全站 by-day / by-time 一律时间从近到远** ★
+  //   采集侧已改成整体倒序；这里再排一次做防御（同 notebook/workbench）★
+  //   ⚠️ 排序用**滤掉 `__more__` 的副本**：那条省略标记没有 at，
+  //     混进来会当空字符串排（旧→新时排最前、新→旧时排最后），位置全乱。
+  //     ⚠️ 但 `more` 本身仍要从**原数组** thAll 里取 —— 上一版把 th 滤干净了，
+  //        导致页面上「还有 N 条」整块消失（`th.find(…__more__)` 永远 undefined）。
+  //        真数据下轻档 44 条 / 池子 46 条，这个提示本来是该出现的。
+  const th=thAll.filter(t=>t.kind!=='__more__').slice();
+  th.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+  const tr=(M.threads||[]);
   const hw=(M.her_words||{}), rc=(hw.recall||{});
   hMem+=sec('🧠 Memory','',`
     <div class="prow"><span>系统体检</span><span class="pv ok">正常</span></div>
@@ -2204,8 +2233,12 @@ function renderPanels(d){
          ⚠️ 跳过时不许打绿勾 —— 这里没有"跳过"，只有条数。*/''}
     ${(()=>{
       const fx=th.filter(t=>t.kind==='fixation');
-      const fl=th.filter(t=>t.kind!=='fixation'&&t.kind!=='__more__');
-      const more=th.find(t=>t.kind==='__more__');
+      // ⚠️ `fl` = 闪念（非执念）—— th 里已经没有 `__more__` 了（上面滤过），
+      //    所以这里只需再排掉 fixation。**上一版把这一行跟下面的 `more`
+      //    替换掉了，`fl is not defined` 直接把 render() 打挂、全页白屏。**
+      const fl=th.filter(t=>t.kind!=='fixation');
+      // ⚠️ `more` 从**原数组**取（th 已滤掉标记，见上面注释）
+      const more=thAll.find(t=>t.kind==='__more__');
       const kindN=(M.thoughts_kind||{}) ;
       // ⚠️ 条数标签一律用 `thoughts_kind`（**全量**），不用本段长度 ——
       //    否则池子 90 条而轻档映 60 条时，会显示成"闪念 60 条"（不诚实）。
@@ -2264,10 +2297,21 @@ function renderPanels(d){
         ${(rc.ours_hints||[]).map(w=>`<span class="hw o">${esc(w)}</span>`).join('')}
       </div>`:''}
       <div style="margin-top:9px">
-      ${hw.entries.map(e=>`<div class="said">
+      ${(()=>{
+        // ★ 2026-09-26：采集侧已是倒序（近→远）；这里再排一次做防御
+        //   ⚠️ 这条的 at 是**纯时间**（"20:59"，没有日期部分）——
+        //     字典序只在**同一天内**成立。跨天的条目上，字符串比较会
+        //     把 "09:30" 排到 "20:59" 前面。采集侧取的是「最近 300 轮」，
+        //     实质都是当天/近一两天，所以现在不出错；但这是数据本身的
+        //     限制，不是这段代码能修的 —— 真要跨天正确得让采集侧补日期。
+        //     照实记在这里，别假装排好了。
+        const hwe=(hw.entries||[]).slice()
+          .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+        return hwe.map(e=>`<div class="said">
         <span class="s-at">${esc(e.at||'')}</span>
         <span class="s-tx">${esc(e.text||'')}</span>
-      </div>`).join('')}
+      </div>`).join('');
+      })()}
       </div></details>`:''}
 
     ${/* ★ 2026-09-18：「记忆密度日历」那条 todo 已摘除 —— 上面 densityPanel 已落地。
@@ -2293,7 +2337,12 @@ function renderPanels(d){
   //   （工作台与未完成清单已拆为平级模块，见下方 ①.5 / ①.6）
   //
   // ★ 原文第 282 行硬要求：唤醒时间线**全量可见**，不做摘要
-  const wk=(R.wake||[]);
+  const wk=(R.wake||[]).slice();
+  // ★★ 2026-09-26 大小姐定：**全站 by-day / by-time 一律时间从近到远** ★★
+  //   采集侧已倒序；这里**再排一次**是防御 —— 万一将来有人改了采集侧的顺序，
+  //   页面这层仍然对。两处都排是故意的，不删（同 notebook / workbench 的纪律）。
+  //   ⚠️ 排的是 `.slice()` 出来的副本，不动原数组（下面 wake_total 用的是原值）。
+  wk.sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
   // ★ 2026-09-20 清文案：副标题"我自己的事 · 非面向你的输出"和括号注解
   //   "（原文：Wake up 页全量可见 —— 不摘要、不截断）"都删。
   //   条数本身（"全量 N 条"）是数据，保留。
@@ -2331,13 +2380,18 @@ function renderPanels(d){
            · projects.open（工作里的，项目自己写的「下一步」）
     */''}
 
-    ${(R.rooms||[]).length?`<div class="pblock"><div class="pblock-h">
-        醒来房间 · ${R.rooms_total||R.rooms.length} 间</div>
-      ${R.rooms.map(r=>`<details class="pitem col room" data-at="${esc(r.at||'')}"
+    ${(()=>{
+      // ★ 2026-09-26：采集侧已按时间倒序；这里再排一次做防御（同 notebook/workbench）
+      const rs=(R.rooms||[]).slice()
+        .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+      return rs.length?`<div class="pblock"><div class="pblock-h">
+        醒来房间 · ${R.rooms_total||rs.length} 间</div>
+      ${rs.map(r=>`<details class="pitem col room" data-at="${esc(r.at||'')}"
         data-date="${esc(r.date||'')}" data-more="${r.has_more?1:0}"><summary>
         <span class="r-at">${esc(r.at||'')}</span>
         </summary>
-        <div class="rm md">${renderMD(roomBody(r.text||''))}</div></details>`).join('')}</div>`:''}
+        <div class="rm md">${renderMD(roomBody(r.text||''))}</div></details>`).join('')}</div>`:'';
+    })()}
     ${/* ── 手记本（①）—— ★★ 2026-09-24 大小姐定：**整块删除** ★★
          ══════════════════════════════════════════════════════════════
          原来这里渲染 `R.notes`（采集自 `wake_ledger.jsonl` 的 note 字段），
