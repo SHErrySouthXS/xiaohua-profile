@@ -2185,12 +2185,67 @@ function renderPanels(d){
   // ── 3.7 书房（★ 2026-09-19 从 Room 拆出，独立 tab）──
   //
   //  大小姐定（21:29）："书房单独列一个 tab？放在日记后一个 tab？"
-  //  → 位置：日记之后（p3）。同样是**占位**（读法 A）。
+  //  → 位置：日记之后（p3）。
   //
-  //  为什么书房是占位而不是真做：读书这件事我做过（红点账里有记录），
-  //  但"书架 / 阅读器 / 续读 / 批注"是一整套阅读系统 —— 一点数据都没有，
-  //  硬造就是假的。先占好位置，做出来再填。
-  const hStudy=sec('📚 书房','',`<div class="dev">待开发</div>`);
+  //  ★★ 2026-10-02 落地：占位换真数据 ★★
+  //   大小姐拍：「按照原文标准进行实施 只能只读」。
+  //   原文依据：`03:13`「书房（书架、导入、阅读器、续读、批注）」，
+  //             工具面 `reading_read_page` / `reading_annotate`。
+  //   数据源：`panels.study`（采集侧 `_study_panel()`，走 reading.py 生产路径）。
+  //
+  //   ⚠️ 铁律（panel-projection-audit §二）：这页出现的每一样，
+  //     必须真的是「书 / 读 / 批注」，不许拿运行日志充数。
+  //     「手记本」借名字翻过车，这里不重犯。
+  //   ⚠️ 「只能只读」→ 这里**一个可点控件都不加**，纯投影。
+  //   ⚠️ 不动 UI 体系（沿用既有 .prow/.pv/.mnote，不引新色）。
+  {
+    const S=P.study||{};
+    const books=S.books||[], anns=S.annotations||[];
+    let b='';
+
+    if(S.ok===false){
+      // ★ 采失败必须可见（留白 ≠ 无数据）
+      b+=`<div class="mnote">书房现在读不出来（${esc(S.error||'未知')}）。</div>`;
+    }
+
+    if(!books.length){
+      b+=`<div class="dev">书架还是空的 —— 放本书进来，我才有的读。</div>`;
+    }else{
+      b+=`<div class="prow"><span>书架</span><span class="pv">${books.length} 本` +
+         (S.reading?` · 在读 ${S.reading}`:'')+`</span></div>`;
+      books.forEach(bk=>{
+        const pg=bk.page||0, ttl=bk.pages||0;
+        const pct=ttl?Math.round(pg/ttl*100):0;
+        const state = pg<=0 ? '还没翻' : (pg>=ttl ? '读完了' : `读到 ${pg}/${ttl} 页`);
+        const when = bk.at? String(bk.at).slice(5,16).replace('T',' ') : '';
+        b+=`<div class="mfeel">
+              <div class="mf-top"><span class="mf-d">📖 ${esc(bk.book)}</span>
+                <span class="mf-t">${esc(state)}</span></div>
+              <div class="mf-meta">${ttl} 页 · ${(bk.chars||0).toLocaleString()} 字` +
+              (bk.annotations?` · 批注 ${bk.annotations} 条`:'')+
+              (when?` · 最近 ${esc(when)}`:'')+`</div>
+            </div>`;
+      });
+    }
+
+    if(anns.length){
+      b+=`<div class="mnote" style="margin-top:10px">他留在书里的话</div>`;
+      anns.slice(0,12).forEach(a=>{
+        const when=a.at? String(a.at).slice(5,16).replace('T',' ') : '';
+        b+=`<div class="mfeel">
+              <div class="mf-top"><span class="mf-d">${esc(a.book)}` +
+                 `<span style="opacity:.55"> · 第 ${(a.page||0)+1} 页</span></span></div>
+              <div class="mf-meta" style="margin-top:2px">${esc(a.text)}</div>
+              ${when?`<div class="mf-meta">${esc(when)}</div>`:''}
+            </div>`;
+      });
+      if(anns.length>12){
+        b+=`<div class="mnote">共 ${anns.length} 条批注</div>`;
+      }
+    }
+
+    hStudy=sec('📚 书房','',b);
+  }
 
   // ── 4. Memory ──★ 2026-09-19 改道：搬到 page3 独立 tab
   // 原文五项：记忆密度日历 / 档案筛选与联想路径 / 语义记忆星河 / 暗号小辞典 / 系统体检
