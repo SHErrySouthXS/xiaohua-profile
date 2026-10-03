@@ -542,6 +542,15 @@
     margin-top:4px; font-size:10.5px; color:var(--fg-4);
     font-variant-numeric:tabular-nums;
   }
+  /* ── 书房：书目行（★ 2026-10-02）──
+     ⚠️ 为什么单独加：.mf-top 是 flex 不换行，长书名（「过渡劳动：平台经济下的
+        外卖骑手」17 字）会被压成一行死撑 —— 视觉验收抓到的。
+        书是**书名 + 进度**两件事，长书名该能换行，别硬挤。
+     只给书房这一块加，不动 .mfeel（别的模块也在用）。 */
+  .study-row{ display:block; }
+  .study-row .mf-d{ display:block; font-size:12.5px; color:var(--fg-2); font-weight:600;
+    white-space:normal; word-break:break-word; line-height:1.4; }
+  .study-row .mf-t{ display:block; margin-top:2px; }
   /* ── 情绪关键词胶囊（2026-09-22）──
      ★ 这是他自己写感受时打的词，是本页的**主体**，给足视觉重量。
      配色取 --pink 系，不引新色。 */
@@ -2212,7 +2221,8 @@ function renderPanels(d){
       b+=`<div class="dev">书架还是空的 —— 放本书进来，我才有的读。</div>`;
     }else{
       b+=`<div class="prow"><span>书架</span><span class="pv">${books.length} 本` +
-         (S.reading?` · 在读 ${S.reading}`:'')+`</span></div>`;
+         (S.reading?` · 在读 ${S.reading}`:'') +
+         (S.finished?` · 读完 ${S.finished}`:'')+`</span></div>`;
       books.forEach(bk=>{
         const pg=bk.page||0, ttl=bk.pages||0;
         const pct=ttl?Math.round(pg/ttl*100):0;
