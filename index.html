@@ -2228,9 +2228,9 @@ function renderPanels(d){
         const pct=ttl?Math.round(pg/ttl*100):0;
         const state = pg<=0 ? '还没翻' : (pg>=ttl ? '读完了' : `读到 ${pg}/${ttl} 页`);
         const when = bk.at? String(bk.at).slice(5,16).replace('T',' ') : '';
-        b+=`<div class="mfeel">
-              <div class="mf-top"><span class="mf-d">📖 ${esc(bk.book)}</span>
-                <span class="mf-t">${esc(state)}</span></div>
+        b+=`<div class="mfeel study-row">
+              <div class="mf-d">📖 ${esc(bk.book)}</div>
+              <div class="mf-t">${esc(state)}</div>
               <div class="mf-meta">${ttl} 页 · ${(bk.chars||0).toLocaleString()} 字` +
               (bk.annotations?` · 批注 ${bk.annotations} 条`:'')+
               (when?` · 最近 ${esc(when)}`:'')+`</div>
