@@ -902,6 +902,35 @@
     padding:9px 12px 11px; border-top:1px solid var(--line);
     font-size:11.5px; line-height:1.7;
   }
+
+  /* ── ★ 2026-10-10：语义记忆星河（Memory 主视觉）──────────────────
+     深色底上撒彩色点 —— 星河意象。纯 SVG，2127 个 circle。
+     ⚠️ 圆点用 vector-effect 防缩放变形；tip 绝对定位浮出。 */
+  .gx-wrap{ position:relative; margin:2px 0 6px }
+  .gx-svg{
+    display:block; width:100%; height:auto; aspect-ratio:1/1;
+    max-height:340px;
+    background:radial-gradient(ellipse at 50% 45%,
+      rgba(120,110,180,.10), rgba(20,18,28,.55) 70%);
+    border-radius:13px;
+  }
+  .gx-dot{ cursor:pointer; transition:opacity .12s, r .12s }
+  .gx-dot:hover{ opacity:1 !important }
+  .gx-tip{
+    position:fixed; z-index:60; max-width:190px; pointer-events:none;
+    background:rgba(30,27,40,.96); color:var(--fg);
+    border:1px solid var(--line); border-radius:9px;
+    padding:7px 10px; font-size:11px; line-height:1.5;
+    box-shadow:0 6px 22px rgba(0,0,0,.5);
+  }
+  .gx-tip .gx-t-t{ font-weight:650; margin-bottom:2px }
+  .gx-tip .gx-t-m{ color:var(--fg-3); font-size:10px }
+  .gx-legend{
+    display:flex; flex-wrap:wrap; gap:8px 12px;
+    font-size:10.5px; color:var(--fg-3); margin:6px 0 2px;
+  }
+  .gx-lg{ display:inline-flex; align-items:center; gap:4px }
+  .gx-lg i{ width:8px; height:8px; border-radius:50%; display:inline-block }
   .iconTile{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:10px; padding:22px 12px; border-radius:15px; cursor:pointer;
@@ -2628,6 +2657,13 @@ function renderPanels(d){
     <div class="prow"><span>档案筛选与联想路径</span>
       <span class="pv">${M.threads_total||0} 条线索</span></div>
 
+    ${/* ★ 2026-10-10：语义记忆星河（原文 03:12 五项之一，此前标"待开发"）
+         —— 料早在 embeddings.db（2127 条 512 维），算法=谱嵌入（实测比 PCA 好）。
+         作为 Memory 主视觉，放密度日历之前。
+         ⚠️ 它是**空间视图**（按语义相似度铺点），与密度日历的**时间视图**正交，
+            两块都留 —— 原文那五项本来就是各问各的。 */''}
+    ${galaxyPanel(P.galaxy)}
+
     ${/* ★ 记忆密度日历（2026-09-18 落地）
          外壳照旧由这里用 sec() 包 —— densityPanel() 在外层，够不到 sec。
          ⚠️ 它不是"又一个日历"：总览数我干了什么，这张数我记住她多少。
@@ -3185,6 +3221,8 @@ function renderPanels(d){
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
+  // ★ 2026-10-10：星河的点点交互（Memory 在 page4，渲染后才绑得上）。
+  bindGalaxy();
 }
 
 // ── ★ 2026-10-05：Call 页交互（原文 §8.1 实时通话）──
@@ -3511,10 +3549,84 @@ function densTier(t){
   return t===0 ? 'empty' : 't'+w;
 }
 
+// ── ★ 2026-10-10：语义记忆星河（SVG 散点图）──────────────────────
+//
+//  原文（03:12）「Memory | ……语义记忆星河……」—— 此前一直标"待开发"。
+//  采集端 `_memory_galaxy()`：2127 条 512 维向量 → 余弦 kNN 图 →
+//  拉普拉斯特征映射 → 2D 坐标（含符号校正，保证不抖动）。
+//
+//  ⚠️ 它是**空间视图**：意思相近的点聚在一起（星座）。
+//     与「记忆密度日历」（时间视图）正交 —— 两块留，问的是两件事。
+//  ⚠️ 不引外部库：纯 SVG，2127 个 <circle>。卡了再降采样。
+//  ⚠️ 颜色按主域；大小按 importance；点开浮出那条记忆。
+function galaxyPanel(G){
+  if(!G || !G.points || !G.points.length) return '';
+  const pts=G.points, doms=G.domains||[];
+  // 域 → 颜色（固定表，同域同色；表外走灰）
+  const DC={
+    '恋爱':'#ff6b9d','心理':'#7c9eff','出行':'#4ecdc4','家庭':'#ffd166',
+    '工作':'#a78bfa','饮食':'#ff9f43','feel':'#95e1d3','内心':'#c8a2c8',
+    '居家':'#8fbc8f','回忆':'#e0b0ff','健康':'#f7b267','社交':'#7ed6df',
+    '情绪':'#ff8fab','自省':'#b8a1d9','游戏':'#5ee7df',
+  };
+  const col=d => DC[d] || '#6b6b7a';
+  const colMain=doms.slice(0,10).map(x=>x.name);
+  const W=100, H=100;
+  const circles=pts.map((p,i)=>{
+    const isMain=colMain.indexOf(p.d)>=0;
+    const r=(p.im>=7)?0.85:0.62;
+    const op=isMain?0.58:0.25;
+    return `<circle class="gx-dot" cx="${(p.x*W).toFixed(2)}" cy="${(p.y*H).toFixed(2)}" `
+      + `r="${r}" fill="${col(p.d)}" opacity="${op}" data-i="${i}"></circle>`;
+  }).join('');
+  const legend=doms.slice(0,10).map(x=>
+    `<span class="gx-lg"><i style="background:${col(x.name)}"></i>${esc(x.name)}</span>`
+  ).join('');
+  return `<div class="pblock"><div class="pblock-h">
+      语义记忆星河 · ${G.total||pts.length} 点</div>
+    <div class="gx-wrap">
+      <svg class="gx-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet">
+        ${circles}
+      </svg>
+      <div class="gx-tip" id="gxTip" hidden></div>
+    </div>
+    <div class="gx-legend">${legend}</div>
+    <div class="pmeta">每点是一条记忆，位置按语义相似度排 —— 意思相近的聚在一起。
+      颜色是主题域，大的点更重要。点一个看那条说的是什么。</div></div>`;
+}
+
+// 点星河上的点 → 浮出那条记忆（事件委托，只绑一次）
+function bindGalaxy(){
+  const svg=document.querySelector('.gx-svg');
+  const tip=document.getElementById('gxTip');
+  if(!svg || !tip || svg.__bound) return;
+  svg.__bound=true;
+  svg.addEventListener('click',(ev)=>{
+    const t=ev.target;
+    if(!t || !t.classList || !t.classList.contains('gx-dot')) return;
+    const i=+t.dataset.i;
+    const G=(window.__DATA__||{}).panels && (window.__DATA__.panels.galaxy||{});
+    const p=(G.points||[])[i];
+    if(!p) return;
+    tip.innerHTML=`<div class="gx-t-t">${esc(p.t||'(无题)')}</div>`
+      + `<div class="gx-t-m">${esc(p.d||'')} · ${esc(p.c||'')}</div>`;
+    tip.hidden=false;
+    // 定位到点的屏幕坐标
+    const R=svg.getBoundingClientRect();
+    const px=R.left + (p.x)*(R.width) ;
+    const py=R.top + (p.y)*(R.height);
+    tip.style.left=Math.max(4, Math.min(px+8, R.right-140))+'px';
+    tip.style.top=Math.max(4, py-40)+'px';
+  });
+  document.addEventListener('click',(ev)=>{
+    const svgEl=document.querySelector('.gx-svg');
+    if(svgEl && !svgEl.contains(ev.target)){ const tp=document.getElementById('gxTip'); if(tp) tp.hidden=true; }
+  });
+}
+
 function densityPanel(D){
   if(!D || !D.days || !D.days.length) return '';
   const t=D.totals||{}, sp=D.span||{};
-
   // ── 横向密度带：63 天压成 63 根细条 ──
   //   为什么要有它：网格看的是"哪一周"，密度带看的是"整段的形状"。
   //   9 周的疏密，扫一眼就出来了，不用在网格里数格子。
