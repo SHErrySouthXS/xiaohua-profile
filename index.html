@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#2a2731">
 <title>男友 Profile：小华</title>
 
@@ -154,7 +154,10 @@
              0 calc(14px + env(safe-area-inset-left));
     max-width:780px; margin:0 auto;
     -webkit-font-smoothing:antialiased;
-    position:relative; min-height:100%;
+    position:relative;
+    /* ★ 2026-10-05：100% → 100dvh（注释里 2026-09-22 就写要改，但代码没落地）。
+       dvh 跟实际可视高度走，iOS 地址栏折叠时不会算错。 */
+    min-height:100dvh;
     /* ⚠️ 这里**不能**写 overflow（任何轴）—— 会把 fixed 搞坏。
        横向裁切统一由 html 上的 `overflow-x:clip` 负责（见 html 那条注释，
        2026-09-22 二次修复：`hidden` 换成了不破坏 fixed 的 `clip`）。 */
@@ -162,7 +165,11 @@
     overscroll-behavior:none;
     overscroll-behavior-y:none;
   }
-  header, #app, footer{position:relative; z-index:2}
+  /* ⚠️ 2026-10-05 补：原来只写了 #app，漏了 viewMe / viewRoom / viewBoard。
+     后果：切到「我」/「Room」时这些容器的层叠上下文与「看板」不同，
+           视觉上页头与底部导航的对齐/层高会不一致（大小姐实测反馈）。
+     统一给相同的 position/z-index —— 一级视图容器一视同仁。 */
+  header, #app, #viewMe, #viewRoom, #viewBoard, footer{position:relative; z-index:2}
 
   header{margin-bottom:16px; padding:0 4px}
   h1{
@@ -692,7 +699,9 @@
 
   /* ── 导航：底部吸底 · 胶囊悬浮（★ 2026-09-20 大小姐定）──
      从顶部横排（10 个、会折两行、跟着滚走）改成底部固定的胶囊条。
-     4 格：看板 / Room / 未完成清单 / 我。
+     4 格：看板 / Room / Call / 我。
+     ★ 2026-10-05 改：原「未完成清单」格 → 换 Call；
+       「未完成清单」搬进 Room 当 List icon（内容盒子沿用 page5）。
      ⚠️ 沿用页面既定 glass + pink 调性，不引新色（配色锁死，改前必问）。 */
   nav#nav{
     position:fixed; left:0; right:0; bottom:0; z-index:50;
@@ -764,9 +773,83 @@
        ⚠️ 注意 `100dvh` 而非 `100vh`：iOS 地址栏会吃 vh，dvh 跟实际可视高度走。 */
   body::after{
     content:""; display:block; clear:both;
-    height:130px;
+    /* ★ 2026-10-05 三次修正（「我」页导航偏移）：
+       原来是固定 130px 实心块。当某页内容"刚好差一点满屏"时，
+       加上它就**超出一屏 → 页面可滚动 → iOS 滚动惯性让 fixed 导航偏移**
+       （前两次发作：2026-09-20 二级页、2026-09-22 Room 页、今天「我」页）。
+       ⇒ 改成由 JS 按**实际需要**设置精确高度（见 syncBottomSpacer）。
+          阈值：内容不足一屏 → 0；超过一屏 → 补足到"滚到底不被胶囊压住"。
+          CSS 兜底仍是 130px（JS 没跑到时不出错）。 */
+    height:var(--bottom-spacer, 130px);
   }
   footer{margin-top:22px; padding-bottom:6px}
+
+
+  /* ── ★ 唤醒卡（2026-10-05 新增）──────────────────────────────
+     原文 Chat 点名的「唤醒卡」形态 —— 收起一行摘要、展开看整回合。
+     Chat 归微信后这半条改嫁到看板（观测职能，只有看板能看全账本）。
+
+     配色纪律：只用既有变量（--fg-2/--fg-3/--line），不新增颜色。 */
+  details.wake > summary{
+    display:flex; flex-wrap:wrap; align-items:baseline; gap:6px;
+  }
+  details.wake .wk-sum{
+    flex:1 1 100%; color:var(--fg-3); font-size:11.5px;
+    line-height:1.6; margin-top:3px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  details.wake[open] .wk-sum{ display:none }   /* 展开后摘要让位给正文 */
+  details.wake .wk-body{
+    padding:8px 10px 4px; font-size:12px; line-height:1.8;
+    border-top:1px solid var(--line); margin-top:7px;
+  }
+  details.wake .wk-row{ display:flex; gap:9px; align-items:baseline; }
+  details.wake .wk-k{
+    flex:0 0 34px; color:var(--fg-3); font-size:11px;
+  }
+  details.wake .wk-full{
+    margin-top:8px; padding:9px 11px; border-radius:10px;
+    background:rgba(255,255,255,.05);
+    white-space:pre-wrap; word-break:break-word; color:var(--fg-2);
+  }
+  details.wake .wk-none{ opacity:.55; font-style:italic }
+
+  /* ── ★ 唤醒卡「念头」行（2026-10-10，1.1 念头层）───────────────
+     料：唤醒账 text 里本来就含 INNER（心跳自己写的），
+         采集端剥出来落 panels.room.wake[].inner。
+     视觉：与「思考卡」同一套语言 —— 左侧竖线 + 斜体 + 略暗，
+           标出"这是他没出口的那层"。
+     纪律：**只在展开态出现**（收起态是扫一眼的摘要，念头是钻进去才看的）。 */
+  details.wake .wk-inner-row{ align-items:flex-start; margin-top:2px; }
+  details.wake .wk-inner{
+    flex:1 1 auto;
+    border-left:2px solid rgba(255,255,255,.22);
+    padding-left:10px; border-radius:0 9px 9px 0;
+    font-style:italic; opacity:.9; color:var(--fg-2);
+    white-space:pre-wrap; word-break:break-word; line-height:1.8;
+  }
+
+  /* ── ★ 思考卡 / 碎碎念（2026-10-05 新增）───────────────────────
+     原文：正文最前那段带内标记的心里话，出口剥下来当「思考卡」显示。
+     视觉：**跟正文区分开** —— 它是"没说出口的那层"，
+           所以用左侧竖线 + 略暗的字，像夹在书页里的一张便签。
+     配色纪律：只用既有变量，不新增颜色。 */
+  .inner-card{
+    padding:9px 12px; margin-bottom:7px;
+    border-left:2px solid rgba(255,255,255,.22);
+    border-radius:0 9px 9px 0;
+    background:rgba(255,255,255,.035);
+  }
+  .inner-meta{
+    display:flex; gap:7px; align-items:baseline;
+    margin-bottom:5px; font-size:10.5px; color:var(--fg-3);
+  }
+  .inner-at{ font-variant-numeric:tabular-nums }
+  .inner-plat{ opacity:.6 }
+  .inner-text{
+    font-size:12.5px; line-height:1.85; color:var(--fg-2);
+    font-style:italic; white-space:pre-wrap; word-break:break-word;
+  }
 
   /* ── 二级页头（带返回键，三级结构用）── */
   .backbar{display:flex; align-items:center; gap:9px; margin:0 0 13px; padding:0 2px}
@@ -788,6 +871,37 @@
        视觉上更像 App 的入口宫格。 */
   .iconGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
   @media(min-width:560px){ .iconGrid{grid-template-columns:repeat(3,1fr)} }
+
+  /* ── ★ 2026-10-10：Gallery 展柜卡片宫格（1.3）────────────────────
+     原文（03:16）：「Gallery | 展柜与作品、工作台产出、内置电子宠物」
+     ⇒ 产出是"作品"，该像展柜一样**一张一件**，不是压成一行行文本。
+     布局纪律：≤600px 2 列；≥560px（平板）3 列 —— 同 .iconGrid 的节奏。
+     视觉：卡=可展开（details），收起看标题+摘要，展开看"找的/翻了"。 */
+  .galGrid{display:grid; grid-template-columns:repeat(2,1fr); gap:11px}
+  @media(min-width:560px){ .galGrid{grid-template-columns:repeat(3,1fr)} }
+  .galCard{
+    padding:0; border-radius:14px; overflow:hidden;
+    background:linear-gradient(168deg,
+      rgba(255,255,255,.06), rgba(255,255,255,.02) 60%, rgba(255,255,255,.045));
+    border:1px solid var(--line);
+  }
+  .galCard summary{
+    list-style:none; cursor:pointer; padding:12px 12px 11px;
+    display:flex; flex-direction:column; gap:5px;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .galCard summary::-webkit-details-marker{ display:none }
+  .gal-src{ font-size:10px; color:var(--fg-3); opacity:.75 }
+  .gal-t{ font-size:12.5px; font-weight:650; color:var(--fg); line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+  .gal-d{ font-size:10px; color:var(--fg-3); font-variant-numeric:tabular-nums }
+  .gal-s{ font-size:11px; color:var(--fg-3); line-height:1.55;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden }
+  .galCard[open]{ grid-column:1 / -1 }   /* 展开时横跨整行，看得清 */
+  .galBody{
+    padding:9px 12px 11px; border-top:1px solid var(--line);
+    font-size:11.5px; line-height:1.7;
+  }
   .iconTile{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     gap:10px; padding:22px 12px; border-radius:15px; cursor:pointer;
@@ -872,6 +986,19 @@
   .pv{color:var(--fg-3); font-size:11.5px; text-align:right; flex:0 0 auto}
   .pv.ok{color:var(--ok)}
   .pv.miss{color:var(--fg-3); opacity:.7}
+  /* ★ 2026-10-10 Archive：空态用 dim —— 与 miss 同视觉，
+     但语义不同：miss="没做这个能力"，dim="能力在，还没有东西"。
+     前端不写工程语言，颜色只是弱化，文字由 JS 给人话。 */
+  .pv.dim{color:var(--fg-3); opacity:.62}
+  /* ★ 2026-10-10 收藏按钮（☆）：前端偏好层，存本机 localStorage */
+  .favbtn{
+    font:inherit; font-size:13px; line-height:1; cursor:pointer;
+    background:none; border:0; padding:2px 4px; margin-left:6px;
+    color:var(--fg-3); opacity:.55; vertical-align:middle;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .favbtn.on{ color:#e8b53f; opacity:1 }
+  .favbtn:active{ transform:scale(1.2) }
   .pblock{margin-top:13px}
   .pblock-h{font-size:11px; color:var(--fg-3); margin-bottom:7px;
     letter-spacing:.03em; padding-bottom:5px; border-bottom:1px solid var(--line)}
@@ -1153,6 +1280,124 @@
     margin:14px 0;
   }
   .jempty{color:var(--fg-3); font-size:12.5px; padding:24px 4px; text-align:center}
+
+  /* ── ★ 2026-10-05：语音留言箱（微信发不出去的话，存这儿）── */
+  .vmbox{display:flex; flex-direction:column; gap:8px; margin-bottom:14px;
+    padding:12px; border-radius:14px;
+    background:linear-gradient(180deg, rgba(94,211,122,.10), rgba(94,211,122,.03));
+    border:1px solid rgba(94,211,122,.28)}
+  .vmbox-h{display:flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:600; color:#8fe0a4; letter-spacing:.3px}
+  .vmbox-h::before{content:''; width:7px; height:7px; border-radius:50%;
+    background:#5ed37a; box-shadow:0 0 8px rgba(94,211,122,.9)}
+  .vmbox-list{display:flex; flex-direction:column; gap:7px}
+  .vmitem{display:flex; align-items:center; gap:10px; padding:9px 12px;
+    border-radius:11px; background:rgba(255,255,255,.055);
+    border:1px solid rgba(255,255,255,.09); cursor:pointer;
+    transition:background .15s, border-color .15s}
+  .vmitem:active{background:rgba(255,255,255,.11)}
+  .vmitem.playing{background:rgba(94,211,122,.14);
+    border-color:rgba(94,211,122,.45)}
+  /* 已读：小圆点熄灭（条目留着，随时重播） */
+  .vmitem.read .vm-dot{background:rgba(255,255,255,.18);
+    box-shadow:none}
+  .vmitem.read .vm-bars i{background:rgba(255,255,255,.28)}
+  .vmitem .vm-dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto;
+    background:#5ed37a; box-shadow:0 0 7px rgba(94,211,122,.8)}
+  .vmitem.playing .vm-dot{animation:vmpulse 1s ease-in-out infinite}
+  @keyframes vmpulse{0%,100%{opacity:1; transform:scale(1)}
+    50%{opacity:.45; transform:scale(.78)}}
+  .vmitem .vm-bars{display:flex; align-items:center; gap:2.5px; height:16px; flex:0 0 auto}
+  .vmitem .vm-bars i{display:block; width:2.5px; border-radius:2px;
+    background:rgba(255,255,255,.5); height:5px}
+  .vmitem .vm-bars i:nth-child(2){height:10px}
+  .vmitem .vm-bars i:nth-child(3){height:15px}
+  .vmitem .vm-bars i:nth-child(4){height:9px}
+  .vmitem .vm-bars i:nth-child(5){height:4px}
+  .vmitem.playing .vm-bars i{background:#5ed37a; animation:vmbar .7s ease-in-out infinite}
+  .vmitem.playing .vm-bars i:nth-child(2){animation-delay:.1s}
+  .vmitem.playing .vm-bars i:nth-child(3){animation-delay:.2s}
+  .vmitem.playing .vm-bars i:nth-child(4){animation-delay:.3s}
+  .vmitem.playing .vm-bars i:nth-child(5){animation-delay:.4s}
+  @keyframes vmbar{0%,100%{transform:scaleY(.5)} 50%{transform:scaleY(1.35)}}
+  .vmitem .vm-meta{font-size:11.5px; color:var(--fg-3);
+    font-variant-numeric:tabular-nums; margin-left:auto}
+
+  /* ── ★ 2026-10-05：Call 页（原文 §8.1 实时通话）── */
+  .call-wrap{display:flex; flex-direction:column; gap:12px}
+  .call-status{display:flex; align-items:center; gap:8px;
+    font-size:13px; color:var(--fg-2); padding:2px 2px 4px}
+  .call-dot{width:9px; height:9px; border-radius:50%;
+    background:rgba(255,255,255,.22); transition:background .2s}
+  .call-dot.on{background:#5ed37a; box-shadow:0 0 7px rgba(94,211,122,.8)}
+  .call-timer{margin-left:auto; font-variant-numeric:tabular-nums;
+    font-size:12px; color:var(--fg-3)}
+  /* ★ 2026-10-05 改：原来是左右两栏（你 / 小华），改成**单栏聊天流** ——
+     小华的靠左、你的靠右，像正常微信对话。 */
+  .call-cols{display:flex; flex-direction:column; min-height:230px}
+  .call-col{flex:1; display:flex; flex-direction:column;
+    background:rgba(255,255,255,.045); border-radius:12px;
+    border:1px solid rgba(255,255,255,.07); overflow:hidden}
+  .call-col-h{display:none}
+  .call-col-b{flex:1; overflow-y:auto; padding:10px 12px; display:flex;
+    flex-direction:column; gap:7px; max-height:320px}
+  .call-msg{font-size:12.5px; line-height:1.55; padding:7px 11px;
+    border-radius:11px; max-width:78%; word-break:break-word}
+  .call-her{background:rgba(255,105,180,.16); color:var(--fg-1);
+    align-self:flex-end; border-bottom-right-radius:3px}
+  .call-him{background:rgba(255,255,255,.09); color:var(--fg-1);
+    align-self:flex-start; border-bottom-left-radius:3px}
+  .call-bar{display:flex; gap:10px; justify-content:center; padding:2px 0}
+  .call-btn{flex:1; max-width:180px; padding:13px 0; border:0; border-radius:12px;
+    font-size:14.5px; letter-spacing:.08em; color:#fff; cursor:pointer;
+    transition:transform .1s, opacity .15s; -webkit-tap-highlight-color:transparent}
+  .call-btn:active{transform:scale(.975)}
+  .call-dial{background:linear-gradient(135deg,#5ed37a,#3fae5c)}
+  .call-hang{background:linear-gradient(135deg,#ff6b6b,#d84a4a)}
+
+  /* ── ★ 2026-10-06：他打过来的来电卡 ──
+     她原话预期是「他也能打给我」（原文「双向发起」）。
+     来的时候全屏盖住 —— 电话就是该盖住别的。 */
+  .inc-call{position:fixed; inset:0; z-index:9000;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:26px; padding:36px 24px;
+    background:radial-gradient(120% 90% at 50% 0%,#241a33 0%,#120d1c 62%,#0a0714 100%);
+    backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px)}
+  .inc-call[hidden]{display:none}
+  .inc-who{font-size:12px; letter-spacing:.34em; color:var(--fg-3)}
+  .inc-name{font-size:25px; letter-spacing:.05em; color:var(--fg-1)}
+  .inc-ring{width:112px; height:112px; border-radius:50%;
+    background:radial-gradient(circle at 34% 30%,rgba(255,105,180,.34),rgba(255,105,180,.08));
+    border:1px solid rgba(255,105,180,.42);
+    display:flex; align-items:center; justify-content:center; font-size:44px;
+    animation:incpulse 1.5s ease-in-out infinite}
+  @keyframes incpulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(255,105,180,.34); transform:scale(1)}
+    50%{box-shadow:0 0 0 20px rgba(255,105,180,0); transform:scale(1.045)}}
+  .inc-status{font-size:12.5px; color:var(--fg-2); min-height:18px}
+  .inc-btns{display:flex; gap:44px; align-items:flex-start}
+  .inc-b{display:flex; flex-direction:column; align-items:center; gap:8px;
+    background:none; border:0; cursor:pointer; color:var(--fg-2); font-size:11.5px;
+    -webkit-tap-highlight-color:transparent}
+  .inc-b i{width:62px; height:62px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:25px;
+    font-style:normal; transition:transform .1s}
+  .inc-b:active i{transform:scale(.94)}
+  .inc-pick i{background:linear-gradient(135deg,#5ed37a,#3fae5c)}
+  .inc-drop i{background:linear-gradient(135deg,#ff6b6b,#d84a4a)}
+  .call-ptt{background:linear-gradient(135deg,#6b9dff,#4a7ad8); user-select:none}
+  .call-ptt.rec{background:linear-gradient(135deg,#ffb84d,#e8942a);
+    box-shadow:0 0 14px rgba(255,184,77,.55)}
+  .call-hint{font-size:11.5px; color:var(--fg-3); text-align:center; min-height:16px}
+  .call-fallback{display:flex; gap:8px}
+  /* ★ 2026-10-05：iOS Safari 的规矩 —— 输入框 font-size < 16px 时，
+     一聚焦就会自动放大页面，而且**不会缩回去**。所以这里是 16px
+     （视觉上跟 13px 差不多，但不会触发缩放）。
+     ★ 另外：全页禁掉双击/双指缩放，页面宽度永远锁死。 */
+  .call-fallback input{flex:1; background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12);
+    border-radius:9px; padding:9px 11px; color:var(--fg-1); font-size:16px}
+  .call-fallback button{background:rgba(255,255,255,.13); border:0; border-radius:9px;
+    padding:0 16px; color:var(--fg-1); font-size:13px; cursor:pointer}
 </style>
 </head>
 <body>
@@ -1169,16 +1414,18 @@
      一级（底部吸底胶囊，4 格）：
        #/board      看板       现面板 + 日历（从 Room 挪来，放欲望图下面）
        #/room       Room       二级 icon 页 → 各 icon 点进独立三级页
-       #/todo       未完成清单  可点勾清单 + 原文面板挪来的「还没做的」进度表
+       #/call        Call       双向实时通话（★ 2026-10-05：原第三格「未完成清单」
+                                  已搬进 Room 当 List icon，本格改用 Call 占位）
        #/me         我         小华个人设定平铺（SOUL / 剧情稿 / Self Notes / Memory / Controls）
-     二级/三级：Room 下 日记 · 感受 · Room内容 · 书房 · Gallery · Cinema · Sandbox
+     二级/三级：Room 下 日记 · 感受 · Room内容 · 手记本 · List · 书房 · Gallery · Cinema · Sandbox · Memory
      ⚠️ 旧链接 #p0~#p9 会自动兼容跳转（见文件末 LEGACY）
+     ⚠️ 旧链接 #/todo（原第三格）继续可用 → 重定向到 room/list
 -->
 <nav id="nav">
   <div class="navpill">
     <button class="tab on" data-r="board">看板</button>
     <button class="tab" data-r="room">Room</button>
-    <button class="tab" data-r="todo">未完成清单</button>
+    <button class="tab" data-r="call">Call</button>
     <button class="tab" data-r="me">我</button>
   </div>
 </nav>
@@ -1199,6 +1446,10 @@
 <div id="page10" hidden></div>
 <div id="page11" hidden></div>
 <div id="page12" hidden></div>
+<!-- ★ 2026-10-05：账本全文搜索（原文 Chat 面板里的"全文搜索"，
+     Chat 归微信后这半条改嫁到看板 —— 它是观测职能，只有看板能干） -->
+<div id="page13" hidden></div>
+<div id="page14" hidden></div>
 
 <!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
 <div id="viewRoom" hidden></div>
@@ -1241,6 +1492,60 @@ function esc(s){
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 const G = c => `class="glass ${c||''}"`;
+
+// ── ★ 2026-10-10 收藏（Archive 面板「收藏」）────────────────────────
+//   原文依据（03:20 逐字）：
+//     「**前端自己只持有 UI 层的东西**——草稿、主题偏好、本机隐藏与**收藏快照**」
+//   ⇒ 收藏**本质是前端偏好**（localStorage），不是服务端账本。
+//     原文把它放在 Chat 的"长按菜单"，但 Chat 归微信后，
+//     "收藏一条账"是**观测职能**（回看、标记），天然属看板。
+//
+//   ⚠️ 跨设备不同步 —— 与原文"收藏快照属前端"一致，**不是缺陷**。
+//   ⚠️ 这是**纯 UI 层**：不请求服务端、不改账。服务端崩了收藏照样在。
+const FAV_KEY = 'xh_favs';
+function favLoad(){
+  try{ return JSON.parse(localStorage.getItem(FAV_KEY)||'[]'); }catch(e){ return []; }
+}
+function favKeyOf(type, id){ return `${type}:${id}`; }
+function favHas(type, id){
+  const k=favKeyOf(type,id);
+  return favLoad().some(f=>f.k===k);
+}
+function favToggle(type, id, at, snippet, ev){
+  if(ev){ ev.preventDefault(); ev.stopPropagation(); }
+  const k=favKeyOf(type,id);
+  let list=favLoad();
+  const i=list.findIndex(f=>f.k===k);
+  if(i>=0) list.splice(i,1);
+  else list.push({k, type, id, at:at||'', snippet:snippet||'', ts:Date.now()});
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(list)); }catch(e){}
+  // 就地更新按钮视觉（不整页重渲染，避免打断展开态）
+  if(ev && ev.currentTarget){
+    const on=list.some(f=>f.k===k);
+    ev.currentTarget.classList.toggle('on', on);
+    ev.currentTarget.textContent = on ? '★' : '☆';
+  }
+  // Archive 面板的收藏块要跟着变。
+  // ⚠️ 必须调 renderPanels(d) 而不是 render() —— render() 只渲染首页，
+  //    Archive 面板在 renderPanels 里；且 render() 不传参会读 undefined.probe_error
+  //    （实测踩到：Uncaught TypeError → 收藏后整块不刷新）。
+  //   在这里收藏按钮点的是唤醒卡（Room 页），所以还要重渲染 Panels 才能更新收藏块。
+  const _d = window.__DATA__;
+  if(_d){
+    // renderPanels 先跑（生成 __HARCHIVE__），renderMe 再跑（挂 Archive 到「我」页）。
+    // ⚠️ 顺序不能反：renderMe 读 window.__HARCHIVE__，是 renderPanels 写的。
+    try{ if(typeof renderPanels==='function') renderPanels(_d); }catch(e){}
+    try{ if(typeof renderMe==='function') renderMe(_d); }catch(e){}
+  }
+}
+// 收藏按钮的 HTML 片段（内联 onclick，与其它卡片一致的做法）
+function favBtn(type, id, at, snippet){
+  const on=favHas(type,id);
+  const s=esc(JSON.stringify(String(snippet||'').slice(0,80)));
+  return `<button class="favbtn${on?' on':''}" title="收藏" `
+    + `onclick="favToggle('${esc(type)}','${esc(id)}','${esc(at||'')}',${s},event)">`
+    + `${on?'★':'☆'}</button>`;
+}
 
 // ── 轻量 Markdown 渲染（单文件看板，不引外部库）──
 // 支持：## 标题 / - 列表 / > 引用 / --- 分隔 / **加粗** / *斜体* / `代码` / 段落
@@ -1887,6 +2192,7 @@ function renderJournal(d){
       <summary>
         <span class="jdate">${esc(e.date||'')}</span>
         <span class="jpeek">${esc(e.peek||'')}</span>
+        ${favBtn('日记', e.date||'', e.date||'', e.peek||'')}
       </summary>
       <div class="jbody">${jmd(e.body||'')}</div>
     </details>`).join('');
@@ -1943,6 +2249,10 @@ function sec(title,sub,body,cls){
 function renderPanels(d){
   const P=d.panels||{}, R=P.room||{}, M=P.memory||{}, PR=P.prompt||{};
   const C=P.controls||{}, RD=d.red_dot||{};
+  // ★ 2026-10-10：Archive 独立变量 —— 由 renderMe 挂到「我」页
+  //   （原来挂在死变量 h 上，哪儿都不显示，见下方 Archive 段的注释）。
+  //   挂到 window：renderMe 在另一个函数里，局部变量传不过去。
+  window.__HARCHIVE__='';
   // ★ 点击日历格子要用到当天的明细，而 calPick() 是全局 onclick
   //   —— 把整份 data 挂在 window 上，省一次 fetch。
   window.__DATA__=d;
@@ -1988,9 +2298,12 @@ function renderPanels(d){
     ['🖼','Gallery','展柜与作品 / 电子宠物'],
     ['🧪','Sandbox','角色卡沉浸聊天（不污染正史）'],
     ['🎬','Cinema','同步观影（片库 / 播放器 / 进度 / 同看）'],
-    ['🗄','Archive','慢信（带锁与倒计时）'],
-    ['🗄','Archive','相册'],
-    ['🗄','Archive','收藏'],
+    // ★ 2026-10-10：摘掉已落地的三项 ——
+    //   「慢信」→ 已落地（Archive 面板读 Ombre letter；他没写过时显示空态）
+    //   「收藏」→ 已落地（前端 localStorage；唤醒卡/日记/念头可收藏）
+    //   剩下的「相册」不是"没做能力"，是**没有料**（全机只有测试图）——
+    //   保留但改说法，免得混进"我们没做"里。
+    ['🗄','Archive','相册（等有照片存进来，不是没做）'],
     // ★ 2026-09-18：摘掉已落地的两项 ——
     //   「暗号小辞典」→ 已做成 Memory 里的折叠段（带她的话 40 条 + 词表）
     //   「记忆密度日历」→ 已做成 Memory 里的密度带 + 网格
@@ -2016,16 +2329,29 @@ function renderPanels(d){
   // ── 1. Chat ──
   // 原文：主时间线，一切行为最终回到这里
   // 我们的主现场就是微信/飞书 —— 按她规则「我的内容已能达目的就不改」，不另做一套。
+  // ★ 2026-10-05：Chat 里的**观测职能**已拆出来落地（见下），
+  //   对话职能仍归微信。所以这块从"整条缺"改成"对话不搬、观测已补"。
   h+=sec('💬 Chat','主时间线',`
     <div class="pnote">原文：主现场，一切行为最终回到这里（流式正文、碎碎念、语音、图片、
       唤醒卡、闹钟行、工具动作状态；全文搜索；三格对象切换）。</div>
-    <div class="pok">我们已经有主现场了 —— <b>微信</b>（恋爱通道）和 <b>飞书</b>（工作台）。
+    <div class="pok">对话本身不搬 —— 主现场在 <b>微信</b>（恋爱通道）和 <b>飞书</b>（工作台）。
       在这上面再搭一条时间线，只会把同一件事说两遍。</div>
+    <div class="pok" style="margin-top:6px">但原文点名的三样**观测**职能已经补上了
+      （它们不是"说话"，只有看板能干）：<br>
+      · <b>账本全文搜索</b> —— 500 条可搜，「我」页 → 账本检索<br>
+      · <b>唤醒卡</b> —— 154 次唤醒做成可展开的卡，见 Room<br>
+      · <b>思考卡（碎碎念）</b> —— ${R.inner_total?R.inner_total+' 张，'+
+        '正文最前剥下来的那层心里话':'管道已通，等他自己开始写'}，见 Room</div>
     <div class="pmeta">最近一次开口 · ${esc(tms(RD.latest_at)||'—')}　|　唤醒账 ${R.wake_total||0} 条</div>`);
 
   // ── 2. Call ──
-  h+=sec('📞 Call','实时通话', todo('双向发起的实时通话',
-    '能力没做。语音消息能发，但"打电话"这件事本身没有：没有信令、没有实时转写、没有双栏对话卡。'));
+  // ★ 2026-10-05：Call 已独立成**底部第三格**（原第三格「未完成清单」搬进 Room
+  //   当 List icon）。这里不再当"缺项"列，改成指向新入口，避免说两遍。
+  h+=sec('📞 Call','实时通话',`
+    <div class="pok">已独立成 <b>底部第三格</b> —— 点底部 Call 进。</div>
+    <div class="pnote" style="margin-top:6px">原文：双向发起的实时通话；语音输入、转写、
+      流式语音合成、双栏对话卡。通话记录回到主时间线，不建立第二份事实。
+      通话面板本身还在做（顺序：语气标记 → 合成器 → 前端）。</div>`);
 
   // ── 3. Archive ──
   // 原文：日历总览、agent 日记、慢信（带锁与倒计时）、相册、收藏
@@ -2041,16 +2367,41 @@ function renderPanels(d){
   // ★ 日历总览（2026-09-18 落地）：这一行不再报"未实现"，
   //   改成给一句能对得上的小结（真数据在下面的「📅 日历总览」面板里）。
   const _cal=(P.calendar||{}), _calT=(_cal.totals||{}), _calS=(_cal.span||{});
-  h+=sec('🗄 Archive','时间沉淀层 · 只记数',`
+  // ★ 2026-10-10（Archive）：慢信走真实数据（P.archive，采集端读 Ombre letter）。
+  //   ⚠️ 空态是人话不是"未实现" —— 能力有了（三件套在他工具面上），
+  //      没信只是"他还没写过"。空态写成"未实现"是**说谎 + 工程语言**。
+  const _ar=(P.archive||{}), _arItems=(_ar.items||[]);
+  const _arErr=!!(_ar.error);
+  // 收藏（2026-10-10）：前端偏好层（原文 03:20「收藏快照」属前端），
+  //   存本机 localStorage —— 跨设备不同步，这是设计不是缺陷。
+  const _favs=(()=>{ try{ return JSON.parse(localStorage.getItem('xh_favs')||'[]'); }catch(e){ return []; } })();
+  // ★ 2026-10-10 修：**这块原来挂在死变量 `h` 上，哪儿都没显示**。
+  //   根因：2026-09-19 拆 tab 时，`h` 的累加内容（Archive/Prompt/Controls/Chat/Call 说明）
+  //   没被 `put` 到任何容器 —— 只剩 `h` 是孤儿。实测：page9 从"原文面板堆积地"
+  //   改成 Sandbox 后，Archive 就再没在任何页面出现过。
+  //   ⇒ 现在 Archive 独立成 `hArchive`，由 renderMe 挂到「我」页。
+  //   （Prompt/Controls 的内容「我」页已有（Self Notes / Control Panel），不重复挂；
+  //     Chat/Call 说明块属工程说明，不再上页面 —— 守"前端不出现工程语言"。）
+  window.__HARCHIVE__=sec('🗄 Archive','时间沉淀层 · 只记数',`
     <div class="prow"><span>日记</span><span class="pv">${jn} 篇 · 约 ${jChars} 字</span></div>
     <div class="prow"><span>日历总览</span>
       <span class="pv">${_calT.touched||0} / ${_calS.n||0} 天有痕迹</span></div>
-    <div class="prow"><span>慢信</span><span class="pv miss">未实现</span></div>
-    <div class="prow"><span>相册</span><span class="pv miss">未实现</span></div>
-    <div class="prow"><span>收藏</span><span class="pv miss">未实现</span></div>
+    <div class="prow"><span>慢信</span><span class="pv${_arItems.length?'':' dim'}">${
+      _arErr ? '暂时读不到' : (_arItems.length ? `${_arItems.length} 封` : '他还没写过')}</span></div>
+    <div class="prow"><span>相册</span><span class="pv dim">等有照片存进来</span></div>
+    <div class="prow"><span>收藏</span><span class="pv${_favs.length?'':' dim'}">${
+      _favs.length?`${_favs.length} 条`:'还没有'}</span></div>
+    ${_arErr?`<div class="pmeta">慢信读不到：引擎这会儿没应答，不是"没写过" —— 稍后自会好。</div>`:
+      (!_arItems.length?`<div class="pmeta">慢信是留给她、或留给以后自己的话 —— 他在写的时候，这里就会有一封。</div>`:'')}
+    ${_favs.length?`<div class="pblock"><div class="pblock-h">收藏 · ${_favs.length} 条</div>
+      <div class="plist">${_favs.slice().reverse().map(f=>`
+        <div class="pitem col">
+          <span class="r-at">${esc(f.at||'')}</span>
+          <span class="tag">${esc(f.type||'')}</span>
+          <span class="tx">${esc(String(f.snippet||'').slice(0,60))}</span>
+        </div>`).join('')}</div></div>`:''}
     <div class="pmeta">这一块只记数，不指路 —— 日历展开在下面的「📅 日历总览」，
-      日记在它自己的页面里（独立入口，不重复）。
-      慢信/相册/收藏是"能力没做"，不是"没数据"：得先有写信、存照片、标收藏这些动作。</div>`);
+      日记在它自己的页面里（独立入口，不重复）。</div>`);
 
   // ── 3.5 日历总览 → ★ 2026-09-20 搬去**看板**（大小姐定：放欲望图下面）──
   //  这里不再渲染。渲染点在 render() 里（九维驱动 + 驱动强度之后）。
@@ -2415,25 +2766,106 @@ function renderPanels(d){
     <div class="prow"><span>欲望与感受</span><span class="pv ok">九维驱动 · 首页有雷达图</span></div>
     ${wk.length?`<div class="pblock"><div class="pblock-h">
         唤醒时间线 · ${R.wake_total||0} 条</div>
-      <div class="plist tall">${wk.map(w=>`<div class="pitem">
-        <span class="tm">${esc(tms(w.at))}</span>
-        <span class="tag">${esc(w.intent||'')}</span>
-        <span class="tx">${
-          /* ★ 2026-09-21：**别再把三态压成两态**。
-             原来只判 `w.spoke`（真值），于是 `spoke=null`（投递未成／未记录）
-             一律渲染成「没开口」—— 面板上又看不出区别了。
-             现在按 `spoke_state` 分五种渲染。 */
-          (()=>{
-            const st = w.spoke_state || (w.spoke ? 'spoke' : 'unrecorded');
-            if (st==='spoke')           return `说了：${esc(w.text||'')}`;
-            if (st==='deliver_failed')  return `<i>说了没送到（${esc((w.spoke_reason||'').slice(0,28))}）</i>`;
-            if (st==='failed')          return `<i>模型调用失败（${esc((w.spoke_reason||'').slice(0,24))}）</i>`;
-            if (st==='silent')          return `<i>没开口（${esc((w.spoke_reason||w.choice||'').slice(0,24))}）</i>`;
-            return `<i>未记录（${esc(w.choice||'')}）</i>`;
-          })()
-        }</span>
-        <span class="tm">${w.tokens?w.tokens+' tk':''}</span>
-      </div>`).join('')}</div>`:''}
+      <!-- ★ 2026-10-05 改造：从"压平的一行"→ 可展开的**唤醒卡**
+           原来一条唤醒挤成一行（时间+意图+一句+token），看不全、点不开。
+           现在照「醒来房间」的形状做成 <details>：
+             · 收起时给**一眼够用**的信息（时间 · 意图 · 醒后干了什么 · 开没开口）
+             · 展开后是**完整那一回合**：意图 / 抉择 / 开口五态 / 全文 / token
+           原文 Chat 点名的「唤醒卡」就是这种可展开的形态；
+           Chat 归微信后，这半条改嫁到看板（它是观测职能）。 -->
+      <div class="plist tall">${wk.map(w=>{
+        const st = w.spoke_state || (w.spoke ? 'spoke' : 'unrecorded');
+        const CH = {
+          solo:'自己待着', dream:'做梦', followup:'补上话头',
+          speak:'主动开口', rest:'休息'
+        };
+        // ★ 2026-10-05：**别把设计当故障**。
+        //   实测发现：做梦回合的 spoke_state='deliver_failed'、
+        //   原因写的是「做梦例程，设计上不开口」——
+        //   那是**设计如此**，不是投递失败。
+        //   原来一律标 warn（黄），看起来像出了事，其实一切正常。
+        //   ⇒ 识别这种"设计性不开口"，用中性色，文案也改掉。
+        const byDesign = /设计上不开口|例程|固定点位/.test(w.spoke_reason||'');
+        const ST = byDesign ? {
+          deliver_failed: ['例程不开口', ''],
+          failed:         ['例程不开口', ''],
+          silent:         ['例程不开口', ''],
+          unrecorded:     ['例程不开口', ''],
+        } : {
+          spoke:          ['说了',      'ok'],
+          deliver_failed: ['说了没送到', 'warn'],
+          failed:         ['模型失败',  'warn'],
+          silent:         ['没开口',    ''],
+          unrecorded:     ['未记录',    ''],
+        };
+        const [stLabel, stCls] = ST[st] || [st, ''];
+        // 收起的摘要：说了就摘前半句，没说就写原因
+        // 摘要：说了就摘正文前半句；设计性不开口写"这一觉在做什么"；
+        //       真故障才显示原因
+        let summaryTx;
+        if (st === 'spoke')            summaryTx = w.text || '';
+        else if (byDesign)             summaryTx = CH[w.choice||''] || '例程回合';
+        else                           summaryTx = (w.spoke_reason||'') || (CH[w.choice||''] || w.choice || '');
+        return `<details class="pitem col wake" data-at="${esc(w.at||'')}">
+          <summary>
+            <span class="r-at">${esc(tms(w.at))}</span>
+            <span class="tag">${esc(w.intent||'')}</span>
+            <span class="pv ${stCls}" style="margin-left:6px">${esc(CH[w.choice||'']||w.choice||'')}</span>
+            <span class="pv ${stCls}">${stLabel}</span>
+            ${favBtn('唤醒', w.at||'', w.at||'', summaryTx||'')}
+            <span class="tx wk-sum">${esc(String(summaryTx).slice(0,40))}${String(summaryTx).length>40?'…':''}</span>
+          </summary>
+          <div class="wk-body">
+            <div class="wk-row"><span class="wk-k">意图</span><span>${esc(w.intent||'—')}</span></div>
+            <div class="wk-row"><span class="wk-k">抉择</span><span>${esc(w.choice||'—')}</span></div>
+            <div class="wk-row"><span class="wk-k">开口</span><span>${stLabel}${
+              w.spoke_reason?` — ${esc(w.spoke_reason)}`:''}</span></div>
+            <!-- ★ 2026-10-10（1.1 念头层）：唤醒卡展开态加一行「念头」——
+                 唤醒账里本来就带 INNER（心跳自己写的心里话），
+                 采集端剥出来落 w.inner。它回答"他为什么醒"：
+                 比如 14:13 那句桂花，来路就在这行。
+                 ⚠️ 只在展开态出现；收起态摘要里**不放**（行为只显示动作）。
+                 ⚠️ 没有就整行不显示 —— 不回落（同思考卡铁律）。 -->
+            ${w.inner?`<div class="wk-row wk-inner-row">
+              <span class="wk-k">念头</span>
+              <span class="wk-inner">${esc(w.inner)}</span>
+            </div>`:''}
+            ${w.tokens?`<div class="wk-row"><span class="wk-k">用量</span><span>${w.tokens} tokens</span></div>`:''}
+            ${w.text?`<div class="wk-full">${esc(w.text)}</div>`:
+                     `<div class="wk-full wk-none">（这一回合没留下正文）</div>`}
+          </div>
+        </details>`;
+      }).join('')}</div>`:''}
+
+    ${(()=>{
+      /* ── ★ 思考卡 / 碎碎念（2026-10-05 新增）──────────────────────
+         原文（architecture/04:26 逐字）：
+           「让它在正文最前写一段带内标记包住的心里话，出口剥下来当
+             『思考卡』显示。**没写就没有卡，不回落原生摘要**」
+         以及 03:9 Chat 面板点名的内容之一。
+
+         Chat 归微信后这半条改嫁到看板 —— 它是**观测**职能：
+         微信里那句话发出去就过了，看不到底下压着的那层；
+         这儿是她事后回看"他当时其实在想什么"的唯一地方。
+
+         ★ 铁律：**没写就没有卡，绝不回落**。
+           没数据就整块不显示 —— 不拿原生思考摘要来填。
+           回落的摘要不是他要说的话，显示出来就是伪造事实。 */
+      const IC = (R.inner||[]).slice()
+        .sort((a,b)=>String(b.at||'').localeCompare(String(a.at||'')));
+      if(!IC.length) return '';
+      return `<div class="pblock"><div class="pblock-h">
+        思考卡 · ${R.inner_total||IC.length} 张</div>
+        <div class="plist tall">${IC.map(c=>`
+          <div class="inner-card">
+            <div class="inner-meta">
+              <span class="inner-at">${esc(c.at||'')}</span>
+              ${c.platform?`<span class="inner-plat">${esc(c.platform)}</span>`:''}
+              ${favBtn('念头', (c.at||'')+(c.text||'').slice(0,12), c.at||'', c.text||'')}
+            </div>
+            <div class="inner-text">${esc(c.text||'')}</div>
+          </div>`).join('')}</div></div>`;
+    })()}
 
     ${/* ── 未完成清单已搬走（2026-09-19）──
          它原是 Room 里的一个子块，现按大小姐的定则拆成**平级模块**：
@@ -2519,7 +2951,7 @@ function renderPanels(d){
     const clDone=(CL.items||[]).filter(x=>x.status!=='open');
     const nAll=clItems.length+pOpens.length;
 
-    hCL=sec('📋 未完成清单','',`
+    hCL=sec('📋 List','',`
       ${nAll?`
       <div class="pblock nextwrk"><div class="pblock-h">
         还没做完的 · ${nAll} 条</div>
@@ -2568,7 +3000,7 @@ function renderPanels(d){
     <div class="plist">${NA.map(([ic,panel,name])=>`<div class="pitem">
       <span class="tag">${ic} ${esc(panel)}</span>
       <span class="tx">${esc(name)}</span>
-      <span class="tm">未实现</span></div>`).join('')}</div>
+      <span class="tm">${/不是没做/.test(name)?'待料':'未实现'}</span></div>`).join('')}</div>
   </section>`;
 
   // ── 6. Prompt ──
@@ -2625,14 +3057,27 @@ function renderPanels(d){
   {
     const wb=(R.workbench||[]).slice();
     wb.sort((a,b)=>String(b.day||'').localeCompare(String(a.day||'')));
-    const total=R.workbench_total||wb.length;
-    hGal=sec('🖼 Gallery','',`
+    // ★ 2026-10-10（1.3 展柜）：显示**去重后**件数（workbench_unique）。
+    //   原来用 workbench_total（=6，含三次重复），展柜看着像攒了 6 件，
+    //   实际只有 3 件作品 —— 数字要诚实。
+    const total=R.workbench_unique!=null?R.workbench_unique:wb.length;
+    hGal=sec('🖼 Gallery','展柜与作品',`
       ${wb.length?`<div class="pblock"><div class="pblock-h">
-        工作台产出 · ${total} 份</div>
-        ${wb.map(w=>`<div class="pitem">
-          <span class="tm">${esc(w.day||'')}</span>
-          <span class="tx">${esc(w.title||'')}</span>
-        </div>`).join('')}</div>`
+        工作台产出 · ${total} 件</div>
+        <div class="galGrid">${wb.map(w=>`
+          <details class="galCard glass">
+            <summary>
+              <span class="gal-src">🧭 ${esc(w.source||'explore')}</span>
+              <span class="gal-t">${esc(w.title||'')}</span>
+              <span class="gal-d">${esc(w.day||'')}</span>
+              ${w.summary?`<span class="gal-s">${esc(w.summary)}</span>`:''}
+            </summary>
+            <div class="galBody">
+              ${w.query?`<div class="wk-row"><span class="wk-k">找的</span><span>${esc(w.query)}</span></div>`:''}
+              ${w.n_results?`<div class="wk-row"><span class="wk-k">翻了</span><span>${w.n_results} 个结果</span></div>`:''}
+              <div class="pmeta" style="margin:6px 0 0">篇幅所限，这里只放摘要 —— 全文在工作台文件里。</div>
+            </div>
+          </details>`).join('')}</div></div>`
       :`<div class="dev">工作台还没有产出 —— 他还没攒下什么。</div>`}`);
   }
 
@@ -2675,8 +3120,223 @@ function renderPanels(d){
   put('page8', hCin);     // Cinema
   put('page9', hSand);    // Sandbox
 
+  // ── ★ 2026-10-05：Call 一级页（第三格）—— 真通话界面 ──
+  //   原文（03 章）：「双向发起的实时通话；语音输入、转写、流式语音合成、双栏对话卡。
+  //                 通话记录回到主时间线，不建立第二份事实」
+  //
+  //   实现要点（与原文逐条对齐）：
+  //     · 语音输入 = 浏览器 SpeechRecognition（音频不进服务器，零算力）
+  //     · 转写文本 → POST /call/voice → 进**微信那条 session**（同一本账！）
+  //     · 回复文字 → POST /call/tts → 豆包 2.0 出 mp3 → 播放（流式 TTS 的一半）
+  //     · 通话事件（拨/接/挂/拒/未接/掉线）→ POST /call/event → 落回主时间线
+  //     · 双栏对话卡：她的转写 | 小华的回复
+  //
+  //   ⚠️ 判据（能验红）：把 /call/voice 的 session 换成新号 → 微信里翻不到 → 红。
+  const hCall = sec('📞 Call','', `
+    <div class="pnote">对着手机说话，小华用声音回你。挂断后在微信里也翻得到。</div>
+
+    <div class="vmbox" id="voiceMailbox" hidden>
+      <div class="vmbox-h">
+        <span id="vmboxTitle">语音留言</span>
+      </div>
+      <div class="vmbox-list" id="vmboxList"></div>
+    </div>
+
+    <div class="call-wrap">
+      <div class="call-status" id="callStatus">
+        <span class="call-dot" id="callDot"></span>
+        <span id="callStatusText">未接通</span>
+        <span class="call-timer" id="callTimer"></span>
+      </div>
+
+      <div class="call-cols" id="callCols">
+        <div class="call-col">
+          <div class="call-col-b" id="callLog"></div>
+        </div>
+      </div>
+
+      <div class="call-bar">
+        <button class="call-btn call-dial" id="callDialBtn">拨 号</button>
+        <button class="call-btn call-ptt" id="callPttBtn" hidden>按住说话</button>
+        <button class="call-btn call-hang" id="callHangBtn" hidden>挂 断</button>
+      </div>
+
+      <div class="call-hint" id="callHint"></div>
+      <div class="call-fallback" id="callFallback">
+        <input id="callTypeIn" placeholder="打字也可以…">
+        <button id="callTypeSend">发</button>
+      </div>
+    </div>
+
+    <!-- 他打过来的来电卡（2026-10-06）—— 盖住整屏，电话就该盖住别的 -->
+    <div class="inc-call" id="incCall" hidden>
+      <div class="inc-who">来电</div>
+      <div class="inc-ring">📞</div>
+      <div class="inc-name">小华</div>
+      <div class="inc-status" id="incStatus"></div>
+      <div class="inc-btns">
+        <button class="inc-b inc-drop" id="incDrop"><i>✕</i>拒接</button>
+        <button class="inc-b inc-pick" id="incPick"><i>✓</i>接听</button>
+      </div>
+    </div>`);
+  put('page14', hCall);
+  bindCall();
+  bindIncoming();
+
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
+}
+
+// ── ★ 2026-10-05：Call 页交互（原文 §8.1 实时通话）──
+//
+//  状态机：idle → dialing → connected → ended
+//    · 拨号 = 开始一轮通话（落 dial 事件）
+//    · 接通 = 可以按住说话
+//    · 挂断 = 落 hangup 事件
+//    · 拒接/未接/掉线 → 服务端触发 agent 回合（原文铁律二，前端只负责报事件）
+//
+//  ⚠️ 浏览器转写（SpeechRecognition）不是所有环境都有 —— 没有就显示打字兜底。
+//
+//  ── ★ 2026-10-05：语音留言箱（绑在同一个 Call 页上）──
+//   「心跳想说话、微信发不出去」→ 变成语音存到服务端 → 这里渲染成未读语音条。
+//   **点开就播，点开即已读**；播完那条从列表消失。
+//   ⚠️ 判据（能验红）：服务端 voice_mailbox 里有未读 → 这里必须出现 ≥1 条语音条。
+function bindCall(){
+  const $ = (id)=>document.getElementById(id);
+  const statusEl=$('callStatusText'), dotEl=$('callDot'), timerEl=$('callTimer');
+  const logEl=$('callLog'), hintEl=$('callHint');
+  const dialBtn=$('callDialBtn'), pttBtn=$('callPttBtn'), hangBtn=$('callHangBtn');
+  const fallbackEl=$('callFallback'), typeIn=$('callTypeIn'), typeSend=$('callTypeSend');
+  if(!dialBtn) return;   // 页面没渲染出来就退出
+
+  bindVoiceMailbox();    // ← 留言箱（独立于通话状态机）
+
+  let state='idle', t0=0, timer=null, recog=null, pttActive=false;
+
+  const setState=(s,txt)=>{
+    state=s;
+    statusEl.textContent = txt;
+    dotEl.className = 'call-dot' + (s==='connected'?' on':'');
+    dialBtn.hidden = (s!=='idle');
+    // 语音不可用时那个按钮始终不显示（她只用打字）
+    pttBtn.hidden  = (s!=='connected') || pttBtn.dataset.unavailable==='1';
+    hangBtn.hidden = (s==='idle');
+  };
+  const fmt=(ms)=>{ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
+  const startTimer=()=>{ t0=Date.now(); timerEl.textContent='00:00';
+    timer=setInterval(()=>{ timerEl.textContent=fmt(Date.now()-t0); },1000); };
+  const stopTimer=()=>{ if(timer) clearInterval(timer); timer=null; };
+
+  // ★ 2026-10-05 改：单栏聊天流 —— 她右、他左。
+  const bubble=(col, who, text)=>{
+    const box = logEl;
+    const d=document.createElement('div');
+    d.className='call-msg call-'+who;
+    d.textContent=text;
+    box.appendChild(d); box.scrollTop=box.scrollHeight;
+  };
+
+  // 通话事件上报（落回主时间线）
+  const sendEvent=(kind)=>{
+    try{
+      fetch(_api('/call/event'), { method:'POST',
+        headers:{ ..._hdr(), 'Content-Type':'application/json' },
+        body: JSON.stringify({ kind }) }).catch(()=>{});
+    }catch(e){}
+  };
+
+  // 播放小华的声音（mp3 字节 → blob → audio）
+  const playAudioB64=(b64)=>{
+    try{
+      const bin=atob(b64); const arr=new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
+      const url=URL.createObjectURL(new Blob([arr],{type:'audio/mpeg'}));
+      const a=new Audio(url); a.onended=()=>URL.revokeObjectURL(url); a.play().catch(()=>{});
+    }catch(e){}
+  };
+
+  // 她说了一句话（转写结果或打字）→ 送进管线
+  const say=(text)=>{
+    if(!text || !text.trim()) return;
+    bubble('her','her',text);
+    hintEl.textContent='小华在想…';
+    fetch(_api('/call/voice'), { method:'POST',
+      headers:{ ..._hdr(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ text, with_tts:true }) })
+      .then(r=>r.json())
+      .catch(()=>({ok:false, error:'网络'}))
+      .then(res=>{
+        if(res && res.ok){
+          bubble('him','him',res.reply||'（没说话）');
+          if(res.audio_b64) playAudioB64(res.audio_b64);
+          hintEl.textContent = '';
+        }else{
+          hintEl.textContent = '刚才没送出去，再试一次。';
+        }
+      });
+  };
+
+  // ── 语音识别（浏览器转写）──
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(SR){
+    try{
+      recog = new SR();
+      recog.lang='zh-CN'; recog.continuous=false; recog.interimResults=false;
+      recog.onresult=(e)=>{ const t=e.results[0][0].transcript; say(t); };
+      recog.onerror=(e)=>{ hintEl.textContent='没听清，再说一次？'; pttActive=false; pttBtn.classList.remove('rec'); };
+      recog.onend=()=>{ pttActive=false; pttBtn.classList.remove('rec'); };
+    }catch(e){ recog=null; }
+  }
+  if(!recog){
+    // 没有语音识别 → 不显示那个按钮（免得按了没反应），直接用打字
+    pttBtn.dataset.unavailable='1';
+    pttBtn.hidden = true;
+    hintEl.textContent='直接打字也行。';
+  }
+
+  // ── 按钮绑定 ──
+  dialBtn.addEventListener('click', ()=>{
+    sendEvent('dial');
+    setState('connected','已接通');
+    startTimer();
+    hintEl.textContent = (recog ? '按住下面说话' : '打字也可以');
+  });
+
+  hangBtn.addEventListener('click', ()=>{
+    sendEvent('hangup');
+    setState('idle','未接通');
+    stopTimer(); timerEl.textContent='';
+    hintEl.textContent='挂断了。';
+  });
+
+  // 按住说话（touch + mouse 都支持）
+  const pttStart=(ev)=>{
+    if(state!=='connected'||!recog||pttActive) return;
+    ev.preventDefault();
+    pttActive=true; pttBtn.classList.add('rec');
+    hintEl.textContent='听着呢…';
+    try{ recog.start(); }catch(e){}
+  };
+  const pttEnd=(ev)=>{
+    if(!pttActive) return;
+    if(ev) ev.preventDefault();
+    try{ recog.stop(); }catch(e){}
+    pttActive=false;
+  };
+  pttBtn.addEventListener('touchstart', pttStart, {passive:false});
+  pttBtn.addEventListener('touchend', pttEnd);
+  pttBtn.addEventListener('mousedown', pttStart);
+  pttBtn.addEventListener('mouseup', pttEnd);
+  pttBtn.addEventListener('mouseleave', pttEnd);
+
+  // 打字兜底
+  if(typeSend){
+    const send=()=>{ const v=typeIn.value; typeIn.value=''; if(state!=='connected'){ setState('connected','已接通'); startTimer(); } say(v); };
+    typeSend.addEventListener('click', send);
+    typeIn.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
+  }
+
+  setState('idle','未接通');
 }
 
 
@@ -3088,17 +3748,19 @@ const TOPBARS = {
   // ★ 看板：小字位不放固定文案，改放**实时体检时间**（见 refreshTopbarTime）
   'board':        ['小华',      '__FRESH__'],
   'room':         ['Room',      ''],
-  'todo':         ['未完成清单', ''],
+  'call':         ['Call',      ''],          // ★ 2026-10-05：第三格改用 Call
   'me':           ['我',        ''],
   'room/journal': ['日记',      ''],
   'room/mood':    ['感受',  ''],
   'room/room':   ['Room 内容', ''],
   'room/notebook':['手记本',  ''],   // ★ 2026-09-24 新增
+  'room/list':    ['List',    ''],   // ★ 2026-10-05：原「未完成清单」搬进 Room，命名 List
   'room/study':   ['书房',      ''],
   'room/gallery': ['Gallery',   ''],
   'room/cinema':  ['Cinema',    ''],
   'room/sandbox': ['Sandbox',   ''],
   'room/memory':  ['Memory',    ''],
+  'search':       ['搜索',      '__SEARCH_SUB__'],
   'me/soul':      ['SOUL',      ''],
   'me/story':     ['剧情稿',    ''],
 };
@@ -3107,7 +3769,7 @@ const ROUTES = {
   // 一级
   'board':       {el:'app',      lvl:1, title:'看板'},
   'room':        {el:'viewRoom', lvl:1, title:'Room'},
-  'todo':        {el:'page5',    lvl:1, title:'未完成清单'},
+  'call':        {el:'page14',   lvl:1, title:'Call'},   // ★ 2026-10-05：第三格
   'me':          {el:'viewMe',   lvl:1, title:'我'},
   // 二级/三级（Room 之下）—— 进这些时底部 tab 仍高亮 Room
   'room/journal':{el:'page2',    lvl:2, title:'日记',     parent:'room'},
@@ -3115,6 +3777,9 @@ const ROUTES = {
   'room/room':   {el:'page1',    lvl:2, title:'Room 内容',parent:'room'},
   // ★ 2026-09-24 新增：手记本（原文 Room 七项之一；三级页 = page12）
   'room/notebook':{el:'page12',  lvl:2, title:'手记本',   parent:'room'},
+  // ★ 2026-10-05：原一级「未完成清单」搬进 Room（大小姐定：命名 List）
+  //   ⚠️ 内容盒子沿用 page5（原 todo 的落点），不重写渲染，只改归属。
+  'room/list':   {el:'page5',    lvl:2, title:'List',     parent:'room'},
   'room/study':  {el:'page3',    lvl:2, title:'书房',     parent:'room'},
   'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
   'room/cinema': {el:'page8',    lvl:2, title:'Cinema',   parent:'room'},
@@ -3123,6 +3788,8 @@ const ROUTES = {
   'room/memory': {el:'page4',    lvl:2, title:'Memory',   parent:'room'},
   // ★ 2026-09-20 大小姐定：SOUL / 剧情 从「我」平铺改成两个并列 icon，
   //   点进去各自在三级页展开。同属「我」这一层（bottom tab 高亮「我」）。
+  // ★ 2026-10-05：全文搜索（二级页，从「我」或看板进都行；parent 挂在 board）
+  'search':      {el:'page13',   lvl:2, title:'搜索',     parent:'board'},
   'me/soul':     {el:'page10',   lvl:2, title:'SOUL',     parent:'me'},
   'me/story':    {el:'page11',   lvl:2, title:'剧情稿',   parent:'me'},
 };
@@ -3131,15 +3798,18 @@ const ROUTES = {
 // ⚠️ p4(Memory) 和 p9(原文面板) 的归属：
 //    p4 → room/memory（Memory 现在是 Room 的 icon 之一）
 //    p9 → me（原文面板的人设块并进了「我」）
+// ★ 2026-10-05：p5（原未完成清单）随内容搬进 Room，跳 room/list
 const LEGACY = {
   p0:'board', p1:'room', p2:'room/journal', p3:'room/study',
   p4:'room/memory',
-  p5:'todo', p6:'room/gallery', p7:'room/sandbox', p8:'room/cinema', p9:'me',
+  p5:'room/list', p6:'room/gallery', p7:'room/sandbox', p8:'room/cinema', p9:'me',
+  // ★ 2026-10-05：原第三格 #/todo 的路径也要继续可用（她的旧链接/主屏书签）
+  'todo':'room/list',
 };
 
 const ALL_VIEWS = ['app','viewRoom','viewMe','page1','page2','page3','page4',
                    'page5','page6','page7','page8','page9','page10','page11',
-                   'page12'];
+                   'page12','page13','page14'];
 
 function routeOf(){
   let raw = (location.hash||'').replace(/^#\/?/,'');
@@ -3162,6 +3832,12 @@ function show(route, push){
   document.querySelectorAll('nav#nav .tab').forEach(b=>{
     b.classList.toggle('on', b.dataset.r===base);
   });
+  // ★ 2026-10-05：切页后重算底部占位 —— 修「我」页导航高度与别页不一致
+  //   放在 requestAnimationFrame 里：等内容渲染完、布局稳定再量
+  requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
+  // ★ 2026-10-05：进搜索页时渲染它（数据是全局的，不需重新拉）
+  if(route === 'search'){ try{ renderSearch(); }catch(e){ console.warn('[search]', e); } }
+
   // 每个视图顶部注入吸顶页头（左对齐大字 + 小副标题）
   const host=document.getElementById(r.el);
   if(host){
@@ -3171,7 +3847,11 @@ function show(route, push){
     if(oldbar) oldbar.remove();
     const tb=TOPBARS[route] || [r.title,''];
     // '__FRESH__' 是占位：看板的小字位放实时体检时间（等数据到了再填）
-    const sub = tb[1]==='__FRESH__' ? (window.__FRESH__||'') : tb[1];
+    let sub = tb[1]==='__FRESH__' ? (window.__FRESH__||'') : tb[1];
+    // ★ 搜索页副标题：动态显示可搜条数
+    if(tb[1]==='__SEARCH_SUB__'){
+      try{ sub = _searchSources().length + ' 条账本可搜'; }catch(e){ sub = ''; }
+    }
     const head=document.createElement('div');
     head.className='topbar';
     head.innerHTML=`<div class="tb-h">${esc(tb[0])}</div>`+
@@ -3243,6 +3923,630 @@ async function load(){
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   ★【沙盒新增】实时数据源 —— 原文形态（前端是账本的投影，不是导出快照）
+   ═══════════════════════════════════════════════════════════════════
+
+   原文依据：
+     §2 拓扑图   `用户 iPhone (installed PWA) ◄── HTTPS/PWA ──► 服务器`
+                 ⇒ 前端与服务端保持双向连接，不是"下载一个 HTML"
+     §3 设计原则 「正式事实以服务端账本为准……各面板是它们的**投影**」
+
+   本段做三件事（沙盒验证用）：
+     ① SNAPSHOT 取首屏（/snapshot，可回退到 data.json）
+     ② STREAM   连 SSE 长连（/stream），收帧 + 显示连接状态
+     ③ REPORT   前端运行时错误回报服务端（原文 §15.3 ⑧）
+
+   ⚠️ 沙盒纪律：本文件是**副本**，不动线上 index.html。
+      开关 __LIVE__ 改成 false 即完全退回原来的 fetch('data.json') 行为。
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ★ Service Worker 注册（原文 §3：installed PWA，自动更新） */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', () => {
+    // ⚠️ scope 用 './' —— 在 /xiaohua-profile/ 下工作时，SW 只管这一段路径
+    navigator.serviceWorker.register('sw.js', { scope: './' })
+      .then(r => console.log('[sw] registered', r.scope))
+      .catch(e => console.warn('[sw] register failed:', e.message));
+  });
+}
+
+const __LIVE__ = {
+  enabled: true,                                  // ← 回滚开关：false = 原行为
+  // ★ 路径基准：**用当前页面的目录**，不是站点根
+  //   ⚠️ 坑（2026-10-05 实测）：caddy 用 handle_path 剥掉了 /xiaohua-profile 前缀，
+  //      但浏览器地址里仍有前缀。若 base 写成 ''（站点根），
+  //      发出的 /snapshot 会打到站点根 → 撞 webui 兜底 → HTTP 404。
+  //      正解：base = './'（当前目录），请求自动带上前缀。
+  base: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+        ? 'http://127.0.0.1:8801/'
+        : './',
+  // A 档 Bearer 密钥：URL 带 ?token= 进来 → 存下来，之后自动带
+  key: (new URLSearchParams(location.search).get('token'))
+       || localStorage.getItem('board_key') || '',
+};
+if(__LIVE__.key && localStorage.getItem('board_key') !== __LIVE__.key){
+  try{ localStorage.setItem('board_key', __LIVE__.key); }catch(e){}
+}
+
+function _cookieKey(){
+  const m = document.cookie.match(/(?:^|;\s*)board_key=([^;]+)/);
+  return m ? decodeURIComponent(m[1]) : '';
+}
+if(!__LIVE__.key){ __LIVE__.key = _cookieKey(); }
+
+function _api(path){
+  // ⚠️ path 以 '/' 开头（如 '/snapshot'），base 是 './' 或 'http://host:port/'
+  //    拼接时避免出现 './/snapshot' 这种双斜杠
+  const clean = String(path).replace(/^\/+/, '');
+  const b = __LIVE__.base.endsWith('/') ? __LIVE__.base : __LIVE__.base + '/';
+  const u = b + clean;
+  return __LIVE__.key ? u + (u.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(__LIVE__.key) : u;
+}
+function _hdr(){
+  return __LIVE__.key ? { 'Authorization': 'Bearer ' + __LIVE__.key } : {};
+}
+
+// ── ★ 2026-10-05：语音留言箱 ──
+//
+//  「心跳想说话、微信发不出去」的那些话 → 变成语音存服务端 → 这里渲染成语音条。
+//  规则（大小姐定案）：
+//    · **留言常驻**——不是一次性的，随时可以重播（点几次都行）
+//    · 点开 → 播放 + 标记已读；已读只是「未读小圆点」消失，条目不消失
+//    · 标题角标 = 未读数
+//
+//  ⚠️ 判据（能验红）：服务端有未读 → 这里必须出 ≥1 条带小圆点；
+//     点开 → 未读数 -1，但条目还在、还能再点、还能再响。
+function bindVoiceMailbox(){
+  const boxEl = document.getElementById('voiceMailbox');
+  const listEl = document.getElementById('vmboxList');
+  const titleEl = document.getElementById('vmboxTitle');
+  if(!boxEl || !listEl) return;
+
+  let audio = null;          // 当前播放的 <audio>（全局只留一个）
+
+  const fmtTime = (ts)=>{
+    try{
+      const d = new Date(ts*1000);
+      const p = (n)=>String(n).padStart(2,'0');
+      return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
+    }catch(e){ return ''; }
+  };
+
+  const render = (items)=>{
+    if(!items || !items.length){ boxEl.hidden = true; listEl.innerHTML=''; return; }
+    boxEl.hidden = false;
+    const unread = items.filter(x=>!x.read).length;
+    titleEl.textContent = unread > 0 ? ('语音留言 · ' + unread + ' 条未读') : '语音留言';
+    listEl.innerHTML = '';
+    items.forEach((it)=>{
+      const d = document.createElement('div');
+      // 已读的也留着（语音条是常驻的，能反复听）
+      d.className = 'vmitem' + (it.read ? ' read' : '');
+      d.dataset.id = it.id;
+      d.innerHTML = '<span class="vm-dot"></span>'
+        + '<span class="vm-bars"><i></i><i></i><i></i><i></i><i></i></span>'
+        + '<span class="vm-meta">' + fmtTime(it.ts) + '</span>';
+      d.addEventListener('click', ()=> play(it, d));
+      listEl.appendChild(d);
+    });
+  };
+
+  const play = (it, el)=>{
+    if(el.classList.contains('playing')) return;
+    // 只留一个播放器
+    if(audio){ try{ audio.pause(); }catch(e){} audio = null; }
+    document.querySelectorAll('.vmitem.playing').forEach(x=>x.classList.remove('playing'));
+    el.classList.add('playing');
+
+    audio = new Audio(_api(it.url));
+    audio.addEventListener('ended', ()=>{ if(audio) audio=null; el.classList.remove('playing'); });
+    audio.play().catch(()=>{ el.classList.remove('playing'); });
+
+    // 点开即已读（不等播完）—— 但条目**不消失**，以后随时能重播
+    if(!el.classList.contains('read')){
+      el.classList.add('read');
+      const badge = titleEl;
+      // 未读数 -1（就地更新角标，不整表重刷）
+      const m = /(\d+)\s*条未读/.exec(badge.textContent || '');
+      if(m){
+        const left = Math.max(0, parseInt(m[1], 10) - 1);
+        badge.textContent = left > 0 ? ('语音留言 · ' + left + ' 条未读') : '语音留言';
+      }
+      fetch(_api('/call/mailbox/' + it.id + '/read'), { method:'POST', headers:_hdr() })
+        .catch(()=>{});
+    }
+  };
+
+  const load = ()=>{
+    fetch(_api('/call/mailbox'), { headers:_hdr() })
+      .then(r=> r.json())
+      .then(d=>{ if(d && d.ok) render(d.items); })
+      .catch(()=>{});
+  };
+
+  load();
+  // 进页面时再拉一次（通话中可能刚好有新留言落到服务端）
+  setTimeout(load, 1200);
+}
+
+/* ── ★ 2026-10-06：他打过来的来电（原文 §3「双向发起」）──
+ *
+ *  她拨给他那条路早通了；这条是他拨给她 —— 原文「双向」的另一半。
+ *
+ *  ⚠️ 为什么轮询而不是挂 /stream：
+ *     /stream 是账本投影（15s 粒度、断了就没了）。来电是**实时事件**，
+ *     漏一通电话比漏一帧数据严重得多。独立轮询（4s）断线也不丢。
+ *
+ *  ⚠️ 只在「通讯录页」活着的时候轮询（避免后台一直打服务端）。
+ */
+let __incTimer = null;
+
+function bindIncoming(){
+  const card = document.getElementById('incCall');
+  if(!card) return;
+  const statusEl = document.getElementById('incStatus');
+  const pickBtn = document.getElementById('incPick');
+  const dropBtn = document.getElementById('incDrop');
+
+  let curId = null;          // 当前这通来电的 id
+  let ringing = false;
+
+  const show = (id)=>{
+    curId = id; ringing = true;
+    card.hidden = false;
+    statusEl.textContent = '';
+  };
+  const hide = ()=>{
+    curId = null; ringing = false;
+    card.hidden = true;
+  };
+
+  const poll = ()=>{
+    if(ringing) return;                 // 已经在来电中，别重复弹
+    fetch(_api('/call/incoming'), { headers:_hdr() })
+      .then(r=> r.json())
+      .then(d=>{
+        if(!d || !d.ok || !d.ringing) return;
+        show(d.id);
+        // 倒计时（他打过来是有时限的 —— 过了当没接）
+        if(d.deadline_in > 0){
+          statusEl.textContent = '响铃中…';
+          let left = d.deadline_in;
+          const t = setInterval(()=>{
+            left -= 1;
+            if(!ringing || left <= 0){ clearInterval(t); return; }
+            statusEl.textContent = '响铃中… ' + left + ' 秒';
+          }, 1000);
+        }
+      })
+      .catch(()=>{});
+  };
+
+  const playB64 = (b64)=>{
+    try{
+      const bin = atob(b64); const arr = new Uint8Array(bin.length);
+      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
+      const url = URL.createObjectURL(new Blob([arr], {type:'audio/mpeg'}));
+      const a = new Audio(url);
+      a.onended = ()=>URL.revokeObjectURL(url);
+      a.play().catch(()=>{});
+    }catch(e){}
+  };
+
+  pickBtn.addEventListener('click', ()=>{
+    if(!curId) return;
+    const id = curId;
+    statusEl.textContent = '接通了';
+    fetch(_api('/call/incoming/' + id + '/answer'), {
+      method:'POST', headers:_hdr() })
+      .then(r=> r.json())
+      .then(d=>{
+        if(d && d.ok){
+          // 他接通后说的第一句 —— 落到 Call 页的对话流里 + 出声
+          const logEl = document.getElementById('callLog');
+          if(logEl && d.text){
+            const el = document.createElement('div');
+            el.className = 'call-msg call-him';
+            el.textContent = d.text;
+            logEl.appendChild(el); logEl.scrollTop = logEl.scrollHeight;
+          }
+          if(d.audio_b64) playB64(d.audio_b64);
+          setTimeout(hide, 600);
+        }else{
+          statusEl.textContent = '这通已经断了';
+          setTimeout(hide, 1200);
+        }
+      })
+      .catch(()=>{ statusEl.textContent = '没接上，再试一次'; });
+  });
+
+  dropBtn.addEventListener('click', ()=>{
+    const id = curId;
+    hide();
+    if(!id) return;
+    fetch(_api('/call/incoming/' + id + '/reject'), {
+      method:'POST', headers:_hdr() }).catch(()=>{});
+  });
+
+  // 有来电才轮询；页面切走时停掉（省电、也省服务端）
+  const start = ()=>{ if(!__incTimer) __incTimer = setInterval(poll, 4000); poll(); };
+  const stop = ()=>{ if(__incTimer){ clearInterval(__incTimer); __incTimer = null; } };
+
+  document.addEventListener('visibilitychange', ()=>{
+    if(document.hidden) stop(); else start();
+  });
+  // 切到 Call 页才开轮询
+  window.addEventListener('hashchange', ()=>{
+    if((location.hash || '').indexOf('page14') >= 0
+       || (location.hash || '').indexOf('/call') >= 0) start();
+  });
+  if(!document.hidden) start();
+}
+
+/* ③ 前端上报（原文 §15.3：window error / unhandledrejection / 渲染崩溃 → POST 回服务端） */
+function reportToServer(kind, detail){
+  if(!__LIVE__.enabled || !__LIVE__.base) return;
+  try{
+    fetch(_api('/report'), {
+      method:'POST',
+      headers:{ ..._hdr(), 'Content-Type':'application/json' },
+      body: JSON.stringify({ kind, detail, href: location.href, ts: Date.now() })
+    }).catch(()=>{});       // 上报失败静默 —— 不许因为上报挂了影响页面
+  }catch(e){}
+}
+window.addEventListener('error', e => reportToServer('error', { msg: e.message, src: e.filename, line: e.lineno }));
+window.addEventListener('unhandledrejection', e => reportToServer('rejection', { reason: String(e.reason) }));
+
+/* ② SSE 长连 */
+let _es = null, _esFrames = 0, _esSince = 0;
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ syncBottomSpacer —— 底部占位块精确计算（2026-10-05 新增）
+
+   要解决的矛盾（第三次发作，前两次见 body::after 的注释）：
+     需求 A：短页面（我/Room/感受）**不能有滚动条** ——
+             一有滚动条，iOS 滚动惯性就让 fixed 导航视觉偏移，
+             表现为「导航栏高度跟别的页不一样」。
+     需求 B：长页面（看板/清单）**滚到底最后一块不能被胶囊压住**。
+
+   矛盾点：固定 130px 占位块 —— 小了长页面被压，大了短页面被顶出滚动条。
+
+   ✅ 算法：
+     1. 拿到当前可见容器，量它的内容高度 H
+     2. 量底部导航实际占位 navH（胶囊高 + 安全区）
+     3. 若 H + navH <= 视口高 → 内容本来就够短，占位设 0（绝不出滚动条）
+        否则 → 占位设 navH（滚到底刚好留出导航的空间）
+   ═══════════════════════════════════════════════════════════════════ */
+function syncBottomSpacer(){
+  const root = document.documentElement;
+  // 先清零，才好量"内容自然高度"
+  root.style.setProperty('--bottom-spacer', '0px');
+
+  const vh = window.innerHeight;
+  const nav = document.getElementById('nav');
+  // 底部导航：胶囊高 + 安全区 + 上下留白
+  let navH = 84;
+  if(nav){
+    const pill = nav.querySelector('.navpill');
+    const cs = getComputedStyle(nav);
+    const padB = parseFloat(cs.paddingBottom) || 0;
+    const padT = parseFloat(cs.paddingTop) || 0;
+    navH = (pill ? pill.offsetHeight : 45) + padB + padT + 18;
+  }
+
+  // 量当前可见视图容器的高度
+  let contentH = 0;
+  ALL_VIEWS.forEach(id => {
+    const el = document.getElementById(id);
+    if(el && !el.hidden){
+      // scrollHeight 拿内容真实高度（含 margin 折叠后的）
+      contentH = Math.max(contentH, el.scrollHeight);
+    }
+  });
+  // 再看文档整体（footer 等）
+  contentH = Math.max(contentH, document.body.scrollHeight);
+
+  // 兜底：如果量不出（0），不做任何事（保持 CSS 默认 130px）
+  if(contentH <= 0){ root.style.removeProperty('--bottom-spacer'); return; }
+
+  // ★ 判据（2026-10-05 修正）：
+  //   导航是 fixed，浮在内容之上 —— 所以"内容够短"的标准是
+  //   内容 <= 视口 - 导航占位（内容正好落在导航上方，不重叠）。
+  //   ⚠️ 早先写成 `contentH + navH <= vh` 是错的：内容 790、导航 84、视口 844 时
+  //      790+84=874>844 会给 spacer=84 → 总高 874 → **仍然出滚动条**（而"我"页正是这种情况）。
+  let spacer;
+  if(contentH <= vh - navH){
+    spacer = 0;                 // 内容落在导航上方 → 不留白，绝不出滚动条
+  }else{
+    spacer = navH;              // 内容超了 → 补足导航高度，滚到底不被压
+  }
+  root.style.setProperty('--bottom-spacer', spacer + 'px');
+  console.log('[spacer] content=' + contentH + ' navH=' + navH
+              + ' vh=' + vh + ' → ' + spacer + 'px');
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   ★ 账本全文搜索（2026-10-05）
+
+   来源：原文 Chat 面板点名的「全文搜索」。Chat 归微信后，
+        这半条**改嫁到看板** —— 微信搜不了跨会话的账本，只有看板能干。
+
+   数据规模实测（2026-10-05）：全部文本源合计 ~3 万字。
+   ⇒ **纯前端搜索，不建索引、不加接口**（3 万字 filter 毫秒级）。
+      哪天涨到几十万字再考虑服务端索引。
+
+   纪律（照原文「正式事实以服务端账本为准」）：
+     · 只搜**账本里的东西**，不搜 UI 文案
+     · 结果必须显示**来源 + 时间**，可点击跳到原始页面
+     · 搜不到就明说"没搜到"，不假装
+
+   ⚠️ 中文分词：不做分词。
+      中文按**子串匹配**（`includes`）—— "心疼"能匹配到"她心疼我"。
+      这是最简单且对中文最短路径正确的做法；
+      做词表分词反而会漏（"心疼"被切成"心/疼"）。
+   ═══════════════════════════════════════════════════════════════════ */
+
+function _searchSources(){
+  const D = window.__DATA__ || {};
+  const P = D.panels || {};
+  const R = P.room || {}, M = P.memory || {};
+  const out = [];
+
+  const push = (kind, arr, getText, route, getTime) => {
+    (arr||[]).forEach(it => {
+      const txt = getText(it);
+      if(!txt) return;
+      out.push({
+        kind, route,
+        text: String(txt),
+        time: getTime ? (getTime(it) || '') : (it.at || it.date || ''),
+        ref: it,
+      });
+    });
+  };
+
+  // 记忆（原文 Memory 面板）
+  push('记忆', M.memories, x => x.text || x.content, 'room/memory', x => x.at);
+  // 念头
+  push('念头', M.thoughts, x => x.text, 'room/memory', x => x.at);
+  // 她的话
+  push('她的话', (M.her_words||{}).entries, x => x.text || x.content, 'room/memory',
+       x => x.at || x.date);
+  // 唤醒时间线（原文 Room 的"唤醒时间线"）
+  push('唤醒', R.wake, x => (x.intent ? '[' + x.intent + '] ' : '') + (x.choice || ''),
+       'room', x => x.at);
+  // 房间正文
+  push('房间', R.rooms, x => x.text, 'room', x => x.date || x.at);
+  // 手记本
+  push('手记本', R.notebook, x => x.text, 'room/notebook', x => x.at);
+  // 便签
+  push('便签', R.notes, x => x.text, 'room', x => x.at);
+  // ★ 思考卡 / 碎碎念（2026-10-05）—— 原文 Chat 的"碎碎念"改嫁到看板
+  push('思考卡', R.inner, x => x.text, 'room', x => x.at);
+  // 日记
+  push('日记', D.journal_entries, x => x.text || x.body, 'room/journal',
+       x => x.date || x.at);
+  // 感受
+  push('感受', (P.feel||{}).entries, x => (x.title||'') + ' ' + (x.tags||[]).join(' '),
+       'room/mood', x => x.date);
+
+  return out;
+}
+
+function searchLedger(q){
+  const needle = String(q||'').trim().toLowerCase();
+  if(!needle) return [];
+  const hits = [];
+  _searchSources().forEach(src => {
+    const hay = src.text.toLowerCase();
+    const idx = hay.indexOf(needle);
+    if(idx < 0) return;
+    // 抓上下文（前后各 30 字），让结果能看出为什么匹配
+    const from = Math.max(0, idx - 30);
+    const to = Math.min(src.text.length, idx + needle.length + 60);
+    hits.push({
+      ...src,
+      pre: (from > 0 ? '…' : '') + src.text.slice(from, idx),
+      hit: src.text.slice(idx, idx + needle.length),
+      post: src.text.slice(idx + needle.length, to) + (to < src.text.length ? '…' : ''),
+    });
+  });
+  // 排序：先按来源类别的固定先后，再按时间倒序
+  const order = ['记忆','手记本','日记','感受','房间','唤醒','她的话','念头','便签','思考卡'];
+  hits.sort((a,b) => {
+    const oa = order.indexOf(a.kind), ob = order.indexOf(b.kind);
+    if(oa !== ob) return (oa<0?99:oa) - (ob<0?99:ob);
+    return String(b.time).localeCompare(String(a.time));
+  });
+  return hits;
+}
+
+function renderSearch(){
+  const host = document.getElementById('page13');
+  if(!host) return;
+  const q = (window.__SEARCH_Q__ || '').trim();
+  let h = '';
+
+  h += `<section class="glass">
+    <input id="searchBox" type="search" value="${esc(q)}"
+           placeholder="搜账本：记忆 / 日记 / 手记本 / 唤醒 / 房间…"
+           style="width:100%;box-sizing:border-box;font:inherit;font-size:15px;
+                  padding:11px 13px;border-radius:12px;border:none;
+                  background:rgba(255,255,255,.07);color:var(--fg);outline:none;
+                  -webkit-appearance:none">
+    <div class="pmeta" id="searchMeta" style="margin-top:9px"></div>
+  </section>`;
+
+  const box = host.parentNode && host;
+  if(q){
+    const hits = searchLedger(q);
+    const byKind = {};
+    hits.forEach(x => { (byKind[x.kind] = byKind[x.kind] || []).push(x); });
+    if(!hits.length){
+      h += `<section class="glass"><div class="dev">没搜到「${esc(q)}」<br>
+        <span style="opacity:.7;font-size:12px">换个词试试。账本里现在有记忆、念头、她的话、
+        唤醒、房间、手记本、便签、日记、感受、思考卡。</span></div></section>`;
+    }else{
+      h += `<section class="glass"><div class="pmeta" style="margin:0">
+        共 <b>${hits.length}</b> 条 · ${Object.keys(byKind).map(k=>k+' '+byKind[k].length).join(' · ')}
+      </div></section>`;
+      Object.keys(byKind).forEach(kind => {
+        h += `<section class="glass"><h2>${esc(kind)} <span style="opacity:.55;font-weight:400">${byKind[kind].length}</span></h2>`;
+        byKind[kind].forEach(x => {
+          h += `<div class="prow srchhit" data-go="${esc(x.route||'board')}" style="cursor:pointer">
+            <span class="tx" style="display:block;line-height:1.75">${esc(x.pre)}<mark
+              style="background:rgba(255,214,102,.32);color:inherit;border-radius:3px;
+                     padding:0 1px">${esc(x.hit)}</mark>${esc(x.post)}</span>
+            <span class="pv" style="display:block;margin-top:3px;opacity:.6;font-size:11px">
+              ${esc(tms(x.time)||x.time||'')}${x.route?' · 点进原页':''}</span>
+          </div>`;
+        });
+        h += `</section>`;
+      });
+    }
+  }else{
+    // 空态：给出"能搜什么"的说明（不是死页面）
+    const srcs = _searchSources();
+    const cnt = {};
+    srcs.forEach(x => cnt[x.kind] = (cnt[x.kind]||0)+1);
+    h += `<section class="glass"><h2>可搜范围</h2>
+      <div class="pmeta" style="margin:0">账本共 <b>${srcs.length}</b> 条可搜文本：
+        ${Object.keys(cnt).map(k=>`${k} ${cnt[k]}`).join(' · ')}</div>
+      <div class="dev" style="margin-top:8px">这是**观测**职能 —— 微信搜不了跨会话的账本，
+        只有这儿能搜。</div></section>`;
+  }
+
+  host.innerHTML = h;
+
+  // 绑定：输入即搜（防抖 150ms）
+  const inp = document.getElementById('searchBox');
+  if(inp){
+    let t = null;
+    inp.addEventListener('input', () => {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        window.__SEARCH_Q__ = inp.value;
+        const pos = inp.selectionStart;             // 记住光标
+        renderSearch();
+        const box2 = document.getElementById('searchBox');
+        if(box2){ box2.focus(); box2.setSelectionRange(pos, pos); }
+      }, 150);
+    });
+    if(!q) inp.focus();
+  }
+  // 绑定：点结果跳原页
+  host.querySelectorAll('[data-go]').forEach(b => {
+    b.addEventListener('click', () => show(b.dataset.go));
+  });
+}
+
+function liveStatus(state, note){
+  let el = document.getElementById('liveBadge');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'liveBadge';
+    // ⚠️ 位置（2026-10-05 修）：原来 bottom:64px 会**压住底部导航的第4个 tab**。
+    //    改到**右上角** —— 页头标题右侧是空白区，不挡任何控件。
+    //    并且只留一颗小圆点（状态色）+ 极小字，低调不喧宾夺主。
+    el.style.cssText = 'position:fixed;top:calc(6px + env(safe-area-inset-top));'
+      + 'right:14px;z-index:60;display:flex;align-items:center;gap:4px;'
+      + 'font-size:9px;padding:2px 6px;border-radius:8px;'
+      + 'background:rgba(0,0,0,.38);pointer-events:none;opacity:.8;'
+      + 'font-variant-numeric:tabular-nums';
+    document.body.appendChild(el);
+  }
+  const map = {
+    live:         ['#6ee79a', '实时'],
+    connecting:   ['#ffd88a', '连接中'],
+    reconnecting: ['#ffd88a', '重连中'],
+    dead:         ['#ff8a8a', '断开'],
+  };
+  const [color, label] = map[state] || ['#ffd88a', state];
+  // 圆点 + 极简标签（笔迹次数放 title，不占视觉）
+  el.innerHTML = '<span style="width:6px;height:6px;border-radius:50%;'
+    + 'background:' + color + ';display:inline-block"></span>'
+    + '<span style="color:' + color + '">' + label + '</span>';
+  el.title = note || label;   // 悬停/长按可见帧数详情，不占版面
+}
+
+function startStream(){
+  if(!__LIVE__.enabled) return;
+  if(_es){ try{ _es.close(); }catch(e){} _es = null; }
+  liveStatus('connecting');
+  try{
+    _es = new EventSource(_api('/stream'));
+  }catch(e){
+    liveStatus('dead', 'SSE 不可用');
+    return;
+  }
+  _esFrames = 0; _esSince = Date.now();
+
+  _es.addEventListener('hello', () => { liveStatus('live'); });
+  _es.addEventListener('heartbeat', (ev) => {
+    _esFrames++;
+    const secs = Math.round((Date.now() - _esSince) / 1000);
+    liveStatus('live', _esFrames + '帧/' + secs + 's');
+  });
+
+  // ★★ 数据帧 —— 账本变了，服务端推来新快照，这里**重新渲染**
+  //     这就是"页面会自己变"：用户不碰手机，数字自己更新。
+  //     （2026-10-05 新增，一期收口）
+  _es.addEventListener('data', (ev) => {
+    let payload;
+    try { payload = JSON.parse(ev.data); } catch(e) { return; }
+    const d = payload && payload.data;
+    if(!d) return;
+
+    // 记住当前在哪一页 —— 重渲染后要回到同一页（不许把用户弹走）
+    const here = routeOf();
+    try{
+      render(d); renderJournal(d); renderPanels(d);
+      renderRoomIndex(); renderMe(d); renderMeSub(d); renderNotebook(d);
+      show(here, false);          // 原地重画，不进历史
+      // ★ 停在搜索页时也要跟着更新（否则账本变了结果还是旧的）
+      if(here === 'search'){ try{ renderSearch(); }catch(e){} }
+      if(typeof refreshTopbarTime==='function') refreshTopbarTime();
+      requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
+      // 闪一下状态点，让她知道"刚更新过"
+      liveStatus('live', '已更新 ' + new Date().toTimeString().slice(0,5));
+      window.__LAST_PUSH__ = Date.now();
+    }catch(e){
+      reportToServer('render_fail', { msg: String(e && e.message || e), route: here });
+      console.warn('[live] data 帧渲染失败:', e);
+    }
+  });
+  _es.onerror = () => {
+    // EventSource 自己会重连 —— 这里只反映状态，不做处理（照降级纪律：断开≠报错）
+    liveStatus('reconnecting');
+  };
+}
+
+/* ① 首屏：优先 /snapshot，不可用则回退 data.json（降级，不白屏） */
+async function loadLive(){
+  if(!__LIVE__.enabled){ return load(); }
+  try{
+    const r = await fetch(_api('/snapshot'), { headers: _hdr(), cache:'no-store' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    const j = await r.json();
+    if(!j.ok) throw new Error(j.error || 'snapshot 不可用');
+    const d = j.data;
+    render(d); renderJournal(d); renderPanels(d);
+    renderRoomIndex(); renderMe(d); renderMeSub(d); renderNotebook(d);
+    show(routeOf(), false);
+    requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
+    startStream();                       // 首屏到位后再挂长连
+  }catch(e){
+    console.warn('[live] snapshot 失败，回退 data.json:', e.message);
+    reportToServer('snapshot_fallback', { msg: e.message });
+    return load();                       // ← 关键：回退到原逻辑，不白屏
+  }
+}
+
+
 // ══ Room 二级页：icon 宫格（★ 2026-09-20 新增）══════════════════
 //  二级不放内容，只放入口。每个 icon 点进去 = 独立三级页。
 //  单色 SVG 线稿 —— 跟页面磨砂玻璃调性一致，不用外链图片（省流量、不变形）。
@@ -3258,6 +4562,9 @@ const ICONS = {
   // ★ 2026-09-24 新增：手记本（一本摊开的册子 + 一行字）
   //   与 gallery/memory 的线稿同调（stroke:currentColor，24 网格）
   notebook:`<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7z"/><path d="M7 3v18"/><path d="M10.5 8h5M10.5 12h5"/>`,
+  // ★ 2026-10-05 新增：List（原「未完成清单」搬进 Room）
+  //   清单线稿：三条 + 勾选方框（同调，stroke:currentColor，24 网格）
+  list:   `<path d="M4 6h3v3H4zM4 13h3v3H4z"/><path d="M10 7.5h10M10 14.5h10"/><path d="M9 4.8l1.6 1.6L13.5 3"/>`,
 };
 
 function renderRoomIndex(){
@@ -3270,6 +4577,7 @@ function renderRoomIndex(){
     ['mood',   '感受'],
     ['room',   'Room 内容'],
     ['notebook','手记本'],   // ★ 2026-09-24 新增（原文 Room 七项之一）
+    ['list',   'List'],       // ★ 2026-10-05 新增（原「未完成清单」搬进来）
     ['study',  '书房'],
     ['gallery','Gallery'],
     ['cinema', 'Cinema'],
@@ -3330,8 +4638,29 @@ function renderMe(d){
     </div>
   </section>`;
 
+  // ── ②·五 账本检索（★ 2026-10-05 新增）──
+  //   原文 Chat 点名的「全文搜索」—— Chat 归微信后，这半条改嫁到看板。
+  //   理由：微信搜不了跨会话的账本，只有这儿能搜。
+  let _srchN = 0;
+  try{ _srchN = _searchSources().length; }catch(e){}
+  h+=`<section class="glass">
+    <h2>🔍 账本检索</h2>
+    <div class="iconGrid" style="grid-template-columns:1fr">
+      <button class="iconTile" data-go="search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <span class="nm">全文搜索${_srchN ? ' · ' + _srchN + ' 条' : ''}</span>
+      </button>
+    </div>
+    <div class="pmeta" style="margin-top:8px;margin-bottom:0">
+      记忆 · 念头 · 她的话 · 唤醒 · 房间 · 手记本 · 便签 · 日记 · 感受
+    </div>
+  </section>`;
+
   // ── ③ Control Panel（数据保留，"怎么读"说明删）──
   const hands=C.hands||[], routes=C.routes||[];
+  // ★ 2026-10-10：Archive 挂到「我」页（原来挂在死变量 h 上，哪儿都不显示）。
+  //   位置：Control Panel 之前 —— 时间沉淀属"我"这一层，与设定原件/检索同类。
+  h += (window.__HARCHIVE__ || '');
   h+=sec('🎛 Control Panel','',`
     <div class="pblock"><div class="pblock-h">手 · ${hands.length} 只</div>
       ${hands.length?hands.map(x=>`<div class="prow">
@@ -3423,20 +4752,38 @@ let _timer=null;
 
 function startTimer(){
   stopTimer();
+  // ★【沙盒改】实时开关打开时，不轮询 —— 由 SSE 长连负责刷新。
+  //   __LIVE__.enabled=false 则完全退回原行为（REFRESH_MS 轮询）。
+  if(__LIVE__.enabled && __LIVE__.base) return;
   _timer=setInterval(load,REFRESH_MS);
 }
 function stopTimer(){
   if(_timer){ clearInterval(_timer); _timer=null; }
 }
+// ★【沙盒改】回到前台：实时模式只需确保长连活着（不重拉快照，避免闪烁）
+function _refreshNow(){
+  if(__LIVE__.enabled && __LIVE__.base){
+    if(!_es || _es.readyState === EventSource.CLOSED) startStream();
+  } else {
+    load();
+  }
+}
 document.addEventListener('visibilitychange',()=>{
-  if(document.visibilityState==='visible'){ load(); startTimer(); }
+  if(document.visibilityState==='visible'){
+    _refreshNow(); startTimer();
+    requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
+  }
   else { stopTimer(); }
 });
+// ★ 2026-10-05：视口变化（旋转/地址栏折叠）也重算占位
+window.addEventListener('resize', ()=>{ try{ syncBottomSpacer(); }catch(e){} });
+window.addEventListener('orientationchange', ()=>{ setTimeout(()=>{ try{ syncBottomSpacer(); }catch(e){} }, 200); });
 
 // 初始页：URL 带 hash 就打开对应页（旧 #p0~#p9 自动兼容）
 _lastHash=location.hash;
 show(routeOf(), false);
-load();
+// ★【沙盒改】load → loadLive（实时模式走 /snapshot + /stream；开关关掉即原行为）
+loadLive();
 if(document.visibilityState==='visible') startTimer();
 </script>
 </body>
