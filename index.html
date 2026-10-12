@@ -4534,21 +4534,70 @@ function renderSearch(){
 
   host.innerHTML = h;
 
-  // 绑定：输入即搜（防抖 150ms）
+  // ★ 2026-10-12 大小姐定：**打字时不搜，打完再搜**（原来输入即搜会跳）
+  //
+  //   原写法的问题（输入即搜 + 150ms 防抖）：
+  //     每次按键 → 重绘整个 page13 的 innerHTML → 光标重置、页面跳动。
+  //     打「大小姐」三个字会触发三次全量重绘，体感是「打一个字符就跳」。
+  //     ⚠️ 而且结果区被整块替换时，**正在输入的那一行也跟着重建**，
+  //        所以连焦点都要手动修（原代码里那两句 focus/setSelectionRange 就是在补这个）。
+  //
+  //   新写法（两个入口，都不在按键路径上全量重绘）：
+  //     ① 回车 / 搜索按钮 → 立即搜（她明确表示"打完了"）
+  //     ② 停止输入 800ms  → 自动搜（"等她打完"；800ms 是松手阈值，
+  //                         比原来 150ms 长得多，不会在词没敲完时就动）
+  //     ③ 清空（×）       → 立即回空态
+  //     ④ 敲字过程中**只更新提示行**，绝不碰结果区 —— 光标永不丢
   const inp = document.getElementById('searchBox');
   if(inp){
+    const meta = () => document.getElementById('searchMeta');
+    const setMeta = (txt) => { const m = meta(); if(m) m.textContent = txt; };
+    const reflow = (val) => {          // 只做"定案搜索"，会重绘
+      window.__SEARCH_Q__ = val.trim();
+      const pos = inp.value.length;
+      renderSearch();
+      const b2 = document.getElementById('searchBox');
+      if(b2){
+        b2.focus();
+        try{ b2.setSelectionRange(pos, pos); }catch(e){}
+      }
+    };
+    const reset = () => {              // 清空回空态
+      window.__SEARCH_Q__ = '';
+      renderSearch();
+      const b2 = document.getElementById('searchBox');
+      if(b2) b2.focus();
+    };
     let t = null;
+    const commit = () => { clearTimeout(t); reflow(inp.value); };
+
     inp.addEventListener('input', () => {
+      const v = inp.value;
       clearTimeout(t);
-      t = setTimeout(() => {
-        window.__SEARCH_Q__ = inp.value;
-        const pos = inp.selectionStart;             // 记住光标
-        renderSearch();
-        const box2 = document.getElementById('searchBox');
-        if(box2){ box2.focus(); box2.setSelectionRange(pos, pos); }
-      }, 150);
+      if(!v.trim()){ reset(); return; }             // ③ 清空立即回空态
+      // ④ 打字中只提示"正在等"，不动结果区 —— 光标稳如打字框
+      setMeta('打完自动搜…（回车立即搜）');
+      t = setTimeout(commit, 800);                   // ② 停手 800ms 才搜
     });
+    // ① 回车立即搜
+    inp.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); commit(); }
+    });
+    // 搜索框旁给一颗明确的「搜索」按钮（手机上好按）
+    const m0 = meta();
+    if(m0 && !document.getElementById('searchGo')){
+      const btn = document.createElement('button');
+      btn.id = 'searchGo';
+      btn.type = 'button';
+      btn.textContent = '搜索';
+      btn.style.cssText = 'margin-top:9px;font:inherit;font-size:13px;padding:7px 16px;'
+        + 'border-radius:10px;border:none;cursor:pointer;'
+        + 'background:rgba(255,255,255,.12);color:var(--fg)';
+      btn.addEventListener('click', commit);
+      m0.parentNode.insertBefore(btn, m0);
+    }
     if(!q) inp.focus();
+    else setMeta(`按回车或再等一停就搜「${q}」`);
   }
   // 绑定：点结果跳原页
   host.querySelectorAll('[data-go]').forEach(b => {
