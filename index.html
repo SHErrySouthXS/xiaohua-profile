@@ -1427,6 +1427,10 @@
     border-radius:9px; padding:9px 11px; color:var(--fg-1); font-size:16px}
   .call-fallback button{background:rgba(255,255,255,.13); border:0; border-radius:9px;
     padding:0 16px; color:var(--fg-1); font-size:13px; cursor:pointer}
+#viewMusic{position:relative;z-index:2}
+#companionMusicFrame{width:100%;height:1050px;border:0;display:block;background:transparent}
+#musicDock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 86px);z-index:60;max-width:85vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border:1px solid rgba(180,139,255,.4);border-radius:20px;background:#251637;color:#f2ecfb;padding:10px 16px;font:inherit;font-size:13px}
+#musicDock[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1482,6 +1486,8 @@
 
 <!-- Room 二级落地页（icon 宫格）—— JS 渲染 -->
 <div id="viewRoom" hidden></div>
+<div id="viewMusic" hidden></div>
+<button id="musicDock" hidden type="button" onclick="show('room/music')"></button>
 
 <!-- ★ 2026-09-20 清文案：原来这里写"每 30 分钟自动更新 · 与飞书体检卡片同源"
      —— 那是工程说明，用户界面不该有，删掉（更新时间已在看板页头）。
@@ -3869,6 +3875,7 @@ const TOPBARS = {
   'room/list':    ['List',    ''],   // ★ 2026-10-05：原「未完成清单」搬进 Room，命名 List
   'room/study':   ['书房',      ''],
   'room/gallery': ['Gallery',   ''],
+  'room/music':   ['一起听歌', ''],
   'room/cinema':  ['Cinema',    ''],
   'room/sandbox': ['Sandbox',   ''],
   'room/memory':  ['Memory',    ''],
@@ -3894,6 +3901,7 @@ const ROUTES = {
   'room/list':   {el:'page5',    lvl:2, title:'List',     parent:'room'},
   'room/study':  {el:'page3',    lvl:2, title:'书房',     parent:'room'},
   'room/gallery':{el:'page7',    lvl:2, title:'Gallery',  parent:'room'},
+  'room/music':  {el:'viewMusic',lvl:2,title:'一起听歌',parent:'room'},
   'room/cinema': {el:'page8',    lvl:2, title:'Cinema',   parent:'room'},
   'room/sandbox':{el:'page9',    lvl:2, title:'Sandbox',  parent:'room'},
   // ★ 2026-09-20 补：Memory 挪进 Room 当最后一个 icon（大小姐定）
@@ -3921,7 +3929,36 @@ const LEGACY = {
 
 const ALL_VIEWS = ['app','viewRoom','viewMe','page1','page2','page3','page4',
                    'page5','page6','page7','page8','page9','page10','page11',
-                   'page12','page13','page14'];
+                   'page12','page13','page14','viewMusic'];
+
+// The iframe is created once and retained when navigating other board views.
+function ensureMusicView(){
+  const host=document.getElementById('viewMusic');
+  let frame=document.getElementById('companionMusicFrame');
+  if(!frame){
+    const section=document.createElement('section');section.className='glass';
+    frame=document.createElement('iframe');frame.id='companionMusicFrame';frame.title='一起听歌';
+    frame.allow='autoplay';
+    const base=location.pathname.replace(/index\.html$/,'').replace(/\/?$/,'/');
+    frame.src=base+'music?embed=1';section.appendChild(frame);host.appendChild(section);
+    frame.addEventListener('load',()=>frame.contentWindow.postMessage({type:'companion-music-visible',active:routeOf()==='room/music'},location.origin));
+  }
+}
+function updateMusicVisibility(route){
+  const frame=document.getElementById('companionMusicFrame');
+  if(frame)frame.contentWindow.postMessage({type:'companion-music-visible',active:route==='room/music'},location.origin);
+  const dock=document.getElementById('musicDock');
+  dock.hidden=route==='room/music'||dock.dataset.playing!=='true';
+}
+window.addEventListener('message',event=>{
+  const frame=document.getElementById('companionMusicFrame');
+  if(!frame||event.origin!==location.origin||event.source!==frame.contentWindow||!event.data||event.data.type!=='companion-music-state')return;
+  const height=Number(event.data.height);
+  if(Number.isFinite(height))frame.style.height=Math.max(600,Math.min(6000,height))+'px';
+  const dock=document.getElementById('musicDock');dock.dataset.playing=event.data.playing?'true':'false';
+  dock.textContent='♪ '+(String(event.data.name||'一起听歌').slice(0,80))+' · 返回';
+  dock.hidden=routeOf()==='room/music'||dock.dataset.playing!=='true';
+});
 
 function routeOf(){
   let raw = (location.hash||'').replace(/^#\/?/,'');
@@ -3930,6 +3967,8 @@ function routeOf(){
 }
 
 function show(route, push){
+  if(route==='room/music')ensureMusicView();
+  updateMusicVisibility(route);
   const r = ROUTES[route] || ROUTES.board;
   ALL_VIEWS.forEach(id=>{
     const el=document.getElementById(id);
@@ -4712,6 +4751,7 @@ async function loadLive(){
 //  二级不放内容，只放入口。每个 icon 点进去 = 独立三级页。
 //  单色 SVG 线稿 —— 跟页面磨砂玻璃调性一致，不用外链图片（省流量、不变形）。
 const ICONS = {
+  music:`<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>`,
   journal:`<path d="M6 3h11a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6z"/><path d="M6 3v18"/><path d="M10 8h6M10 12h6"/>`,
   mood:   `<path d="M12 21s-7-4.5-9-9a5 5 0 0 1 9-3 5 5 0 0 1 9 3c-2 4.5-9 9-9 9z"/>`,
   room:   `<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>`,
@@ -4741,6 +4781,7 @@ function renderRoomIndex(){
     ['list',   'List'],       // ★ 2026-10-05 新增（原「未完成清单」搬进来）
     ['study',  '书房'],
     ['gallery','Gallery'],
+    ['music',  '一起听歌'],
     ['cinema', 'Cinema'],
     ['sandbox','Sandbox'],
     ['memory', 'Memory'],
