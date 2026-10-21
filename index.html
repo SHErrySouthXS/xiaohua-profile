@@ -3150,7 +3150,7 @@ function renderPanels(d){
   //  ⚠️ page9 原来是「原文面板」的堆积地，现在改成 Sandbox 独立页。
   //    原文面板剩下的内容已分流：进度表 → 清单、人设块 → 「我」。
   //    新内容一律 `h` 在后面，旧的 box.innerHTML=h 已不再使用。
-  const put=(id,html)=>{ const el=document.getElementById(id); if(el) el.innerHTML=html; };
+  const put=(id,html)=>{const el=document.getElementById(id);if(!el)return;const opened=new Set(Array.from(el.querySelectorAll('details[open]')).map(x=>x.dataset.at||x.dataset.activityId).filter(Boolean));el.innerHTML=html;el.querySelectorAll('details').forEach(x=>{if(opened.has(x.dataset.at||x.dataset.activityId))x.open=true;});};
 
   put('page1', hRoom);    // Room 内容
   // page2 = 日记（renderJournal 自己写，这儿不碰）
@@ -3221,9 +3221,7 @@ function renderPanels(d){
         <button class="inc-b inc-pick" id="incPick"><i>✓</i>接听</button>
       </div>
     </div>`);
-  put('page14', hCall);
-  bindCall();
-  bindIncoming();
+  if(!document.getElementById('callStatus')){put('page14', hCall);bindCall();bindIncoming();}
 
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
@@ -4774,6 +4772,7 @@ function renderRoomIndex(){
   // ★ 2026-09-20 大小姐定：icon 下面**不放解释性小字**，只留名字。
   //   小字（"每天我写的那些"这类）删掉之后，icon 和名字要**居中**。
   const items=[
+    ['activity','最近在做'],
     ['journal','日记'],
     ['mood',   '感受'],
     ['room',   'Room 内容'],
@@ -4987,6 +4986,33 @@ show(routeOf(), false);
 // ★【沙盒改】load → loadLive（实时模式走 /snapshot + /stream；开关关掉即原行为）
 loadLive();
 if(document.visibilityState==='visible') startTimer();
+</script>
+<script>
+
+// Ongoing activity projection: read-only, same board authentication and route system.
+ROUTES['room/activity']={el:'viewActivity',lvl:2,title:'最近在做',parent:'room'};
+TOPBARS['room/activity']=['最近在做',''];ALL_VIEWS.push('viewActivity');
+const activityView=document.createElement('div');activityView.id='viewActivity';activityView.hidden=true;
+activityView.style.cssText='position:relative;z-index:2';document.getElementById('viewRoom').after(activityView);
+ICONS.activity=ICONS.notebook;
+let activityFingerprint='';
+async function refreshActivity(){
+ if(routeOf()!=='room/activity')return;
+ try{
+  const r=await fetch(_api('/activity'),{headers:_hdr(),cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();if(!d.ok)throw Error();
+  const fp=JSON.stringify(d);if(fp===activityFingerprint)return;activityFingerprint=fp;
+  const opened=new Set(Array.from(activityView.querySelectorAll('details[open]')).map(x=>x.dataset.activityId));
+  const labels={reading:'读书',xhs:'逛小红书',garden:'逛花园'};
+  const states={running:'正在看',prepared:'正在看',completed:'看过了',rested:'这次先歇一会儿',paused:'暂停，之后接着看',blocked:'这次没有新内容',failed:'这次没能完成',needs_reconcile:'进度待核对'};
+  const oldHead=activityView.querySelector('.topbar');const oldBack=activityView.querySelector('.backbar');
+  activityView.innerHTML=`<section class="glass"><h2>最近在做</h2>${!d.enabled?'<p>还没开始新的活动。</p>':!d.steps.length?'<p>等空下来，再读一点或出去看看。</p>':d.steps.map(x=>`<details class="pitem col activity-step" data-activity-id="${esc(x.id)}"><summary style="display:block;min-height:44px;line-height:1.7;text-align:left"><div><span class="tag">${esc(labels[x.kind]||'活动')}</span></div><div style="font-size:16px;line-height:1.6;margin:8px 0">${esc(x.title||'一次活动')}</div><div class="pmeta">${esc(states[x.state]||'状态待核对')} · ${new Date(x.at*1000).toLocaleString('zh-CN')}</div></summary><div style="font-size:14px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere">${x.locator?`阅读页 ${Number(x.locator.start)}–${Number(x.locator.end)}\n`:''}${esc(x.summary||'')}${x.thought?'\n\n'+esc(x.thought):''}</div>${activityLink(x.url,x.kind)}</details>`).join('')}</section>`;
+  if(oldBack)activityView.prepend(oldBack);if(oldHead)activityView.prepend(oldHead);
+  activityView.querySelectorAll('details').forEach(x=>{if(opened.has(x.dataset.activityId))x.open=true;});
+ }catch(e){if(!activityFingerprint)activityView.innerHTML='<section class="glass"><h2>最近在做</h2><p>这会儿暂时读不到，稍后再来看看。</p></section>';}
+}
+function activityLink(value,kind){try{const u=new URL(value);const hosts=kind==='xhs'?['www.xiaohongshu.com','xiaohongshu.com','xhslink.com']:['galatea.abysslumina.com'];if(u.protocol!=='https:'||!hosts.includes(u.hostname)||u.username)return '';return `<a class="backbtn" style="margin-top:12px;min-height:44px" href="${esc(u.href)}" target="_blank" rel="noopener noreferrer">打开原帖 ↗</a>`;}catch(e){return '';}}
+window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivity,30000);refreshActivity();
+
 </script>
 </body>
 </html>
