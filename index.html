@@ -2607,17 +2607,19 @@ function renderPanels(d){
       b+=`<div class="dev">书架还是空的 —— 放本书进来，我才有的读。</div>`;
     }else{
       b+=`<div class="prow"><span>书架</span><span class="pv">${books.length} 本` +
-         (S.reading?` · 在读 ${S.reading}`:'') +
-         (S.finished?` · 读完 ${S.finished}`:'')+`</span></div>`;
+         (S.reading?` · 阅读中 ${S.reading}`:'') +
+         (S.finished?` · 已读完 ${S.finished}`:'')+`</span></div>`;
       books.forEach(bk=>{
         const pg=bk.page||0, ttl=bk.pages||0;
         const pct=ttl?Math.round(pg/ttl*100):0;
-        const state = pg<=0 ? '还没翻' : (pg>=ttl ? '读完了' : `读到 ${pg}/${ttl} 页`);
+        const readingStatus=bk.status||(pg<=0?'not_started':pg>=ttl?'completed':'reading');
+        const state=readingStatus==='completed'?'已读完':readingStatus==='reading'?`阅读中 · 已读到 ${pg}/${ttl} 阅读页`:'未开始';
         const when = bk.at? String(bk.at).slice(5,16).replace('T',' ') : '';
         b+=`<div class="mfeel study-row">
               <div class="mf-d">📖 ${esc(bk.book)}</div>
               <div class="mf-t">${esc(state)}</div>
-              <div class="mf-meta">${ttl} 页 · ${(bk.chars||0).toLocaleString()} 字` +
+              <div class="mf-meta">${ttl} 阅读页 · ${(bk.chars||0).toLocaleString()} 字` +
+              (readingStatus==='completed'&&bk.completion_source==='user_confirmation'?' · 你已确认读完':'')+
               (bk.annotations?` · 批注 ${bk.annotations} 条`:'')+
               (when?` · 最近 ${esc(when)}`:'')+`</div>
             </div>`;
