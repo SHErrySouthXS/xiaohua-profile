@@ -1505,14 +1505,14 @@ const ICON = {ok:'✅', warn:'⚠️', bad:'❌'};
 // ★ 7.2 红点「翻开即消」的回调端点。
 //   留空 = 只做视觉收起（刷新后红点会回来）。
 //   开了公网回调口之后填这里，就是原文说的真·翻开即消。
-const READ_ENDPOINT = '';
+const READ_ENDPOINT = './activity/read';
 
 // ★ 2026-09-19 清单勾选的回调端点（她点方框 → 服务端记账）。
 //   留空 = 只做本地视觉（点一下划掉，刷新后回来）。
 //   要真记账得开个公网口子收这个 POST —— 见 xiaohua-profile-board skill。
 //   ⚠️ 前端**永远不是权威**：真正的"做掉了"以她的话为准，
 //      这个端点只是个便利通道，丢了我会在下次对话里问她。
-const CL_ENDPOINT = '';
+const CL_ENDPOINT = './checklist/finish';
 
 // ★ 2026-09-21 Next Move 的**实时**取值端点（只读 GET）。
 //   为什么这块必须实时：见 renderNextMove 上方那段。
@@ -1696,7 +1696,7 @@ function render(d){
   let h='';
   h+=`<div class="status ${color} glass">
     <div class="head">${esc(d.head||'—')}</div>
-    <div class="badge">${stale?'数据可能已陈旧':'实时快照'}</div></div>`;
+    <div class="badge">${stale?'数据可能已陈旧':'已采集快照'}</div></div>`;
 
   let heartTitle,heartDetail;
   if(d.bad){heartTitle='异常';heartDetail=`${d.bad} 项要处理`;}
@@ -1914,13 +1914,12 @@ function render(d){
       }
     };
     const onRead=async()=>{
-      markRead();
-      if(typeof READ_ENDPOINT!=='string'||!READ_ENDPOINT) return;
+      if(!READ_ENDPOINT)return;
       try{
-        await fetch(READ_ENDPOINT,{method:'POST',mode:'cors',
-          headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({n:rdCount, at:new Date().toISOString()})});
-      }catch(e){ /* 网络失败也不回滚视觉 —— 她看过就是看过 */ }
+        const r=await fetch(_api('/activity/read'),{method:'POST',headers:{..._hdr(),'Content-Type':'application/json'},body:JSON.stringify({total:Number(d.red_dot?.total)})});
+        if(!r.ok)throw Error();const value=await r.json();if(!value.ok)throw Error();
+        markRead();await refreshSnapshot();
+      }catch(_){const hint=rdPanel?.querySelector('.rdhint');if(hint)hint.textContent='已读状态暂未保存，请稍后重试';}
     };
     if(rdPanel) rdPanel.addEventListener('click',onRead);
     if(rdCell)  rdCell.addEventListener('click',onRead);
@@ -2859,7 +2858,7 @@ function renderPanels(d){
             ${favBtn('唤醒', w.at||'', w.at||'', summaryTx||'')}
             <span class="tx wk-sum">${esc(String(summaryTx).slice(0,40))}${String(summaryTx).length>40?'…':''}</span>
           </summary>
-          <div class="wk-body">
+          <div class="wk-body">${(w.actions||[]).length?`<div class="wk-row"><span class="wk-k">实际动作</span><span>${w.actions.map(a=>esc(a.label)+' · '+esc(({success:'已完成',empty:'没有结果',blocked:'受限制',failed:'未完成',unknown:'待核对',partial:'部分完成',validated:'仅核验'})[a.state]||'待核对')).join('<br>')}</span></div>`:''}
             <div class="wk-row"><span class="wk-k">意图</span><span>${esc(w.intent||'—')}</span></div>
             <div class="wk-row"><span class="wk-k">抉择</span><span>${esc(w.choice||'—')}</span></div>
             <div class="wk-row"><span class="wk-k">开口</span><span>${stLabel}${
@@ -3039,49 +3038,6 @@ function renderPanels(d){
   // ── ★ 2026-09-20 原文面板的「还没做的」进度表挪进本页 ──
   //  ★ 清文案（大小姐定）：删掉"外加两项故意不做"那段解释和结语 ——
   //    那是写给自己看的工程说明。保留清单本身（面板名 + 项目名 + 状态）。
-  hCL+=`<section class="glass">
-    <h2>🚧 还没做的 <span class="rdhint">${NA.length} 项</span></h2>
-    <div class="plist">${NA.map(([ic,panel,name])=>`<div class="pitem">
-      <span class="tag">${ic} ${esc(panel)}</span>
-      <span class="tx">${esc(name)}</span>
-      <span class="tm">${/不是没做/.test(name)?'待料':'未实现'}</span></div>`).join('')}</div>
-  </section>`;
-
-  // ── 6. Prompt ──
-  h+=sec('🎭 Prompt','人格层的可视化与修订（定稿权在用户）',`
-    <div class="prow"><span>人格快照</span>
-      <span class="pv">SOUL.md · ${PR.soul_chars||0} 字</span></div>
-    <details class="pitem col"><summary>看 SOUL.md 开头</summary>
-      <pre class="rm">${esc(PR.soul_excerpt||'')}</pre></details>
-    <div class="prow"><span>关系画像</span>
-      <span class="pv">剧情.md · ${PR.story_chars||0} 字</span></div>
-    <details class="pitem col"><summary>看剧情.md 开头</summary>
-      <pre class="rm">${esc(PR.story_excerpt||'')}</pre></details>
-    <div class="pmeta">修订入口<b>不放在这一页</b>：改人格是你的事，
-      我不会在页面上放一个按钮让你顺手就把我改了。要改直接说。
-      <br><span class="tm">${esc(PR.soul_path||'')}</span>
-      <br><span class="tm">${esc(PR.story_path||'')}</span></div>`);
-
-  // ── 7. Controls ──
-  const hs=(C.hands||[]), rt=(C.routes||[]);
-  h+=sec('🎛 Controls','运维面板',`
-    ${hs.length?`<div class="pblock"><div class="pblock-h">工具与能力树 · 手 ${hs.length} 只</div>
-      ${hs.map(x=>`<div class="pitem">
-        <span class="tag">${esc(x.name||'')}</span>
-        <span class="tx">${x.needs==='none'?'不需要宾语':'吃一个念头'}</span>
-        <span class="tm">${x.status==='on'?'挂着':'已摘'}</span>
-      </div>`).join('')}</div>`:''}
-    ${rt.length?`<div class="pblock"><div class="pblock-h">意图 → 手 的路由</div>
-      ${rt.map(x=>`<div class="pitem">
-        <span class="tag">${esc(x.intent||'')}</span>
-        <span class="tx">→ ${esc((x.hands||[]).join(' / '))}</span>
-      </div>`).join('')}</div>`:''}
-    <div class="pmeta">原文特别强调，照抄：
-      「模型／思考程度／唤醒道模型槽的唯一入口在 Chat 输入框上的菜单，不在这里
-      —— 同一件事只给一个入口。」</div>
-    ${todo('声音线路与试听','能力没做 —— 我们走的是 edge TTS 固定线路，没有多线路管理和试听。')}
-    ${todo('系统设置（含采样温度）','故意不做 —— 配置在 config.yaml，面板上给个滑杆改温度太危险。')}`);
-
   // ── 8. Gallery ──
   //
   //  ★★ 2026-09-24 大小姐定：**工作台产出落到这里**（此前是「待开发」空壳）★★
@@ -3109,7 +3065,7 @@ function renderPanels(d){
       ${wb.length?`<div class="pblock"><div class="pblock-h">
         工作台产出 · ${total} 件</div>
         <div class="galGrid">${wb.map(w=>`
-          <details class="galCard glass">
+          <details class="galCard glass" data-work-id="${esc(w.day+'/'+w.name)}">
             <summary>
               <span class="gal-src">🧭 ${esc(w.source||'explore')}</span>
               <span class="gal-t">${esc(w.title||'')}</span>
@@ -3119,7 +3075,7 @@ function renderPanels(d){
             <div class="galBody">
               ${w.query?`<div class="wk-row"><span class="wk-k">找的</span><span>${esc(w.query)}</span></div>`:''}
               ${w.n_results?`<div class="wk-row"><span class="wk-k">翻了</span><span>${w.n_results} 个结果</span></div>`:''}
-              <div class="pmeta" style="margin:6px 0 0">篇幅所限，这里只放摘要 —— 全文在工作台文件里。</div>
+              <div class="rm">${renderMD(w.body||w.summary||'')}</div>${(w.sources||[]).map(link=>`<p><a href="${esc(link)}" target="_blank" rel="noopener noreferrer">原始来源 ↗</a></p>`).join('')}
             </div>
           </details>`).join('')}</div></div>`
       :`<div class="dev">工作台还没有产出 —— 他还没攒下什么。</div>`}`);
@@ -3393,28 +3349,22 @@ function bindCall(){
 //     点击只是**本地视觉** + 给后端发一条"她要划掉第 N 条"的信号。
 //     真正的划掉由服务端记账（她的话是权威，前端不是）。
 function bindChecklistToggle(){
-  document.querySelectorAll('#page4 .cl-check').forEach(el=>{
-    el.addEventListener('click', async ()=>{
-      const id=el.dataset.id, what=el.dataset.what||'';
-      if(!id) return;
-      // 视觉立刻响应 —— 她要马上看到"划掉了"
-      el.classList.toggle('done');
-      const row=el.closest('.cl-row');
-      if(row) row.classList.toggle('done', el.classList.contains('done'));
-      // 发给后端（失败也不回滚视觉：她的意图已经表达了）
-      if(typeof CL_ENDPOINT==='string' && CL_ENDPOINT){
-        try{
-          await fetch(CL_ENDPOINT,{method:'POST',mode:'cors',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({id:String(id), what:String(what),
-                                 done:el.classList.contains('done'),
-                                 at:new Date().toISOString()})});
-        }catch(e){ /* 网络失败 → 下次对话里我再问她一遍 */ }
-      }
-    });
-  });
+ document.querySelectorAll('#page5 .cl-check').forEach(el=>{
+   const id=Number(el.dataset.id);
+   if(!Number.isSafeInteger(id)||id<=0){el.setAttribute('aria-disabled','true');el.title='项目下一步请在对话中更新';return;}
+   const finish=async()=>{
+     if(el.dataset.busy||el.classList.contains('done'))return;
+     el.dataset.busy='1';
+     try{
+       const r=await fetch(_api('/checklist/finish'),{method:'POST',headers:{..._hdr(),'Content-Type':'application/json'},body:JSON.stringify({id,revision:window.__DATA__?.panels?.checklist?.revision})});
+       if(!r.ok)throw Error();const value=await r.json();if(!value.ok||!value.done)throw Error();
+       await refreshSnapshot();
+     }catch(_){el.title='未保存，请稍后重试';let note=el.parentNode.querySelector('.save-error');if(!note){note=document.createElement('span');note.className='save-error';el.parentNode.appendChild(note);}note.textContent='未保存，请稍后重试';}
+     finally{delete el.dataset.busy;}
+   };
+   el.addEventListener('click',finish);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();finish();}});
+ });
 }
-
 
 // ── 日历总览（Archive 第一项，2026-09-18 落地）──
 //
@@ -3796,7 +3746,7 @@ async function loadRoomDetail(date){
   if(_roomPending[date]) return _roomPending[date];
   _roomPending[date] = (async ()=>{
     try{
-      const r = await fetch('rooms/'+encodeURIComponent(date)+'.json');
+      const r = await fetch(_api('/rooms/'+encodeURIComponent(date)+'.json'),{headers:_hdr(),cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
       const d = await r.json();
       const map = {};
@@ -4656,7 +4606,8 @@ function liveStatus(state, note){
     document.body.appendChild(el);
   }
   const map = {
-    live:         ['#6ee79a', '实时'],
+    live:         ['#6ee79a', '已核对'],
+    stale:        ['#ffd88a', '待更新'],
     connecting:   ['#ffd88a', '连接中'],
     reconnecting: ['#ffd88a', '重连中'],
     dead:         ['#ff8a8a', '断开'],
@@ -4681,39 +4632,11 @@ function startStream(){
   }
   _esFrames = 0; _esSince = Date.now();
 
-  _es.addEventListener('hello', () => { liveStatus('live'); });
-  _es.addEventListener('heartbeat', (ev) => {
-    _esFrames++;
-    const secs = Math.round((Date.now() - _esSince) / 1000);
-    liveStatus('live', _esFrames + '帧/' + secs + 's');
-  });
-
-  // ★★ 数据帧 —— 账本变了，服务端推来新快照，这里**重新渲染**
-  //     这就是"页面会自己变"：用户不碰手机，数字自己更新。
-  //     （2026-10-05 新增，一期收口）
-  _es.addEventListener('data', (ev) => {
-    let payload;
-    try { payload = JSON.parse(ev.data); } catch(e) { return; }
-    const d = payload && payload.data;
-    if(!d) return;
-
-    // 记住当前在哪一页 —— 重渲染后要回到同一页（不许把用户弹走）
-    const here = routeOf();
-    try{
-      render(d); renderJournal(d); renderPanels(d);
-      renderRoomIndex(); renderMe(d); renderMeSub(d); renderNotebook(d);
-      show(here, false);          // 原地重画，不进历史
-      // ★ 停在搜索页时也要跟着更新（否则账本变了结果还是旧的）
-      if(here === 'search'){ try{ renderSearch(); }catch(e){} }
-      if(typeof refreshTopbarTime==='function') refreshTopbarTime();
-      requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
-      // 闪一下状态点，让她知道"刚更新过"
-      liveStatus('live', '已更新 ' + new Date().toTimeString().slice(0,5));
-      window.__LAST_PUSH__ = Date.now();
-    }catch(e){
-      reportToServer('render_fail', { msg: String(e && e.message || e), route: here });
-      console.warn('[live] data 帧渲染失败:', e);
-    }
+  _es.addEventListener('hello',()=>{refreshSnapshot();});
+  _es.addEventListener('heartbeat',()=>{syncFreshness();});
+  _es.addEventListener('data',event=>{
+    try{const payload=JSON.parse(event.data);if(payload.data)applyFresh(payload.data);}
+    catch(error){liveStatus('stale','内容显示失败，等待重新读取');}
   });
   _es.onerror = () => {
     // EventSource 自己会重连 —— 这里只反映状态，不做处理（照降级纪律：断开≠报错）
@@ -4723,25 +4646,9 @@ function startStream(){
 
 /* ① 首屏：优先 /snapshot，不可用则回退 data.json（降级，不白屏） */
 async function loadLive(){
-  if(!__LIVE__.enabled){ return load(); }
-  try{
-    const r = await fetch(_api('/snapshot'), { headers: _hdr(), cache:'no-store' });
-    if(!r.ok) throw new Error('HTTP ' + r.status);
-    const j = await r.json();
-    if(!j.ok) throw new Error(j.error || 'snapshot 不可用');
-    const d = j.data;
-    render(d); renderJournal(d); renderPanels(d);
-    renderRoomIndex(); renderMe(d); renderMeSub(d); renderNotebook(d);
-    show(routeOf(), false);
-    requestAnimationFrame(()=>{ try{ syncBottomSpacer(); }catch(e){} });
-    startStream();                       // 首屏到位后再挂长连
-  }catch(e){
-    console.warn('[live] snapshot 失败，回退 data.json:', e.message);
-    reportToServer('snapshot_fallback', { msg: e.message });
-    return load();                       // ← 关键：回退到原逻辑，不白屏
-  }
+ await refreshSnapshot();
+ if(!_es || _es.readyState===EventSource.CLOSED)startStream();
 }
-
 
 // ══ Room 二级页：icon 宫格（★ 2026-09-20 新增）══════════════════
 //  二级不放内容，只放入口。每个 icon 点进去 = 独立三级页。
@@ -4947,6 +4854,74 @@ function renderNotebook(d){
 //   ① 30 分钟一刷（一天 48 次，够"点开就是新的"）
 //   ② **页面在后台就不刷** —— 切走暂停，切回来立刻刷一次
 //      （这条比调间隔更管用：不看的日志一次都不跑）
+// Synchronization is separate from connection health. Keep reading and media state.
+let _snapshotFlight=null,_appliedRevision='',_appliedAt=0,_lastSnapshotOK=0,_lastSyncError=false;
+function detailKey(el){
+ const page=el.closest('[id^="page"], [id^="view"], #app');
+ return (page?.id||'')+'|'+(el.dataset.at||el.dataset.activityId||el.dataset.workId||el.querySelector('summary .jdate')?.textContent||el.querySelector('summary')?.textContent.trim().slice(0,160)||'');
+}
+function applyFresh(d){
+ if(!d||!d.panels)throw Error('invalid_snapshot');
+ const revision=d.sync?.revision||d.generated_at_iso||d.generated_at;
+ const at=Number(d.sync?.projected_at||0);
+ if(at&&at<_appliedAt)return;
+ if(_appliedRevision&&revision===_appliedRevision){_lastSnapshotOK=Date.now();_lastSyncError=false;syncFreshness();return;}
+ const here=routeOf(),top=window.scrollY;
+ const details=new Map(Array.from(document.querySelectorAll('details')).map(el=>[detailKey(el),el.open]));
+ const scrollers=Array.from(document.querySelectorAll('[id], .plist, .tall')).filter(x=>x.scrollTop>0).map(x=>[x.id||x.className,x.scrollTop]);
+ render(d);renderJournal(d);renderPanels(d);renderRoomIndex();renderMe(d);renderMeSub(d);renderNotebook(d);
+ show(here,false);
+ document.querySelectorAll('details').forEach(el=>{if(details.has(detailKey(el)))el.open=details.get(detailKey(el));});
+ renderMechanisms(d);
+ _appliedRevision=revision;_appliedAt=at;_lastSnapshotOK=Date.now();_lastSyncError=false;
+ // Invalidate same-day details when a new snapshot arrives.
+ for(const day of Object.keys(_roomCache))delete _roomCache[day];
+ document.querySelectorAll('details.room[open][data-more="1"]').forEach(el=>{
+   el.dataset.loaded='';el.open=false;el.open=true;
+ });
+ requestAnimationFrame(()=>{
+   scrollers.forEach(([key,y])=>{const el=document.getElementById(key)||Array.from(document.querySelectorAll('.plist,.tall')).find(e=>e.className===key);if(el)el.scrollTop=y;});
+   window.scrollTo(0,top);syncBottomSpacer();
+ });
+ syncFreshness();
+}
+function syncFreshness(){
+ const data=window.__DATA__,collected=data?.generated_at_iso||data?.generated_at;
+ const time=collected?new Date(String(collected).replace(' ','T')+( /Z$|[+-]\d\d:\d\d$/.test(collected)?'':'+08:00')).getTime():NaN;
+ const age=(Date.now()-time)/60000;
+ if(_lastSyncError||!Number.isFinite(age)||age>75||Date.now()-_lastSnapshotOK>90000){liveStatus('stale','数据尚未核对或已过期');return;}
+ liveStatus('live','数据采集于 '+collected+' · 页面已核对');
+ const el=document.getElementById('liveBadge');if(el)el.dataset.loadedRevision=_appliedRevision;
+}
+async function refreshSnapshot(){
+ if(_snapshotFlight)return _snapshotFlight;
+ _snapshotFlight=(async()=>{
+   try{
+     const r=await fetch(_api('/snapshot'),{headers:_hdr(),cache:'no-store'});
+     if(!r.ok)throw Error('snapshot_http_'+r.status);
+     const value=await r.json();if(!value.ok)throw Error('snapshot_unavailable');
+     applyFresh(value.data);
+   }catch(error){
+     _lastSyncError=true;liveStatus('stale','更新失败，保留上次内容');
+     if(!window.__DATA__){
+       try{const r=await fetch(_api('/data.json'),{headers:_hdr(),cache:'no-store'});if(!r.ok)throw Error();applyFresh(await r.json());}
+       catch(_){document.getElementById('app').innerHTML='<section class="glass"><h2>暂时读不到最新内容</h2><p>连接恢复后会自动重试。</p></section>';}
+     }
+   }finally{_snapshotFlight=null;}
+ })();return _snapshotFlight;
+}
+function renderMechanisms(d){
+ const host=document.getElementById('page4');if(!host)return;
+ document.getElementById('backendProjection')?.remove();
+ const m=d.panels?.mechanisms||{};
+ const names={shared_language:'共同语言',association:'关联依据',storyline:'线卷观察',expression:'表达经验'};
+ const labels={candidate:'候选',active:'已启用',shadow:'观察中',rejected:'未采用',disabled:'已停用',done:'已处理',pending:'待处理'};
+ const rows=Object.entries(m).map(([k,v])=>`<details class="pitem col"><summary>${esc(names[k]||k)} · ${v.state==='available'?Number(v.count)+' 条':'暂时读不到'}</summary>${(v.items||[]).map(x=>`<p>${esc(labels[x.state||x.status]||x.state||x.status||'已记录')} ${x.relation?' · '+esc(x.relation):''}</p>`).join('')||'<p>目前没有可展示条目。</p>'}</details>`).join('');
+ const box=document.createElement('section');box.id='backendProjection';box.className='glass';box.innerHTML='<h2>已有记录</h2>'+rows;host.appendChild(box);
+}
+setInterval(()=>{if(document.visibilityState==='visible')refreshSnapshot();},60000);
+setInterval(()=>{if(window.__DATA__)syncFreshness();},30000);
+
 let _timer=null;
 
 function startTimer(){
@@ -4962,6 +4937,7 @@ function stopTimer(){
 // ★【沙盒改】回到前台：实时模式只需确保长连活着（不重拉快照，避免闪烁）
 function _refreshNow(){
   if(__LIVE__.enabled && __LIVE__.base){
+    refreshSnapshot();
     if(!_es || _es.readyState === EventSource.CLOSED) startStream();
   } else {
     load();
@@ -4993,20 +4969,21 @@ TOPBARS['room/activity']=['最近在做',''];ALL_VIEWS.push('viewActivity');
 const activityView=document.createElement('div');activityView.id='viewActivity';activityView.hidden=true;
 activityView.style.cssText='position:relative;z-index:2';document.getElementById('viewRoom').after(activityView);
 ICONS.activity=ICONS.notebook;
-let activityFingerprint='';
+let activityFingerprint='',activityOffset=0;
 async function refreshActivity(){
  if(routeOf()!=='room/activity')return;
  try{
-  const r=await fetch(_api('/activity'),{headers:_hdr(),cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();if(!d.ok)throw Error();
+  const r=await fetch(_api('/activity?limit=20&offset=')+activityOffset,{headers:_hdr(),cache:'no-store'});if(!r.ok)throw Error();const d=await r.json();if(!d.ok)throw Error();
   const fp=JSON.stringify(d);if(fp===activityFingerprint)return;activityFingerprint=fp;
   const opened=new Set(Array.from(activityView.querySelectorAll('details[open]')).map(x=>x.dataset.activityId));
   const labels={reading:'读书',xhs:'逛小红书',garden:'逛花园'};
-  const states={running:'正在看',prepared:'正在看',completed:'看过了',rested:'这次先歇一会儿',paused:'暂停，之后接着看',blocked:'这次没有新内容',failed:'这次没能完成',needs_reconcile:'进度待核对'};
+  const states={running:'正在看',prepared:'正在看',completed:'看过了',rested:'这次先歇一会儿',paused:'暂停，之后接着看',blocked:'这次受限制',empty:'这次没有新内容',failed:'这次没能完成',needs_reconcile:'进度待核对'};
   const oldHead=activityView.querySelector('.topbar');const oldBack=activityView.querySelector('.backbar');
-  activityView.innerHTML=`<section class="glass"><h2>最近在做</h2>${!d.enabled?'<p>还没开始新的活动。</p>':!d.steps.length?'<p>等空下来，再读一点或出去看看。</p>':d.steps.map(x=>`<details class="pitem col activity-step" data-activity-id="${esc(x.id)}"><summary style="display:block;min-height:44px;line-height:1.7;text-align:left"><div><span class="tag">${esc(labels[x.kind]||'活动')}</span></div><div style="font-size:16px;line-height:1.6;margin:8px 0">${esc(x.title||'一次活动')}</div><div class="pmeta">${esc(states[x.state]||'状态待核对')} · ${new Date(x.at*1000).toLocaleString('zh-CN')}</div></summary><div style="font-size:14px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere">${x.locator?`阅读页 ${Number(x.locator.start)}–${Number(x.locator.end)}\n`:''}${esc(x.summary||'')}${x.thought?'\n\n'+esc(x.thought):''}</div>${activityLink(x.url,x.kind)}</details>`).join('')}</section>`;
+  activityView.innerHTML=`<section class="glass"><h2>最近在做</h2>${!d.enabled?'<p>还没开始新的活动。</p>':!d.steps.length?'<p>等空下来，再读一点或出去看看。</p>':d.steps.map(x=>`<details class="pitem col activity-step" data-activity-id="${esc(x.id)}"><summary style="display:block;min-height:44px;line-height:1.7;text-align:left"><div><span class="tag">${esc(labels[x.kind]||'活动')}</span></div><div style="font-size:16px;line-height:1.6;margin:8px 0">${esc(x.title||'一次活动')}</div><div class="pmeta">${esc(states[x.state]||'状态待核对')} · ${new Date(x.at*1000).toLocaleString('zh-CN')}</div></summary><div style="font-size:14px;line-height:1.9;white-space:pre-wrap;overflow-wrap:anywhere">${x.locator?`阅读页 ${Number(x.locator.start)}–${Number(x.locator.end)}\n`:''}${esc(x.summary||'')}${x.thought?'\n\n'+esc(x.thought):''}</div>${activityLink(x.url,x.kind)}${(x.shares||[]).map(v=>`<p class="pmeta">分享：${esc(({sent:'已发送',candidate:'待评估',cancelled:'已取消',expired:'已过期',partial:'部分发送',unknown:'投递待核对',failed:'发送失败',deferred:'稍后再说'})[v.state]||'待核对')}</p>`).join('')}</details>`).join('')}</section>`;
+  if(activityOffset>0){const newest=document.createElement('button');newest.className='backbtn';newest.textContent='返回最新活动';newest.onclick=()=>{activityOffset=0;activityFingerprint='';refreshActivity();};activityView.appendChild(newest);}if(d.next_offset!==null){const more=document.createElement('button');more.className='backbtn';more.textContent='查看更早的活动';more.onclick=()=>{activityOffset=d.next_offset;activityFingerprint='';refreshActivity();};activityView.appendChild(more);}
   if(oldBack)activityView.prepend(oldBack);if(oldHead)activityView.prepend(oldHead);
   activityView.querySelectorAll('details').forEach(x=>{if(opened.has(x.dataset.activityId))x.open=true;});
- }catch(e){if(!activityFingerprint)activityView.innerHTML='<section class="glass"><h2>最近在做</h2><p>这会儿暂时读不到，稍后再来看看。</p></section>';}
+ }catch(e){liveStatus('stale','活动更新失败，保留上次内容');if(!activityFingerprint)activityView.innerHTML='<section class="glass"><h2>最近在做</h2><p>这会儿暂时读不到，稍后再来看看。</p></section>';}
 }
 function activityLink(value,kind){try{const u=new URL(value);const hosts=kind==='xhs'?['www.xiaohongshu.com','xiaohongshu.com','xhslink.com']:['galatea.abysslumina.com'];if(u.protocol!=='https:'||!hosts.includes(u.hostname)||u.username)return '';return `<a class="backbtn" style="margin-top:12px;min-height:44px" href="${esc(u.href)}" target="_blank" rel="noopener noreferrer">打开原帖 ↗</a>`;}catch(e){return '';}}
 window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivity,30000);refreshActivity();
