@@ -4103,41 +4103,37 @@ if('serviceWorker' in navigator){
   });
 }
 
-const __LIVE__ = {
-  enabled: true,                                  // ← 回滚开关：false = 原行为
-  // ★ 路径基准：**用当前页面的目录**，不是站点根
-  //   ⚠️ 坑（2026-10-05 实测）：caddy 用 handle_path 剥掉了 /xiaohua-profile 前缀，
-  //      但浏览器地址里仍有前缀。若 base 写成 ''（站点根），
-  //      发出的 /snapshot 会打到站点根 → 撞 webui 兜底 → HTTP 404。
-  //      正解：base = './'（当前目录），请求自动带上前缀。
-  base: (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
-        ? 'http://127.0.0.1:8801/'
-        : './',
-  // A 档 Bearer 密钥：URL 带 ?token= 进来 → 存下来，之后自动带
-  key: (new URLSearchParams(location.search).get('token'))
-       || localStorage.getItem('board_key') || '',
-};
-if(__LIVE__.key && localStorage.getItem('board_key') !== __LIVE__.key){
-  try{ localStorage.setItem('board_key', __LIVE__.key); }catch(e){}
-}
 
-function _cookieKey(){
-  const m = document.cookie.match(/(?:^|;\s*)board_key=([^;]+)/);
+// No website access credential is stored in script, URL, or browser storage.
+try { localStorage.removeItem('board_key'); sessionStorage.removeItem('board_key'); } catch (_) {}
+if (location.search) {
+  const u = new URL(location.href);
+  ['token', 'access_token', 'board_key'].forEach(k => u.searchParams.delete(k));
+  history.replaceState(history.state, '', u.pathname + u.search + u.hash);
+}
+function _accessCsrf() {
+  const m = document.cookie.match(/(?:^|;\s*)__Host-xiaohua_csrf=([^;]+)/);
   return m ? decodeURIComponent(m[1]) : '';
 }
-if(!__LIVE__.key){ __LIVE__.key = _cookieKey(); }
+// Covers existing fetch callers without changing their body, streaming, or playback contracts.
+const _accessFetch = window.fetch.bind(window);
+window.fetch = function(input, options) {
+  const init = Object.assign({}, options || {});
+  const url = new URL(input instanceof URL ? input.href : (typeof input === 'string' ? input : input.url), location.href);
+  const method = String(init.method || (typeof input !== 'string' && input.method) || 'GET').toUpperCase();
+  if (url.origin === location.origin && url.pathname.startsWith('/xiaohua/') && !['GET','HEAD','OPTIONS'].includes(method)) {
+    const headers = new Headers((typeof input !== 'string' && input.headers) || {});
+    new Headers(init.headers || {}).forEach((v,k) => headers.set(k,v));
+    headers.set('X-Xiaohua-CSRF', _accessCsrf());
+    init.headers = headers;
+    init.credentials = 'same-origin';
+  }
+  return _accessFetch(input, init);
+};
 
-function _api(path){
-  // ⚠️ path 以 '/' 开头（如 '/snapshot'），base 是 './' 或 'http://host:port/'
-  //    拼接时避免出现 './/snapshot' 这种双斜杠
-  const clean = String(path).replace(/^\/+/, '');
-  const b = __LIVE__.base.endsWith('/') ? __LIVE__.base : __LIVE__.base + '/';
-  const u = b + clean;
-  return __LIVE__.key ? u + (u.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(__LIVE__.key) : u;
-}
-function _hdr(){
-  return __LIVE__.key ? { 'Authorization': 'Bearer ' + __LIVE__.key } : {};
-}
+const __LIVE__ = {enabled: true, base: './'};
+function _api(path) { return __LIVE__.base + String(path).replace(/^\/+/, ''); }
+function _hdr() { return {}; }
 
 // ── ★ 2026-10-05：语音留言箱 ──
 //
