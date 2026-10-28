@@ -1436,7 +1436,7 @@
 // Session recovery applies only to this private site; never cache passwords or sessions in JS.
 (()=>{
 const nativeFetch=window.fetch.bind(window);let leaving=false;
-function login(){if(!leaving){leaving=true;location.replace('/xiaohua/login');}}
+function login(){if(window.__settingsHoldLogin?.())return;if(!leaving){leaving=true;location.replace('/xiaohua/login');}}
 window.fetch=async(...args)=>{const response=await nativeFetch(...args);try{const target=new URL(args[0] instanceof Request?args[0].url:args[0],location.href);if(response.status===401&&target.origin===location.origin&&target.pathname.startsWith('/xiaohua/')&&!target.pathname.startsWith('/xiaohua/auth/'))login();}catch(e){}return response;};
 let pending=false;
 async function check(){if(pending||document.hidden)return;pending=true;try{const r=await nativeFetch('/xiaohua/auth/status',{cache:'no-store',credentials:'same-origin'});if(r.status===401)login();}catch(e){}finally{pending=false;}}
@@ -1477,6 +1477,61 @@ window.addEventListener('pageshow',check);document.addEventListener('visibilityc
   button:disabled{cursor:not-allowed}
 }
 
+</style>
+<style id="xiaohua-setting-editor">/* Settings candidate: scoped styles; existing visual tokens stay authoritative. */
+.se{max-width:900px;margin-inline:auto;position:relative;z-index:2}
+.se button,.se input,.se select,.se textarea{font:inherit}
+.se button{cursor:pointer}
+.se .glass{padding:22px}
+.se-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.se-between{justify-content:space-between}
+.se-muted{color:var(--fg-3);font-size:13px;line-height:1.7}
+.se-btn{padding:10px 17px;min-height:44px;border-radius:13px;border:1px solid var(--glass-brd);background:rgba(255,255,255,.045);color:var(--fg)}
+.se-btn.primary{background:var(--pink);color:#29212a;border-color:var(--pink);font-weight:650}
+.se-btn:disabled{opacity:.5;cursor:default}
+.se button:focus-visible,.se input:focus-visible,.se textarea:focus-visible,.se select:focus-visible{outline:2px solid var(--pink);outline-offset:3px}
+.se-search{width:100%;margin:18px 0 14px;padding:13px 15px;border:1px solid var(--glass-brd);border-radius:14px;background:rgba(0,0,0,.13);color:var(--fg);font-size:16px!important}
+.se-cats{display:flex;gap:8px;overflow-x:auto;padding:3px 2px 10px;scrollbar-width:thin}
+.se-chip{flex:none;padding:9px 13px;min-height:40px;border:1px solid var(--glass-brd);border-radius:30px;color:var(--fg-3);background:transparent;font-size:13px!important}
+.se-chip[aria-pressed=true]{color:var(--pink);border-color:var(--pink);background:rgba(255,159,197,.08)}
+.se-filter{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:6px 0 20px}
+.se-filter select{color:var(--fg-2);background:var(--bg-mid);border:1px solid var(--glass-brd);border-radius:10px;padding:9px;min-height:40px}
+.se details.se-group{margin:0 0 24px;padding:0;background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none}
+.se-group>summary{display:flex;justify-content:flex-start;cursor:pointer;font-size:15px;font-weight:600;padding:10px 2px;margin-bottom:9px;color:var(--fg-2);list-style:none}
+.se-group>summary::after{content:none}
+.se-group>summary::before{content:'⌄';display:inline-block;width:20px;color:var(--fg-3)}
+.se-group:not([open])>summary::before{content:'›'}
+.se-count{font-size:12px;color:var(--fg-3);font-weight:400;margin-left:9px}
+.se-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.se-card{display:block;width:100%;min-width:0;text-align:left;border:1px solid var(--glass-brd);background:rgba(255,255,255,.025);border-radius:17px;padding:18px;color:var(--fg);transition:background .15s,border-color .15s}
+.se-card:hover{background:rgba(255,255,255,.055);border-color:rgba(255,159,197,.45)}
+.se-card-title{display:flex;justify-content:space-between;gap:12px;align-items:start;font-size:15px;font-weight:600;line-height:1.6}
+.se-state{font-size:11px;white-space:nowrap;color:var(--ok);font-weight:400}
+.se-state.off{color:var(--fg-3)}
+.se-preview{font-size:13px;line-height:1.8;color:var(--fg-3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;margin:10px 0;min-height:46px;overflow-wrap:anywhere}
+.se-keywords{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
+.se-key{font-size:11px;border-radius:6px;padding:3px 7px;color:var(--fg-3);background:rgba(255,255,255,.055);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.se-read{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px;line-height:2;color:var(--fg-2);margin:24px 0 10px}
+.se-title{font-size:21px;line-height:1.6;font-weight:650;overflow-wrap:anywhere}
+.se-label{display:block;font-size:13px;color:var(--fg-3);margin:22px 0 8px}
+.se-field{width:100%;padding:12px 14px;border:1px solid var(--glass-brd);border-radius:12px;background:rgba(0,0,0,.15);color:var(--fg);font-size:16px!important;line-height:1.7}
+textarea.se-field{resize:vertical;min-height:340px;white-space:pre-wrap}
+.se-editor-meta{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.se-editor-meta label{min-width:0}
+.se-actions{position:sticky;bottom:calc(var(--nav-h,76px) + env(safe-area-inset-bottom,0px) + 12px);z-index:8;background:rgba(37,34,44,.96);border:1px solid var(--glass-brd);border-radius:17px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 32px #0005;margin-top:20px}
+.se-status{color:var(--fg-3);font-size:12px;line-height:1.6}
+.se-message{margin:14px 0;padding:12px 15px;border:1px solid var(--glass-brd);border-radius:12px;font-size:13px;line-height:1.8;color:var(--fg-2)}
+.se-message.error{border-color:var(--bad);color:#ffc6d1}
+.se-diff{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+.se-diff>div{min-width:0;border:1px solid var(--glass-brd);border-radius:13px;padding:14px}
+.se-diff pre{font:13px/1.9 inherit;white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto;margin-top:12px;color:var(--fg-2)}
+.se-dialog{background:var(--bg-mid);color:var(--fg);border:1px solid var(--glass-brd);border-radius:20px;padding:24px;width:min(440px,calc(100vw - 32px));margin:auto}
+.se-dialog::backdrop{background:rgba(0,0,0,.6);backdrop-filter:blur(4px)}
+.se-empty{padding:45px 16px;text-align:center;color:var(--fg-3);font-size:14px;line-height:2}
+.se-advanced{margin-top:24px;color:var(--fg-3);font-size:13px;line-height:1.8}
+.se-advanced pre{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:10px}
+.se-preview-banner{position:relative;z-index:30;padding:9px 16px;text-align:center;font-size:12px;color:var(--pink);border-bottom:1px solid var(--glass-brd);background:var(--bg-mid)}
+@media(max-width:600px){.se-grid,.se-editor-meta,.se-diff{grid-template-columns:1fr}.se .glass{padding:18px}.se-card{padding:16px}.se-actions{padding:11px 12px}.se-btn{padding:10px 13px}.se-title{font-size:19px}textarea.se-field{min-height:48vh}}
 </style>
 </head>
 <body>
@@ -5057,6 +5112,206 @@ window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivit
  });
 })();
 
+</script>
+<script id="xiaohua-setting-editor-code">window.SETTINGS_PREVIEW=false;
+/* Candidate UI. Preview endpoints are loopback fixtures, never production writes. */
+(() => {
+ 'use strict';
+ const cats=['自我与日常','人物塑造','聊天表达','吐槽与玩梗','亲密表达','其他'];
+ const prefixes={'wb-self-':cats[0],'wb-roleplay-':cats[1],'wb-chat-':cats[2],'wb-roast-':cats[3],'wb-dirtytalk-':cats[4]};
+ const state={book:null,docs:{},category:'全部',query:'',status:'all',selected:null,editing:false,review:false,draft:null,original:null,error:'',notice:'',saving:false,collapsed:new Set(),history:null,historyOpen:false};
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const current=()=>routeOf().split('/')[1];
+ const enabled=e=>e.enabled===undefined?true:Boolean(e.enabled);
+ const settingRoute=r=>['me/worldbook','me/soul','me/story'].includes(r);
+ const category=e=>state.book?.display_categories?.[e.id] || Object.entries(prefixes).find(([p])=>e.id.startsWith(p))?.[1] || '其他';
+ const dirty=()=>state.editing && JSON.stringify(state.draft)!==JSON.stringify(state.original);
+ const btn=(label,action,primary=false,attrs='')=>`<button type="button" class="se-btn ${primary?'primary':''}" data-se="${action}" ${attrs}>${label}</button>`;
+ const fields=()=>current()==='worldbook'?['title','content','keys','enabled','display_category']:['content'];
+ const host=()=>document.getElementById(current()==='worldbook'?'pageWorldbook':current()==='soul'?'page10':'page11');
+ const isPreview=()=>Boolean(window.SETTINGS_PREVIEW || state.book?.preview_only || state.docs[current()]?.preview_only);
+ const source=()=>current()==='worldbook'?state.book?.entries.find(e=>e.id===state.selected):state.docs[current()];
+ const resetEditor=()=>{state.editing=false;state.review=false;state.draft=null;state.original=null;state.error='';state.conflict=false;state.latest=null;};
+ const message=()=>`${state.authExpired?'<div class="se-message error" role="alert">登录已过期，修改仍保留。<a href="/xiaohua/login" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">在新窗口重新登录</a></div>':''}${state.error?`<div class="se-message error" role="alert">${esc(state.error)}</div>`:''}${state.notice?`<div class="se-message" role="status">${esc(state.notice)}</div>`:''}`;
+ async function api(path,body){
+   const r=await fetch(_api('/settings/'+path),{method:body?'POST':'GET',cache:'no-store',headers:{..._hdr(),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
+   const d=await r.json().catch(()=>({}));if(!r.ok){const e=Error(d.detail==='settings_busy'?'busy':r.status===409?'conflict':r.status===401?'auth':d.detail==='invalid_key_pattern'?'pattern':'failed');e.code=r.status;throw e;}return d;
+ }
+ async function ensure(kind,reload=false){
+   if(kind==='worldbook'&&state.book&&!reload)return;
+   if(kind!=='worldbook'&&state.docs[kind]&&!reload)return;
+   const d=await api(kind);if(kind==='worldbook')state.book=d;else state.docs[kind]=d;
+ }
+ function summary(s){return String(s).replace(/[#>*`_]/g,'').replace(/\s+/g,' ').slice(0,105);}
+ function paint(){
+   if(!settingRoute(routeOf()))return;
+   const h=host();let content=h.querySelector('.se-content');
+   if(!content){content=document.createElement('div');content.className='se-content';h.append(content);}h.classList.add('se');
+   const kind=current();
+   if(kind==='worldbook'&&!state.book||kind!=='worldbook'&&!state.docs[kind]){content.innerHTML=`<section class="glass">${state.error?message()+btn('重新加载','reload'): '<p class="se-muted" role="status">正在读取…</p>'}</section>`;return;}
+   if(kind==='worldbook'&&!state.selected){paintList(content);return;}
+   const entry=source()||{title:'新条目',content:'',keys:[],enabled:true};
+   if(state.review){paintReview(content);return;}
+   if(state.editing){paintEditor(content);return;}
+   content.innerHTML=`<section class="glass">
+     <div class="se-row se-between">${kind==='worldbook'?btn('‹ 条目列表','list'):'<span></span>'}<div class="se-row">${btn('历史版本','history')}${btn('编辑','edit',true)}</div></div>
+     ${message()}<h2 class="se-title" style="margin-top:24px">${esc(kind==='worldbook'?entry.title:kind==='soul'?'SOUL':'剧情稿')}</h2>
+     ${kind==='worldbook'?`<div class="se-row se-muted" style="margin-top:8px"><span>${esc(category(entry))}</span><span class="se-state ${!enabled(entry)?'off':''}">${!enabled(entry)?'已停用':'已启用'}</span></div><div class="se-keywords">${(entry.keys||[]).map(k=>`<span class="se-key">${esc(k)}</span>`).join('')}</div>`:''}
+     <div class="se-read">${esc(entry.content)}</div>
+     <div class="se-muted">${isPreview()?'示例内容 · 保存仅在本地预览内模拟':esc((kind==='worldbook'?state.book:entry).runtime?.message||'已从原始设定读取')}</div>
+     ${kind==='worldbook'&&!entry.keys?.length?'<p class="se-muted">未设置触发词，聊天中不会自动触发。</p>':''}
+     ${kind==='worldbook'?advanced(entry):''}
+     ${state.historyOpen?historyPanel():''}
+   </section>`;
+ }
+ function historyPanel(){return `<section style="margin-top:24px;border-top:1px solid var(--glass-brd);padding-top:20px"><h3 style="font-size:15px;margin-bottom:12px">保存前版本</h3>${state.history===null?'<p class="se-muted">正在读取…</p>':state.history.length?state.history.map(v=>`<div class="se-row se-between" style="padding:10px 0"><span class="se-muted">${esc(v.created_at.replace('T',' ').slice(0,19))}</span>${btn('载入编辑器','load-history',false,`data-version="${esc(v.version)}"`)}</div>`).join(''):'<p class="se-muted">这里会保留通过此页面保存前的版本。</p>'}</section>`;}
+ function advanced(entry){const data=Object.fromEntries(Object.entries(entry).filter(([k])=>!['title','content','keys','enabled','display_category'].includes(k)));return `<details class="se-advanced"><summary>高级触发设置 · 只读</summary><pre>${esc(JSON.stringify(data,null,2))}</pre></details>`;}
+ function paintList(content){
+   const entries=state.book.entries;
+   content.innerHTML=`<section class="glass"><div class="se-row se-between"><span class="se-muted">${entries.length} 个条目</span>${btn('＋ 新增条目','new',true)}</div>
+     ${message()}<input class="se-search" type="search" aria-label="搜索世界书" placeholder="搜索标题、触发词或正文" value="${esc(state.query)}" data-se-field="search">
+     <div class="se-cats" aria-label="条目分类">${['全部',...cats.filter(c=>entries.some(e=>category(e)===c))].map(c=>`<button class="se-chip" type="button" data-se="category" data-category="${esc(c)}" aria-pressed="${state.category===c}">${esc(c)} <span style="opacity:.6">${c==='全部'?entries.length:entries.filter(e=>category(e)===c).length}</span></button>`).join('')}</div>
+     <div class="se-filter"><span class="se-muted" id="se-result-count"></span><select data-se-field="status" aria-label="启用状态"><option value="all" ${state.status==='all'?'selected':''}>全部状态</option><option value="on" ${state.status==='on'?'selected':''}>已启用</option><option value="off" ${state.status==='off'?'selected':''}>已停用</option></select></div><div id="se-results"></div></section>`;
+   paintResults();
+ }
+ function paintResults(){
+   const result=document.getElementById('se-results');if(!result)return;
+   const needle=state.query.trim().toLocaleLowerCase();
+   const entries=state.book.entries.filter(e=>(state.category==='全部'||category(e)===state.category)&&(state.status==='all'||(state.status==='on')===(enabled(e)))&&[e.title,e.content,...(e.keys||[])].join(' ').toLocaleLowerCase().includes(needle));
+   document.getElementById('se-result-count').textContent=state.query||state.status!=='all'?`找到 ${entries.length} 个条目`:'按类型陈列';
+   result.innerHTML=entries.length?cats.filter(c=>entries.some(e=>category(e)===c)).map(c=>`<details class="se-group" data-category="${esc(c)}" ${state.collapsed.has(c)?'':'open'}><summary>${esc(c)}<span class="se-count">${entries.filter(e=>category(e)===c).length} 条</span></summary><div class="se-grid">${entries.filter(e=>category(e)===c).map(e=>`<button class="se-card" type="button" data-se="open" data-id="${esc(e.id)}"><div class="se-card-title"><span>${esc(e.title)}</span><span class="se-state ${!enabled(e)?'off':''}">${!enabled(e)?'停用':'启用'}</span></div><p class="se-preview">${esc(summary(e.content))}</p><div class="se-keywords">${(e.keys||[]).slice(0,3).map(k=>`<span class="se-key">${esc(k)}</span>`).join('')}${e.keys?.length>3?`<span class="se-key">＋${e.keys.length-3}</span>`:''}</div></button>`).join('')}</div></details>`).join(''):`<div class="se-empty">没有找到符合条件的条目<br>${btn('清除筛选','clear')}</div>`;
+ }
+ function startEdit(isNew=false){
+   const kind=current();const e=isNew?{title:'',content:'',keys:[],enabled:true}:source();
+   if(!e)return;
+   state.draft=kind==='worldbook'?{title:e.title,content:e.content,keys:[...(e.keys||[])],enabled:enabled(e),display_category:isNew?'其他':category(e)}:{content:e.content};
+   state.original=structuredClone(state.draft);state.editing=true;state.review=false;state.notice='';state.error='';state.historyOpen=false;paint();
+ }
+ function paintEditor(content){
+   const d=state.draft;const book=current()==='worldbook';
+   content.innerHTML=`<section class="glass"><h2 class="se-title">${book?(state.selected==='__new__'?'新增条目':'编辑条目'):current()==='soul'?'编辑 SOUL':'编辑剧情稿'}</h2>
+     ${message()}${book?`<label class="se-label" for="se-title">标题</label><input id="se-title" class="se-field" data-se-field="title" value="${esc(d.title)}" maxlength="160">
+     <div class="se-editor-meta"><label><span class="se-label">展示分类</span><select class="se-field" aria-label="展示分类" data-se-field="display_category">${cats.map(c=>`<option ${c===d.display_category?'selected':''}>${esc(c)}</option>`).join('')}</select></label><label><span class="se-label">状态</span><span class="se-row" style="min-height:52px"><input type="checkbox" data-se-field="enabled" ${d.enabled?'checked':''}> 启用这个条目</span></label></div>
+     <label class="se-label" for="se-keys">触发词 · 每行一个</label><textarea id="se-keys" class="se-field" data-se-field="keys" style="min-height:96px" rows="2">${esc(d.keys.join('\n'))}</textarea><p class="se-muted">留空时，这条内容不会在聊天中自动触发。</p>`:''}
+     <label class="se-label" for="se-body">正文</label><textarea id="se-body" class="se-field" data-se-field="content" spellcheck="false">${esc(d.content)}</textarea>
+     ${book&&state.selected!=='__new__'?advanced(source()):''}
+     </section><div class="se-actions"><span class="se-status" id="se-edit-status">${dirty()?'有未保存的修改':'正在编辑'}</span><div class="se-row">${btn('取消','cancel')}${btn('预览修改','review',true)}</div></div>`;
+ }
+ function changes(){return fields().filter(k=>JSON.stringify(state.original[k])!==JSON.stringify(state.draft[k]));}
+ function human(k){return ({title:'标题',content:'正文',keys:'触发词',enabled:'状态',display_category:'展示分类'})[k];}
+ function value(d,k){return k==='keys'?d[k].join('\n'):k==='enabled'?(d[k]?'启用':'停用'):String(d[k]);}
+ function changedPart(a,b){
+   const old=a.split('\n'),now=b.split('\n');let prefix=0,suffix=0;
+   while(prefix<old.length&&prefix<now.length&&old[prefix]===now[prefix])prefix++;
+   while(suffix<old.length-prefix&&suffix<now.length-prefix&&old.at(-1-suffix)===now.at(-1-suffix))suffix++;
+   return [(prefix?'…前文未变…\n':'')+old.slice(prefix,old.length-suffix).join('\n')+(suffix?'\n…后文未变…':''),(prefix?'…前文未变…\n':'')+now.slice(prefix,now.length-suffix).join('\n')+(suffix?'\n…后文未变…':'')];
+ }
+ function paintReview(content){
+   const changed=changes();
+   content.innerHTML=`<section class="glass"><h2 class="se-title">确认修改</h2><p class="se-muted" style="margin-top:8px">${isPreview()?'保存只影响本地示例，不会写入小华设定。':'保存将更新原始设定，并保留修改前版本。'}</p>${message()}
+     ${state.conflict?`<div class="se-message">${state.latest?`<p>后端最新正文</p><div class="se-read">${esc((current()==='worldbook'?state.latest.entries.find(e=>e.id===state.selected):state.latest)?.content||'此条目已不存在')}</div>${btn('保留我的修改，基于新版重审','rebase')}`:btn('读取后端新版对比','load-latest')}</div>`:''}
+     ${changed.map(k=>{const pair=changedPart(value(state.original,k),value(state.draft,k));return `<h3 style="margin-top:24px;font-size:14px">${human(k)}</h3><div class="se-diff"><div><span class="se-muted">原内容</span><pre>${esc(pair[0])||'（空）'}</pre></div><div><span class="se-muted" style="color:var(--pink)">修改后</span><pre>${esc(pair[1])||'（空）'}</pre></div></div>`;}).join('')||'<p class="se-empty">还没有修改内容</p>'}</section><div class="se-actions"><span class="se-status">${state.saving?'正在保存…':isPreview()?'本地模拟保存':'等待保存'}</span><div class="se-row">${btn('继续编辑','back-edit',false,state.saving?'disabled':'')}${btn(isPreview()?'模拟保存':'保存修改','save',true,!changed.length||state.saving||state.conflict?'disabled':'')}</div></div>`;
+ }
+ async function save(){
+   if(state.saving)return;const kind=current();const patch=Object.fromEntries(changes().filter(k=>k!=='display_category').map(k=>[k,state.draft[k]]));
+   state.saving=true;state.error='';paint();
+   try{
+     const body=kind==='worldbook'?{revision:state.book.revision,id:state.selected==='__new__'?null:state.selected,patch,display_category:state.draft.display_category}:{revision:state.docs[kind].revision,content:state.draft.content};
+     const response=await api(kind,body);const id=response.id;
+     // Success is shown only after reading back the saved values.
+     await ensure(kind,true);const saved=kind==='worldbook'?state.book.entries.find(e=>e.id===(id||state.selected)):state.docs[kind];
+     if(!saved||Object.entries(patch).some(([k,v])=>JSON.stringify(saved[k])!==JSON.stringify(v))||kind==='worldbook'&&category(saved)!==state.draft.display_category)throw Error('readback');
+     if(id)state.selected=id;resetEditor();state.authExpired=false;state.history=null;state.notice=isPreview()?'已在本地预览保存 · 正式设定未改变':'已保存到后端，并已读回核对。修改前版本已备份；当前聊天是否采用尚未核实。';
+   }catch(e){state.conflict=e.message==='conflict';state.error=e.message==='busy'?'另一处正在保存，请稍后重试。你的修改仍保留。':e.message==='pattern'?'有一个正则触发词格式不正确，请返回检查。修改仍保留。':e.message==='conflict'?'后端已有新版本，本次没有覆盖。你的修改仍保留，请先读取新版对比，再决定如何合并。':e.message==='auth'?'登录已过期，修改仍保留。请在新窗口重新登录后，再回这里保存。':'保存或保存后核对未完成，修改仍保留。请重试；暂不显示保存成功。';}
+   finally{state.saving=false;paint();}
+ }
+ function askDiscard(action){
+   if(!dirty()){resetEditor();action();return;}
+   let dialog=document.getElementById('se-discard');if(dialog)dialog.remove();
+   dialog=document.createElement('dialog');dialog.className='se-dialog';dialog.id='se-discard';dialog.innerHTML=`<h2 style="font-size:18px">保留这次修改吗？</h2><p class="se-muted" style="margin:14px 0 22px">离开后，这次尚未保存的修改会被丢弃。</p><div class="se-row" style="justify-content:flex-end">${btn('放弃修改','discard')}${btn('继续编辑','stay',true)}</div>`;document.body.append(dialog);
+   dialog.querySelector('[data-se=discard]').onclick=()=>{dialog.close();dialog.remove();resetEditor();action();};
+   dialog.querySelector('[data-se=stay]').onclick=()=>{dialog.close();dialog.remove();};dialog.showModal();
+ }
+ document.addEventListener('input',event=>{
+   const field=event.target.dataset.seField;if(!field)return;
+   if(field==='search'){state.query=event.target.value;paintResults();return;}
+   if(!state.editing)return;
+   state.draft[field]=field==='enabled'?event.target.checked:field==='keys'?event.target.value.split('\n').map(v=>v.trim()).filter(Boolean):event.target.value;
+   const status=document.getElementById('se-edit-status');if(status)status.textContent=dirty()?'有未保存的修改':'正在编辑';
+ });
+ document.addEventListener('change',event=>{if(event.target.dataset.seField==='status'){state.status=event.target.value;paintResults();}});
+ document.addEventListener('toggle',event=>{if(event.target.classList?.contains('se-group')){const c=event.target.dataset.category;if(event.target.open)state.collapsed.delete(c);else state.collapsed.add(c);}},true);
+ document.addEventListener('click',async event=>{
+   const node=event.target.closest('[data-se]');if(!node||node.closest('dialog'))return;
+   const action=node.dataset.se;
+   if(action==='category'){state.category=node.dataset.category;paint();}
+   if(action==='clear'){state.query='';state.status='all';state.category='全部';paint();}
+   if(action==='open'){state.selected=node.dataset.id;state.notice='';state.historyOpen=false;paint();window.scrollTo(0,0);}
+   if(action==='list'){state.selected=null;state.notice='';paint();window.scrollTo(0,0);}
+   if(action==='edit')startEdit();
+   if(action==='new'){state.selected='__new__';startEdit(true);window.scrollTo(0,0);}
+   if(action==='cancel')askDiscard(()=>{if(state.selected==='__new__')state.selected=null;paint();});
+   if(action==='review'){
+     if(current()==='worldbook'&&(!state.draft.title.trim()||!state.draft.content.trim())){state.error='标题和正文都需要填写。';paint();return;}
+     if(!state.draft.content.trim()){state.error='正文不能为空。';paint();return;}
+     state.review=true;state.error='';paint();window.scrollTo(0,0);
+   }
+   if(action==='back-edit'){state.review=false;paint();}
+   if(action==='save')await save();
+   if(action==='load-latest'){try{state.latest=await api(current());}catch{state.error='新版暂时无法读取，你的修改仍保留。';}paint();}
+   if(action==='rebase'&&state.latest){
+     const changed=Object.fromEntries(changes().map(k=>[k,structuredClone(state.draft[k])]));const latest=state.latest;const kind=current();
+     const entry=kind==='worldbook'?latest.entries.find(e=>e.id===state.selected):latest;
+     if(!entry){state.error='后端已没有此条目，不能直接覆盖。请复制内容后新建。';paint();return;}
+     if(kind==='worldbook')state.book=latest;else state.docs[kind]=latest;
+     startEdit();Object.assign(state.draft,changed);state.conflict=false;state.latest=null;state.notice='已以新版为基础保留你的修改，请重新预览、比较后保存。';paint();
+   }
+   if(action==='history'){
+     state.historyOpen=!state.historyOpen;if(!state.historyOpen){paint();return;}state.history=null;paint();
+     try{const kind=current();const result=await api(kind+'/history'+(kind==='worldbook'?'?entry_id='+encodeURIComponent(state.selected):''));state.history=result.items;}catch{state.history=[];state.error='历史版本暂时无法读取，请重试。';}paint();
+   }
+   if(action==='load-history'){
+     try{
+       const kind=current();const old=await api(kind+'/history/'+node.dataset.version);
+       const e=kind==='worldbook'?old.entries.find(e=>e.id===state.selected):old;
+       if(!e){state.error='此备份中尚无这条内容。';paint();return;}
+       startEdit();state.draft=kind==='worldbook'?{title:e.title,content:e.content,keys:[...(e.keys||[])],enabled:enabled(e),display_category:old.display_categories[state.selected]}:{content:e.content};state.notice='旧版已载入编辑器，请预览后再保存。'+(kind==='worldbook'?'高级触发设置保持当前版本。':'');paint();
+     }catch{state.error='旧版本暂时无法读取，请重试。';paint();}
+   }
+   if(action==='reload'){state.error='';try{await ensure(current(),true);}catch{state.error='暂时无法读取，请重试。';}paint();}
+ });
+ // Reuse the existing routes and keep independent editor state during snapshot refresh.
+ ROUTES['me/worldbook']={el:'pageWorldbook',lvl:2,title:'世界书',parent:'me'};TOPBARS['me/worldbook']=['世界书',''];ALL_VIEWS.push('pageWorldbook');
+ const view=document.createElement('div');view.id='pageWorldbook';view.hidden=true;document.getElementById('page11').after(view);
+ const baseMe=renderMe;renderMe=function(d){baseMe(d);const grid=document.querySelector('#viewMe [data-go="me/soul"]')?.parentElement;if(!grid)return;grid.style.gridTemplateColumns='repeat(3,minmax(0,1fr))';const tile=document.createElement('button');tile.className='iconTile';tile.dataset.go='me/worldbook';tile.innerHTML='<svg viewBox="0 0 24 24"><path d="M3 5h7l2 2 2-2h7v15h-7l-2 2-2-2H3z"/><path d="M12 7v15"/></svg><span class="nm">世界书</span>';tile.onclick=()=>show('me/worldbook');grid.append(tile);};
+ renderMeSub=function(){/* Full source comes from settings API; never replace an open editor with snapshot excerpts. */};
+ const baseShow=show;let lastRoute=routeOf();
+ show=function(route,push){
+   if(dirty()&&route!==lastRoute){const keep=lastRoute;if(location.hash!=='#/'+keep)history.replaceState(null,'','#/'+keep);askDiscard(()=>{lastRoute=route;show(route,push);});return;}
+   const entering=route!==lastRoute;
+   if(entering){resetEditor();state.notice='';state.historyOpen=false;}
+   lastRoute=route;baseShow(route,push);
+   if(settingRoute(route)){
+     const loaded=current()==='worldbook'?state.book:state.docs[current()];
+     // Snapshot refresh must not recreate a focused textarea or move its caret.
+     if(!host().querySelector('.se-content')||!loaded)paint();
+     const kind=current();
+     if(!loaded||entering)ensure(kind,entering).then(()=>{if(routeOf()===route&&!state.editing)paint();}).catch(()=>{if(routeOf()===route){state.error='暂时无法读取原始设定，请重新加载。';paint();}});
+   }
+ };
+ window.addEventListener('beforeunload',event=>{if(dirty()){event.preventDefault();event.returnValue='';}});
+ // Existing login recovery consults this hook before redirecting a dirty editor.
+ window.__settingsHoldLogin=()=>{
+   if(!dirty())return false;
+   state.authExpired=true;
+   if(!document.getElementById('se-login-expired')){
+     const alert=document.createElement('div');alert.id='se-login-expired';alert.className='se-message error';alert.setAttribute('role','alert');alert.innerHTML='登录已过期，你的编辑内容仍保留。请在新窗口登录后返回这里保存。 <a href="/xiaohua/login" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">重新登录</a>';
+     host().querySelector('.se-content').prepend(alert);
+   }
+   return true;
+ };
+ if(window.__DATA__)renderMe(window.__DATA__);show(routeOf(),false);
+})();
 </script>
 </body>
 </html>
