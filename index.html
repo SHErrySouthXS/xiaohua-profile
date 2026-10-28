@@ -1444,6 +1444,40 @@ window.addEventListener('pageshow',check);document.addEventListener('visibilityc
 })();
 </script>
 
+<style id="xiaohua-desktop-adaptation">
+/* Desktop only: preserve the touch layout and the established colour tokens. */
+@media (min-width:960px) and (hover:hover) and (pointer:fine){
+  body{max-width:1120px;padding-right:24px;padding-left:24px}
+  html{scroll-padding-bottom:110px}
+  .topbar{margin-left:-24px;margin-right:-24px;padding-left:24px;padding-right:24px}
+  .topbar .tb-h{font-size:28px}
+  .topbar .tb-s{font-size:13px}
+  #app:not([hidden]){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  #app> *{grid-column:1/-1;min-width:0;margin-bottom:0}
+  #app>.desktop-drive-chart,#app>.desktop-drive-bars{grid-column:auto}
+  #app>.desktop-drive-chart svg.radar{display:block;margin-inline:auto}
+  .cell{padding:18px}
+  .cell .k{font-size:13px}
+  .cell .v{font-size:17px}
+  .cell .v.sm{font-size:13px;line-height:1.6}
+  .iconGrid,.galGrid{grid-template-columns:repeat(4,minmax(0,1fr));gap:16px}
+  .iconTile{min-height:112px}
+  .iconTile .nm{font-size:14px}
+  .today .md{max-width:78ch}
+  .today .md p,.rm,.rm.md{font-size:15px;line-height:1.85}
+  .rm{max-height:480px;overflow-wrap:anywhere}
+  #viewMe,#page11{max-width:900px;margin-inline:auto}
+  .call-wrap{max-width:860px;margin-inline:auto}
+  .call-col-b{min-height:260px;max-height:50vh;overflow:auto}
+  .call-msg{font-size:15px;line-height:1.7}
+  .call-hint{font-size:13px}
+  nav#nav .navpill{max-width:600px}
+  nav#nav .tab{font-size:14px;padding:11px 14px}
+  button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--pink);outline-offset:4px}
+  button:disabled{cursor:not-allowed}
+}
+
+</style>
 </head>
 <body>
 
@@ -1793,8 +1827,8 @@ function render(d){
   const hasBoost = !!(boosts && boosts.length===dims.length &&
                       boosts.some(b=>b!==null && b!==undefined && Number(b)>0));
   if(dims.length&&vals.length===dims.length){
-    h+=`<section class="glass"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
-    h+=`<section class="glass"><h2>驱动强度</h2>
+    h+=`<section class="glass desktop-drive-chart"><h2>🧭 九维驱动</h2>${radarSVG(dims,vals)}</section>`;
+    h+=`<section class="glass desktop-drive-bars"><h2>驱动强度</h2>
       ${hasBoost?`<div class="pmeta">执念加成：某一维被执念顶着时，仲裁按「驱动条值 + 加成」比（原文 score 公式）。</div>`:''}
       <div class="bars">${
       dims.map((n,i)=>{
@@ -5000,6 +5034,28 @@ async function refreshActivity(){
 }
 function activityLink(value,kind){try{const u=new URL(value);const hosts=kind==='xhs'?['www.xiaohongshu.com','xiaohongshu.com','xhslink.com']:['galatea.abysslumina.com'];if(u.protocol!=='https:'||!hosts.includes(u.hostname)||u.username)return '';return `<a class="backbtn" style="margin-top:12px;min-height:44px" href="${esc(u.href)}" target="_blank" rel="noopener noreferrer">打开原帖 ↗</a>`;}catch(e){return '';}}
 window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivity,30000);refreshActivity();
+
+</script>
+<script>
+// Desktop keyboard navigation is limited to the four existing navigation buttons.
+(()=>{
+ const nav=document.getElementById('nav');if(!nav)return;
+ nav.setAttribute('aria-label','小华主导航');
+ const buttons=Array.from(nav.querySelectorAll('button[data-r]'));
+ function current(){buttons.forEach(b=>{if(b.classList.contains('on'))b.setAttribute('aria-current','page');else b.removeAttribute('aria-current');});}
+ new MutationObserver(current).observe(nav,{subtree:true,attributes:true,attributeFilter:['class']});current();
+ nav.addEventListener('keydown',event=>{
+  if(!matchMedia('(min-width:960px) and (hover:hover) and (pointer:fine)').matches||event.altKey||event.ctrlKey||event.metaKey)return;
+  const i=buttons.indexOf(event.target);if(i<0)return;
+  let next;
+  if(event.key==='ArrowRight')next=(i+1)%buttons.length;
+  else if(event.key==='ArrowLeft')next=(i+buttons.length-1)%buttons.length;
+  else if(event.key==='Home')next=0;
+  else if(event.key==='End')next=buttons.length-1;
+  else return;
+  event.preventDefault();buttons[next].focus();buttons[next].click();
+ });
+})();
 
 </script>
 </body>
