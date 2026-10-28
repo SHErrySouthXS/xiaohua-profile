@@ -2157,6 +2157,44 @@ function radarSVG(dims,vals){
 //   引擎口径 valence「0 消极 / 0.5 中性 / 1 积极」、arousal「0 平静 / 1 激动」，
 //   没有刻度线的曲线**读者无法判断高低**（渲染实测反复提过"缺解释"）。
 //   三条线把"中位"标出来，才不用在图例里写一堆字。
+function feelHistory(fp){
+  if(!Array.isArray(fp.history))return '';
+  const entries=fp.history.filter(e=>e && e.date && String(e.date)<String(fp.week_start||''));
+  if(!entries.length)return '';
+  entries.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
+  const items=entries.map(e=>{
+    const tags=Array.isArray(e.tags)?e.tags:[];
+    const numeric=(value,label)=>value===null||value===undefined||!Number.isFinite(Number(value))?'':`${label} ${Number(value).toFixed(2)}`;
+    const meta=[numeric(e.valence,'色调'),numeric(e.arousal,'强度')].filter(Boolean).join(' · ');
+    const ref=e.ref?`源记忆 ${esc(String(e.ref).slice(0,8))}`:'未挂源记忆';
+    return `<div class="mfeel">
+      <div class="mf-top"><span class="mf-d">${esc(String(e.date))}</span>
+        ${e.title?`<span class="mf-t">${esc(String(e.title))}</span>`:''}</div>
+      ${tags.length?`<div class="mf-tag">${tags.map(t=>esc(String(t))).join(' · ')}</div>`:''}
+      <div class="mf-meta">${meta}${meta?' · ':''}${ref}</div>
+    </div>`;
+  }).join('');
+  return `<details class="feel-history" data-work-id="feel-history">
+    <summary class="mrow">更早的感受 · ${entries.length} 条</summary>
+    <div class="mfeel-list">${items}</div>
+  </details>`;
+}
+
+function journalSummaryHistory(d){
+  const summaries=(d.journal_summaries||[]).filter(e=>e&&!e.error).slice();
+  if(!summaries.length)return '';
+  summaries.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
+  const items=summaries.map(e=>`<details class="jentry glass" data-work-id="summary-${esc(String(e.date||''))}">
+    <summary><span class="jdate">${esc(String(e.date||''))}</span>
+      <span class="jpeek">${esc(String(e.peek||''))}</span></summary>
+    <div class="jbody">${jmd(e.body||'')}</div>
+  </details>`).join('');
+  return `<section class="glass" style="padding:15px 18px;margin-top:24px">
+    <h2 style="margin:0">📝 每日总结</h2>
+    <div class="hint" style="margin-top:6px">共 ${summaries.length} 篇 · 与原日记分别陈列 · 点开看全文</div>
+  </section>${items}`;
+}
+
 function feelChart(es, vals, aros){
   const W=560, H=150, padL=26, padR=8, padT=12, padB=26;
   const iw=W-padL-padR, ih=H-padT-padB;
@@ -2321,7 +2359,7 @@ function renderJournal(d){
   list.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));
   if(!list.length){
     box.innerHTML=`<section class="glass"><h2>📔 日记</h2>
-      <div class="jempty">本子还空着。</div></section>`;
+      <div class="jempty">本子还空着。</div></section>`+journalSummaryHistory(d);
     return;
   }
   const items=list.map((e,i)=>`<details class="jentry glass"${i===0?' open':''}>
@@ -2336,7 +2374,7 @@ function renderJournal(d){
       <h2 style="margin:0">📔 日记</h2>
       <div class="hint" style="margin-top:6px">
         共 ${list.length} 篇 · 点开看全文 · 新的在最上</div>
-    </section>${items}`;
+    </section>${items}`+journalSummaryHistory(d);
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -2675,6 +2713,7 @@ function renderPanels(d){
       }
     }
 
+    b+=feelHistory(fp);
     hMood=sec('💭 感受','',b,'mood-card');
   }
 
