@@ -1533,6 +1533,35 @@ textarea.se-field{resize:vertical;min-height:340px;white-space:pre-wrap}
 .se-preview-banner{position:relative;z-index:30;padding:9px 16px;text-align:center;font-size:12px;color:var(--pink);border-bottom:1px solid var(--glass-brd);background:var(--bg-mid)}
 @media(max-width:600px){.se-grid,.se-editor-meta,.se-diff{grid-template-columns:1fr}.se .glass{padding:18px}.se-card{padding:16px}.se-actions{padding:11px 12px}.se-btn{padding:10px 13px}.se-title{font-size:19px}textarea.se-field{min-height:48vh}}
 </style>
+<style id="xiaohua-galaxy-desktop">
+.gx-desktop-hint{display:none}
+@media (min-width:960px) and (hover:hover) and (pointer:fine){
+  #page4 .gx-svg{height:clamp(460px,64vh,680px);max-height:none;aspect-ratio:auto}
+  #page4 .gx-wrap{margin-top:14px;margin-bottom:16px}
+  #page4 .gx-tip,.gx-tip.gx-desktop-tip{max-width:min(360px,calc(100vw - 32px));max-height:min(360px,50vh);overflow:auto;pointer-events:auto;padding:13px 16px;font-size:14px;line-height:1.7;overflow-wrap:anywhere}
+  #page4 .gx-tip .gx-t-t,.gx-desktop-tip .gx-t-t{white-space:pre-wrap;font-size:14px;line-height:1.7}
+  #page4 .gx-tip .gx-t-m,.gx-desktop-tip .gx-t-m{font-size:12px}
+  #page4 .gx-legend{gap:10px 16px;font-size:12px}
+  #page4 .gx-dot.gx-active{opacity:1!important;stroke:var(--pink);stroke-width:.18}
+  .gx-touch-hint{display:none}
+  .gx-desktop-hint{display:inline}
+}
+</style>
+
+<style id="xiaohua-memory-monthly">
+.memory-monthly .density-month-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:18px 0 14px}
+.memory-monthly .density-month-controls button,.memory-monthly select{min-height:44px;border:1px solid var(--line);border-radius:11px;color:var(--fg);background:rgba(255,255,255,.04);font:inherit;font-size:13px;padding:9px 12px;cursor:pointer}
+.memory-monthly select{min-width:0;flex:1;max-width:260px;text-align:center;background:var(--bg-mid,#25222c);color-scheme:dark}
+.memory-monthly .density-month-controls button:disabled{opacity:.35;cursor:default}
+.memory-monthly .calwrap{grid-template-columns:repeat(7,minmax(0,1fr))}
+.memory-monthly button.calx{width:100%;min-width:0;min-height:40px;height:clamp(40px,6vw,64px);aspect-ratio:auto;font:inherit;color:var(--fg);padding:0;cursor:pointer}
+.memory-monthly button.calx:disabled{opacity:.3;cursor:default}
+.memory-monthly .calx .n,.memory-monthly .calhead{font-size:12px}
+.memory-monthly button:focus-visible,.memory-monthly select:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.memory-monthly .density-unavailable{background:transparent}
+@media(max-width:420px){.memory-monthly .density-month-controls{gap:6px}.memory-monthly .density-month-controls button{padding:8px;font-size:12px}.memory-monthly select{font-size:13px;padding:8px}}
+</style>
+
 </head>
 <body>
 
@@ -3326,6 +3355,7 @@ function renderPanels(d){
   bindChecklistToggle();
   // ★ 2026-10-10：星河的点点交互（Memory 在 page4，渲染后才绑得上）。
   bindGalaxy();
+  bindDensityMonth();
 }
 
 // ── ★ 2026-10-05：Call 页交互（原文 §8.1 实时通话）──
@@ -3689,18 +3719,99 @@ function galaxyPanel(G){
     </div>
     <div class="gx-legend">${legend}</div>
     <div class="pmeta">每点是一条记忆，位置按语义相似度排 —— 意思相近的聚在一起。
-      颜色是主题域，大的点更重要。点一个看那条说的是什么。</div></div>`;
+      颜色是主题域，大的点更重要。<span class="gx-touch-hint">点一个看那条说的是什么。</span><span class="gx-desktop-hint">悬浮查看记忆，移开收起。</span></div></div>`;
 }
 
 // 点星河上的点 → 浮出那条记忆（事件委托，只绑一次）
+function bindGalaxyDesktop(svg,tip){
+  if(window.__gxDesktopCleanup)window.__gxDesktopCleanup();
+  const media=window.matchMedia('(min-width:960px) and (hover:hover) and (pointer:fine)');
+  const abort=new AbortController();
+  const originalParent=tip.parentElement;
+  let active=null,timer=null;
+  const points=()=>window.__DATA__?.panels?.galaxy?.points||[];
+  const clearTimer=()=>{if(timer!==null){clearTimeout(timer);timer=null;}};
+  const hide=()=>{
+    clearTimer();tip.hidden=true;
+    if(active)active.classList.remove('gx-active');
+    active=null;
+  };
+  const later=()=>{clearTimer();timer=setTimeout(hide,150);};
+  const show=dot=>{
+    if(!media.matches||!dot?.classList?.contains('gx-dot'))return;
+    const point=points()[Number(dot.dataset.i)];
+    if(!point)return;
+    clearTimer();
+    if(active&&active!==dot)active.classList.remove('gx-active');
+    active=dot;active.classList.add('gx-active');
+    tip.innerHTML=`<div class="gx-t-t">${esc(point.t||'(无题)')}</div>`
+      +`<div class="gx-t-m">${esc(point.d||'')} · ${esc(point.c||'')}</div>`;
+    tip.hidden=false;
+    const anchor=dot.getBoundingClientRect(),box=tip.getBoundingClientRect();
+    const viewport=document.documentElement;
+    const width=viewport.clientWidth,height=viewport.clientHeight,gap=12,edge=12;
+    let left=anchor.right+gap,top=anchor.top+anchor.height/2-box.height/2;
+    if(left+box.width>width-edge)left=anchor.left-gap-box.width;
+    left=Math.max(edge,Math.min(left,width-box.width-edge));
+    top=Math.max(edge,Math.min(top,height-box.height-edge));
+    tip.style.left=left+'px';tip.style.top=top+'px';
+  };
+  const layout=()=>{
+    const bounds=svg.getBoundingClientRect(),all=points();
+    const wide=media.matches&&bounds.width>0&&bounds.height>0;
+    if(wide){
+      tip.classList.add('gx-desktop-tip');
+      if(tip.parentElement!==document.body)document.body.appendChild(tip);
+    }else{
+      tip.classList.remove('gx-desktop-tip');
+      if(tip.parentElement!==originalParent)originalParent.appendChild(tip);
+    }
+    const width=wide?100*bounds.width/bounds.height:100;
+    svg.setAttribute('viewBox',`0 0 ${width} 100`);
+    svg.querySelectorAll('.gx-dot').forEach(dot=>{
+      const point=all[Number(dot.dataset.i)];
+      if(!point)return;
+      dot.setAttribute('cx',(point.x*width).toFixed(2));
+      dot.setAttribute('cy',(point.y*100).toFixed(2));
+    });
+    if(wide&&active)show(active);
+  };
+  const onChange=()=>{hide();layout();};
+  svg.addEventListener('pointerover',event=>{
+    if(!media.matches||(event.pointerType&&event.pointerType!=='mouse'))return;
+    if(event.target?.classList?.contains('gx-dot'))show(event.target);
+  },{signal:abort.signal});
+  svg.addEventListener('pointerout',event=>{
+    if(media.matches&&event.target===active&&!tip.contains(event.relatedTarget))later();
+  },{signal:abort.signal});
+  svg.addEventListener('pointerleave',()=>{if(media.matches)later();},{signal:abort.signal});
+  tip.addEventListener('pointerenter',()=>{if(media.matches)clearTimer();},{signal:abort.signal});
+  tip.addEventListener('pointerleave',()=>{if(media.matches)later();},{signal:abort.signal});
+  document.addEventListener('keydown',event=>{if(media.matches&&event.key==='Escape')hide();},{signal:abort.signal});
+  window.addEventListener('scroll',event=>{
+    if(media.matches&&event.target!==tip&&!tip.contains(event.target))hide();
+  },{capture:true,passive:true,signal:abort.signal});
+  media.addEventListener('change',onChange);
+  const observer=new ResizeObserver(layout);
+  observer.observe(svg);
+  layout();
+  window.__gxDesktopCleanup=()=>{
+    clearTimer();abort.abort();media.removeEventListener('change',onChange);observer.disconnect();
+    if(tip.parentElement===document.body)tip.remove();
+  };
+  return {isDesktop:()=>media.matches,show};
+}
+
 function bindGalaxy(){
   const svg=document.querySelector('.gx-svg');
   const tip=document.getElementById('gxTip');
   if(!svg || !tip || svg.__bound) return;
   svg.__bound=true;
+  const desktop=bindGalaxyDesktop(svg,tip);
   svg.addEventListener('click',(ev)=>{
     const t=ev.target;
     if(!t || !t.classList || !t.classList.contains('gx-dot')) return;
+    if(desktop.isDesktop()){desktop.show(t);return;}
     const i=+t.dataset.i;
     const G=(window.__DATA__||{}).panels && (window.__DATA__.panels.galaxy||{});
     const p=(G.points||[])[i];
@@ -3721,69 +3832,68 @@ function bindGalaxy(){
   });
 }
 
+let _densityMonth=null,_densityDay=null;
+function densityToday(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'});}
+function densityMonthModel(D,selected,today=densityToday()){
+  const valid=(D?.days||[]).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')&&d.date<=today);
+  const current=today.slice(0,7),first=valid.map(d=>d.date.slice(0,7)).sort()[0]||current;
+  const months=[];let [y,m]=current.split('-').map(Number);
+  while(`${y}-${String(m).padStart(2,'0')}`>=first){months.push(`${y}-${String(m).padStart(2,'0')}`);if(--m===0){m=12;y--;}}
+  const month=months.includes(selected)?selected:current;
+  const [year,number]=month.split('-').map(Number);
+  const length=new Date(Date.UTC(year,number,0)).getUTCDate();
+  const offset=(new Date(Date.UTC(year,number-1,1)).getUTCDay()+6)%7;
+  const byDate=new Map(valid.filter(d=>d.date.startsWith(month+'-')).map(d=>[d.date,d]));
+  const days=Array.from({length},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0');return {date,row:byDate.get(date),future:date>today};});
+  const rows=days.filter(d=>d.row).map(d=>d.row);
+  const totals={};for(const key of ['her','thread','note','diary'])totals[key]=rows.reduce((n,d)=>n+Number(d[key]||0),0);
+  return {month,months,current,first,offset,days,rows,totals,today,dense:rows.filter(d=>Number(d.total)>0).length};
+}
+function densityMonthBody(D){
+  const model=densityMonthModel(D,_densityMonth),{month,months,offset,days,rows,totals}=model;
+  const label=key=>`${key.slice(0,4)}年${Number(key.slice(5))}月`;
+  let html=`<div class="density-month-controls">
+    <button type="button" data-density-step="-1" aria-label="上个月"${month===model.first?' disabled':''}>‹ 上月</button>
+    <select data-density-month aria-label="选择记忆月份">${months.map(key=>`<option value="${key}"${key===month?' selected':''}>${label(key)}</option>`).join('')}</select>
+    <button type="button" data-density-step="1" aria-label="下个月"${month===model.current?' disabled':''}>下月 ›</button>
+  </div>`;
+  html+=`<div class="caltop">${['一','二','三','四','五','六','日'].map(w=>`<div class="calhead">${w}</div>`).join('')}</div><div class="calwrap dens">`;
+  html+='<span aria-hidden="true"></span>'.repeat(offset);
+  html+=days.map(({date,row,future})=>{
+    const unavailable=!row,info=future?'尚未到来':unavailable?'未收录':`${Number(row.total)||0} 条`;
+    const classes=['calx',row?densTier(row.total):'density-unavailable',date===model.today?'today':''].join(' ');
+    return `<button type="button" class="${classes}" data-date="${date}" title="${date} · ${info}" aria-label="${date}，${info}"${unavailable?' disabled':''} onclick="densityDayPick('${date}')"><span class="n">${Number(date.slice(8))}</span></button>`;
+  }).join('');
+  const trailing=(7-(offset+days.length)%7)%7;html+='<span aria-hidden="true"></span>'.repeat(trailing);
+  html+=`</div><div class="callegend"><span>稀</span><i style="background:rgba(255,255,255,.03)"></i><i class="calx t0"></i><i class="calx t1"></i><i class="calx t2"></i><i class="calx t3"></i><span>密</span></div><div class="calday" id="densday"></div>`;
+  html+=`<div class="pmeta"><b>${label(month)}</b> · 已收录 ${rows.length} 天<br><span style="color:var(--pink)">${model.dense} 天留下记忆</span><br>她的话 <b>${totals.her}</b> 句 · 线索 <b>${totals.thread}</b> 笔 · 便签 <b>${totals.note}</b> 张 · 日记 <b>${totals.diary}</b> 篇</div>`;
+  return html;
+}
 function densityPanel(D){
-  if(!D || !D.days || !D.days.length) return '';
-  const t=D.totals||{}, sp=D.span||{};
-  // ── 横向密度带：63 天压成 63 根细条 ──
-  //   为什么要有它：网格看的是"哪一周"，密度带看的是"整段的形状"。
-  //   9 周的疏密，扫一眼就出来了，不用在网格里数格子。
-  const peak = Math.max(1, ...D.days.map(d=>d.total));
-  let strip = `<div class="dstrip" title="整段密度：每根=1天，越高说明那天记住的越多">`;
-  D.days.forEach(d=>{
-    const hgt = d.total===0 ? 2 : Math.max(6, Math.round(d.total/peak*34));
-    const cls = d.total===0 ? 'dbar empty' : 'dbar';
-    strip += `<i class="${cls}" style="height:${hgt}px"
-      title="${d.date} · ${d.total} 条"></i>`;
-  });
-  strip += `</div>`;
-
-  // ── 网格（按周排，和总览同一套排法）──
-  const first=D.days[0].weekday;
-  const cells=[];
-  for(let i=0;i<first;i++) cells.push(null);
-  D.days.forEach(d=>cells.push(d));
-  while(cells.length%7) cells.push(null);
-
-  const WD=['一','二','三','四','五','六','日'];
-  const todayStr=new Date().toISOString().slice(0,10);
-  let grid=`<div class="caltop">${WD.map(w=>`<div class="calhead">${w}</div>`).join('')}</div>`;
-  grid+=`<div class="calwrap dens">`;
-  cells.forEach(c=>{
-    if(!c){ grid+=`<div></div>`; return; }
-    const cls=['calx', densTier(c.total), c.date===todayStr?'today':''].join(' ');
-    // ⚠️ 密度格子**不写件数** —— 只写日子。
-    //    写数就变成第二个"总览"了，而且 100 多条的格子塞不下。
-    //    要看数：点一下。
-    grid+=`<div class="${cls}" data-date="${c.date}" title="${c.date} · ${c.total} 条"
-             onclick="densPick('${c.date}')">
-             <span class="n">${String(parseInt(c.date.slice(8),10))}</span>
-           </div>`;
-  });
-  grid+=`</div>`;
-
-  let h = strip;
-  h += grid;
-  h += `<div class="callegend">
-    <span>稀</span>
-    <i style="background:rgba(255,255,255,.03)"></i>
-    <i class="calx t0"></i><i class="calx t1"></i>
-    <i class="calx t2"></i><i class="calx t3"></i>
-    <span>密</span>
-  </div>`;
-  h += `<div class="calday" id="densday"></div>`;
-  // ★ 2026-09-20 清文案（大小姐定）：删掉「⚠️ 说清楚一件事…」那段长解释。
-  //   并**去掉"合计 N 条"** —— 它把"她说过的话"和"我记得的事"混成一个数，
-  //   才是误读的根源。数据分开列，不用解释也看得懂。
-  h += `<div class="pmeta">
-    <b>${sp.from} → ${sp.to}</b> · 共 ${sp.n} 天<br>
-    <span style="color:var(--pink)">${t.dense_days} 天记住了东西</span> ·
-    ${sp.n - t.dense_days} 天是空的<br>
-    她的话 <b>${t.her}</b> 句 · 线索 <b>${t.thread}</b> 笔 ·
-    便签 <b>${t.note}</b> 张 · 日记 <b>${t.diary}</b> 篇<br>
-    最密的一天 <b>${t.busiest_date||'—'}</b> · ${t.busiest||0} 条
-  </div>`;
-
-  return h;
+  if(!D||!Array.isArray(D.days))return '';
+  return `<div id="memoryMonthCalendar" class="memory-monthly">${densityMonthBody(D)}</div>`;
+}
+function densityDayPick(day){_densityDay=day;densPick(day);}
+function bindDensityMonth(){
+  const root=document.getElementById('memoryMonthCalendar');if(!root)return;
+  const source=()=>window.__DATA__?.panels?.density;
+  const choose=(month,focus)=>{
+    const data=source();if(!data||!densityMonthModel(data,_densityMonth).months.includes(month))return;
+    _densityMonth=month;_densityDay=null;root.innerHTML=densityMonthBody(data);
+    const control=root.querySelector(focus);(control&&!control.disabled?control:root.querySelector('select'))?.focus({preventScroll:true});
+  };
+  if(!root.__bound){
+    root.__bound=true;
+    root.addEventListener('change',event=>{if(event.target.matches('[data-density-month]'))choose(event.target.value,'select');});
+    root.addEventListener('click',event=>{
+      const button=event.target.closest('[data-density-step]');if(!button||button.disabled)return;
+      const model=densityMonthModel(source(),_densityMonth),index=model.months.indexOf(model.month);
+      const next=model.months[index-Number(button.dataset.densityStep)];
+      if(next)choose(next,`[data-density-step="${button.dataset.densityStep}"]`);
+    });
+  }
+  const data=source(),model=densityMonthModel(data,_densityMonth);
+  if(_densityDay?.startsWith(model.month+'-')&&model.rows.some(d=>d.date===_densityDay))densPick(_densityDay);
 }
 
 function densPick(date){
