@@ -3833,22 +3833,40 @@ function bindGalaxy(){
 }
 
 let _densityMonth=null,_densityDay=null;
-function densityToday(){return new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Shanghai'});}
+// Use clock arithmetic for Shanghai's date; locale presentation never drives loops.
+function densityToday(){
+  return new Date(Date.now()+8*60*60*1000).toISOString().slice(0,10);
+}
 function densityMonthModel(D,selected,today=densityToday()){
-  const valid=(D?.days||[]).filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d.date||'')&&d.date<=today);
+  const validDate=value=>{
+    if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+    const time=Date.parse(value+'T00:00:00Z');
+    return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===value;
+  };
+  if(!validDate(today))today=densityToday();
+  const valid=(Array.isArray(D?.days)?D.days:[]).filter(d=>d&&validDate(d.date)&&d.date<=today);
   const current=today.slice(0,7),first=valid.map(d=>d.date.slice(0,7)).sort()[0]||current;
-  const months=[];let [y,m]=current.split('-').map(Number);
-  while(`${y}-${String(m).padStart(2,'0')}`>=first){months.push(`${y}-${String(m).padStart(2,'0')}`);if(--m===0){m=12;y--;}}
+  const index=key=>Number(key.slice(0,4))*12+Number(key.slice(5,7))-1;
+  const end=index(current),start=index(first),months=[];
+  // ISO years have four digits, so even malformed source ranges are finite.
+  const count=Math.max(1,Math.min(120000,end-start+1));
+  for(let step=0;step<count;step++){
+    const value=end-step;
+    months.push(String(Math.floor(value/12)).padStart(4,'0')+'-'+String(value%12+1).padStart(2,'0'));
+  }
   const month=months.includes(selected)?selected:current;
   const [year,number]=month.split('-').map(Number);
-  const length=new Date(Date.UTC(year,number,0)).getUTCDate();
-  const offset=(new Date(Date.UTC(year,number-1,1)).getUTCDay()+6)%7;
+  // Parsing explicit ISO dates also handles years 0000–0099 without Date.UTC's 1900 offset.
+  const firstDay=new Date(month+'-01T00:00:00Z');
+  const lastDay=new Date(firstDay);lastDay.setUTCMonth(lastDay.getUTCMonth()+1);lastDay.setUTCDate(0);
+  const length=lastDay.getUTCDate(),offset=(firstDay.getUTCDay()+6)%7;
   const byDate=new Map(valid.filter(d=>d.date.startsWith(month+'-')).map(d=>[d.date,d]));
   const days=Array.from({length},(_,i)=>{const date=month+'-'+String(i+1).padStart(2,'0');return {date,row:byDate.get(date),future:date>today};});
   const rows=days.filter(d=>d.row).map(d=>d.row);
   const totals={};for(const key of ['her','thread','note','diary'])totals[key]=rows.reduce((n,d)=>n+Number(d[key]||0),0);
   return {month,months,current,first,offset,days,rows,totals,today,dense:rows.filter(d=>Number(d.total)>0).length};
 }
+
 function densityMonthBody(D){
   const model=densityMonthModel(D,_densityMonth),{month,months,offset,days,rows,totals}=model;
   const label=key=>`${key.slice(0,4)}年${Number(key.slice(5))}月`;
