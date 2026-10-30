@@ -1817,6 +1817,60 @@ details.fold>summary .f-n{font-size:10px;margin-left:auto}
 .topbar{position:relative;top:auto}
 
 </style>
+<style id="xiaohua-list-release">
+/* List: compact Swiss rows, optical glass, a distinct completion sequence. */
+#page5 .checklist-card{padding:20px 22px;display:flex;flex-direction:column;gap:0;min-height:0}
+#page5 .cl-heading{display:flex;align-items:baseline;justify-content:space-between;padding:0 0 16px;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.06em}
+#page5 .cl-count{font-size:36px;font-weight:400;letter-spacing:-.06em;line-height:1;font-variant-numeric:tabular-nums}
+#page5 .cl-scroll{overflow:auto;min-height:0;flex:1;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#ffffff55 transparent;-webkit-overflow-scrolling:touch}
+#page5 .cl-row{display:grid;grid-template-columns:44px minmax(0,1fr);gap:5px;padding:6px 0;min-height:56px;border-bottom:1px solid #ffffff16;transition:opacity .22s ease,transform .22s ease}
+#page5 .cl-row:last-child{border:0}
+#page5 .cl-check{appearance:none;display:grid;place-items:center;width:44px;height:44px;padding:0;margin:0;border:0;background:transparent;box-shadow:none;border-radius:6px;color:inherit;cursor:pointer;align-self:center;flex-shrink:0}
+#page5 .cl-check-ring{display:grid;place-items:center;width:22px;height:22px;border:1px solid #ffffff80;border-radius:50%;transition:background .18s,border-color .18s,transform .18s}
+#page5 .cl-check:hover .cl-check-ring{background:#ffffff14;border-color:#ffffffcc}
+#page5 .cl-check:active .cl-check-ring{transform:scale(.9)}
+#page5 .cl-check svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#page5 .cl-check path{stroke-dasharray:1;stroke-dashoffset:1;transition:stroke-dashoffset .28s ease}
+#page5 .cl-row.is-saving .cl-check-ring{border-color:#ffffff20;border-top-color:#fff;animation:cl-spin .8s linear infinite}
+#page5 .cl-row.is-checked .cl-check-ring{background:#ffffff1f;border-color:#ffffffaa}
+#page5 .cl-row.is-checked path{stroke-dashoffset:0}
+#page5 .cl-body{display:flex;align-items:center;gap:14px;min-width:0;padding:5px 0}
+#page5 .cl-number{flex:0 0 21px;font-size:10px;line-height:1.5;font-variant-numeric:tabular-nums;color:var(--fg-3);letter-spacing:.03em}
+#page5 .cl-body .tx{font-size:14px;line-height:1.65;font-weight:400;overflow-wrap:anywhere;transition:color .3s,text-decoration-color .3s;text-decoration:line-through;text-decoration-color:transparent;text-decoration-thickness:1px}
+#page5 .cl-row.is-struck .tx{color:var(--fg-3);text-decoration-color:currentColor}
+#page5 .cl-row.is-leaving{opacity:0;transform:translateY(-5px)}
+#page5 .cl-status{font-size:11px;line-height:1.5;min-height:17px;margin:9px 0;color:var(--fg-2)}
+#page5 .cl-archive{background:none;border:0;border-top:1px solid var(--line);border-radius:0;padding:0;margin:0;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;flex-shrink:0}
+#page5 .cl-archive summary{display:flex;align-items:center;gap:12px;min-height:44px;padding:10px 0 0;list-style:none;font-size:12px;cursor:pointer}
+#page5 .cl-archive summary::-webkit-details-marker{display:none}
+#page5 .cl-archive summary::after{display:none}
+#page5 .cl-archive-count{margin-left:auto;font-variant-numeric:tabular-nums;color:var(--fg-3)}
+#page5 .cl-archive summary svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1;transition:transform .2s}
+#page5 .cl-archive[open] summary svg{transform:rotate(90deg)}
+#page5 .cl-archive-scroll{max-height:32dvh;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin}
+#page5 .cl-archived-row{display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #ffffff16}
+#page5 .cl-archived-row .tx{font-size:13px;line-height:1.65;color:var(--fg-3);text-decoration:line-through;overflow-wrap:anywhere}
+#page5 .cl-archived-row time{display:block;font-size:10px;line-height:1.5;color:var(--fg-3);margin-top:5px}
+#page5 .cl-empty{font-size:13px;line-height:1.7;color:var(--fg-3);margin:20px 0}
+#page5 .cl-check:focus-visible,#page5 .cl-scroll:focus-visible,#page5 .cl-archive-scroll:focus-visible{outline:1px solid #fff;outline-offset:2px}
+@keyframes cl-spin{to{transform:rotate(360deg)}}
+@media(max-width:767px){
+ body.xh-list-page{height:100dvh;min-height:0;overflow:hidden}
+ body.xh-list-page footer,body.xh-list-page .bottom-spacer{display:none}
+ body.xh-list-page #page5{height:calc(100dvh - var(--cl-nav-height,76px));display:flex;flex-direction:column;min-height:0;padding-bottom:12px;box-sizing:border-box}
+ #page5>.topbar{flex-shrink:0;padding-top:calc(22px + env(safe-area-inset-top));padding-bottom:8px;margin-bottom:0}
+ #page5>.backbar{flex-shrink:0;margin-bottom:12px;padding-top:4px;padding-bottom:4px}
+ #page5 .checklist-card{flex:1;min-height:0;margin:0;padding:16px}
+ #page5 .cl-heading{padding-bottom:12px}
+ #page5 .cl-count{font-size:32px}
+ #page5 .cl-row{padding:4px 0;min-height:52px;gap:2px}
+ #page5 .cl-body{gap:9px}
+ #page5 .cl-body .tx{font-size:14px;line-height:1.6}
+ #page5 .cl-archive-scroll{max-height:28dvh}
+}
+@media(prefers-reduced-motion:reduce){#page5 .cl-row,#page5 .cl-check-ring,#page5 .cl-check path,#page5 .cl-body .tx{transition:none}#page5 .cl-row.is-saving .cl-check-ring{animation:none}}
+
+</style>
 </head>
 <body>
 <div class="xh-scene" aria-hidden="true"><div class="xh-landscape"><img src="/portal-assets/xiaohua-autumn-ddd1901b1689.webp" alt="" fetchpriority="high"></div></div>
@@ -3410,55 +3464,28 @@ function renderPanels(d){
   //   单开一层、不占注入包预算。→ 它在功能上本来就是**独立一层**，
   //   前端把它埋在 Room 里，等于在展示上降了它一级。
   //
-  // 料源两个（分开标，不混成一锅）：
-  //   · checklist —— 关系里还没做完的事（原文装配第 5 层，双方共用）
-  //   · projects.open —— 工作里项目自己写的「下一步」
+  // The shared checklist is authoritative; project notes are a separate source.
   const CL=(P.checklist||{});
   {
-    const clItems=(CL.items||[]).filter(x=>x.status==='open');
-    const pOpens=(R.projects||[]).flatMap(p=>(p.open||[]).map(e=>({...e,proj:p.name})));
-    const clDone=(CL.items||[]).filter(x=>x.status!=='open');
-    const nAll=clItems.length+pOpens.length;
-
-    hCL=sec('List','',`
-      ${nAll?`
-      <div class="pblock nextwrk"><div class="pblock-h">
-        还没做完的 · ${nAll} 条</div>
-        ${clItems.map(it=>`
-          <div class="cl-row${it.status!=='open'?' done':''}">
-            <span class="cl-check${it.status!=='open'?' done':''}"
-                  data-id="${esc(String(it.id))}"
-                  data-what="${esc(it.what||'')}"
-                  role="checkbox" tabindex="0"
-                  aria-checked="${it.status!=='open'?'true':'false'}">${it.status!=='open'?'✓':''}</span>
-            <div class="cl-body">
-              <div><span class="tag">${it.id}、</span>
-                <span class="tx">${esc(it.what||'')}</span></div>
-              ${it.at?`<div class="tm">${esc(it.at)} 记下${it.source?` · 出自 ${esc(it.source)}`:''}</div>`:''}
-            </div>
-          </div>`).join('')}
-        ${pOpens.slice().reverse().map(e=>`
-          <div class="cl-row work">
-            <span class="cl-check" data-id="proj:${esc(e.proj||'')}"
-                  data-what="${esc(e.what||'')}"
-                  role="checkbox" tabindex="0" aria-checked="false">✓</span>
-            <div class="cl-body">
-              <div><span class="tag">🗂 ${esc(e.proj||'')}</span>
-                <span class="tx">${esc(e.what||'')}</span></div>
-              ${e.why?`<div class="tm">为什么：${esc(e.why)}</div>`:''}
-              ${e.at?`<div class="tm">${esc(e.at)}</div>`:''}
-            </div>
-          </div>`).join('')}
-      </div>`:todo('未完成清单','都没有 —— 关系和工作的清单都是空的。')}
-
-      ${clDone.length?`<div class="pblock"><div class="pblock-h">
-        做掉了 · ${clDone.length} 条</div>
-        ${clDone.map(it=>`<div class="pitem">
-          <span class="tag">${it.id}、</span>
-          <span class="tx" style="opacity:.55;text-decoration:line-through">${esc(it.what||'')}</span>
-          ${it.done_at?`<span class="tm">${esc(it.done_at)}</span>`:''}
-        </div>`).join('')}</div>`:''}
-      ${CL.updated_at?`<div class="pmeta">清单最后更新 ${esc(CL.updated_at)}</div>`:''}`);
+    const items=(CL.items||[]).filter(x=>x.status==='open').sort((a,b)=>a.id-b.id);
+    const archived=(CL.items||[]).filter(x=>x.status==='done').sort((a,b)=>String(b.done_at||'').localeCompare(String(a.done_at||'')));
+    hCL=sec('', '', `
+      <div class="cl-heading"><span>未完成</span><span class="cl-count">${items.length.toString().padStart(2,'0')}</span></div>
+      <div id="checklist-scroll" class="cl-scroll" role="region" aria-label="未完成清单" tabindex="0">
+        ${items.map(it=>`<div class="cl-row" data-item-id="${esc(String(it.id))}">
+          <button type="button" class="cl-check" data-id="${esc(String(it.id))}" role="checkbox" aria-checked="false" aria-labelledby="cl-text-${esc(String(it.id))}">
+            <span class="cl-check-ring"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 12 4 4L19 6" pathLength="1"/></svg></span>
+          </button>
+          <div class="cl-body"><span class="cl-number">${esc(String(it.id).padStart(2,'0'))}</span><span class="tx" id="cl-text-${esc(String(it.id))}">${esc(it.what||'')}</span></div>
+        </div>`).join('')||'<p class="cl-empty">都做完了，留点空白。</p>'}
+      </div>
+      <p id="checklist-status" class="cl-status" role="status" aria-live="polite">${esc(_listNotice)}</p>
+      <details class="cl-archive" data-work-id="list-archive">
+        <summary><span>Archive</span><span class="cl-archive-count">${archived.length.toString().padStart(2,'0')}</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 7 7-7 7"/></svg></summary>
+        <div id="checklist-archive-scroll" class="cl-archive-scroll" role="region" aria-label="已完成清单" tabindex="0">
+          ${archived.map(it=>`<div class="cl-archived-row" data-item-id="${esc(String(it.id))}"><span class="cl-number">${esc(String(it.id).padStart(2,'0'))}</span><div><span class="tx">${esc(it.what||'')}</span>${it.done_at?`<time>${esc(String(it.done_at).replace('T',' '))}</time>`:''}</div></div>`).join('')||'<p class="cl-empty">还没有已完成的事项。</p>'}
+        </div>
+      </details>`, 'checklist-card');
   }
 
   // ── ★ 2026-09-20 原文面板的「还没做的」进度表挪进本页 ──
@@ -3767,31 +3794,70 @@ function bindCall(){
 }
 
 
-// ── 清单勾选交互（★ 2026-09-19 大小姐要的）──
-//
-//  她点一下 checkbox = 「这件事做掉了」→ 划掉。
-//  另一条通道（对话里她说"那个我做完了"）由后端 finish() 走，不在这儿。
-//
-//  ⚠️ 这个前端**不改服务端账本** —— 看板是投影。
-//     点击只是**本地视觉** + 给后端发一条"她要划掉第 N 条"的信号。
-//     真正的划掉由服务端记账（她的话是权威，前端不是）。
+// Defer background renders while saving/animating so SSE cannot erase feedback.
+let _listFinishing=false,_listDeferred=null,_listNotice='';
+function listNotice(text){
+ _listNotice=text;const status=document.getElementById('checklist-status');if(status)status.textContent=text;
+}
 function bindChecklistToggle(){
  document.querySelectorAll('#page5 .cl-check').forEach(el=>{
-   const id=Number(el.dataset.id);
-   if(!Number.isSafeInteger(id)||id<=0){el.setAttribute('aria-disabled','true');el.title='项目下一步请在对话中更新';return;}
-   const finish=async()=>{
-     if(el.dataset.busy||el.classList.contains('done'))return;
-     el.dataset.busy='1';
-     try{
-       const r=await fetch(_api('/checklist/finish'),{method:'POST',headers:{..._hdr(),'Content-Type':'application/json'},body:JSON.stringify({id,revision:window.__DATA__?.panels?.checklist?.revision})});
-       if(!r.ok)throw Error();const value=await r.json();if(!value.ok||!value.done)throw Error();
-       await refreshSnapshot();
-     }catch(_){el.title='未保存，请稍后重试';let note=el.parentNode.querySelector('.save-error');if(!note){note=document.createElement('span');note.className='save-error';el.parentNode.appendChild(note);}note.textContent='未保存，请稍后重试';}
-     finally{delete el.dataset.busy;}
+  const id=Number(el.dataset.id);
+  if(!Number.isSafeInteger(id)||id<=0){el.disabled=true;return;}
+  el.addEventListener('click',async()=>{
+   if(_listFinishing)return;
+   _listFinishing=true;let confirmed=false,saved=false,next=null,notice='';
+   const row=el.closest('.cl-row');
+   const delay=ms=>new Promise(resolve=>setTimeout(resolve,matchMedia('(prefers-reduced-motion: reduce)').matches?0:ms));
+   const request=async(path,options={})=>{
+    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),15000);
+    try{const response=await fetch(_api(path),{...options,signal:controller.signal});return {ok:response.ok,value:await response.json()};}finally{clearTimeout(timer);}
    };
-   el.addEventListener('click',finish);el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();finish();}});
+   document.querySelectorAll('#page5 .cl-check').forEach(b=>b.setAttribute('aria-disabled','true'));
+   el.setAttribute('aria-busy','true');row.classList.add('is-saving');listNotice('正在保存…');
+   try{
+    const r=await request('/checklist/finish',{method:'POST',headers:{..._hdr(),'Content-Type':'application/json'},body:JSON.stringify({id,revision:window.__DATA__?.panels?.checklist?.revision})});
+    const value=r.value;
+    if(!r.ok){
+     const reason=value.detail;
+     throw Error(reason==='revision_conflict'?'清单刚有更新，已重新核对，请再点一次。':reason==='activity_busy'||reason==='chat_busy'||reason==='chat_state_unknown'?'小华正在更新内容，稍后再点一次。':'未能保存，请再试一次。');
+    }
+    if(!value.ok||!value.done||value.id!==id)throw Error('还未确认保存，请重试。');
+    saved=true;
+    // A separate read verifies the persisted projection, rather than trusting a local tick.
+    const snapshot=await request('/snapshot',{headers:_hdr(),cache:'no-store'});
+    const fresh=snapshot.value;
+    if(!snapshot.ok||!fresh.ok||!fresh.data?.panels?.checklist?.items?.some(x=>x.id===id&&x.status==='done'))throw Error('readback_pending');
+    next=fresh.data;confirmed=true;listNotice('已保存');
+    row.classList.remove('is-saving');row.classList.add('is-checked');el.setAttribute('aria-checked','true');
+    await delay(320);row.classList.add('is-struck');
+    await delay(360);row.classList.add('is-leaving');await delay(220);
+    notice='已收进 Archive';
+   }catch(error){
+    notice=saved?'已保存，正在重新核对列表…':error.name==='AbortError'?'连接超时，正在核对是否保存…':error instanceof TypeError?'连接中断，正在核对是否保存…':error.message;
+   }finally{
+    row.classList.remove('is-saving');el.removeAttribute('aria-busy');
+    document.querySelectorAll('#page5 .cl-check').forEach(b=>b.removeAttribute('aria-disabled'));
+    _listFinishing=false;_listNotice=notice;
+    const deferred=_listDeferred;_listDeferred=null;
+    if(deferred&&(!next||Number(deferred.sync?.projected_at||0)>Number(next.sync?.projected_at||0)))next=deferred;
+    if(next)applyFresh(next);
+    listNotice(notice);
+    if(confirmed){
+     const archive=document.querySelector('#page5 .cl-archive');if(archive)archive.open=false;
+     if(routeOf()==='room/list'){
+      const buttons=[...document.querySelectorAll('#page5 .cl-check')];
+      const focus=buttons.find(b=>Number(b.dataset.id)>id)||buttons[0]||archive?.querySelector('summary');
+      focus?.focus({preventScroll:true});
+     }
+    }else{
+     await refreshSnapshot();
+     if(window.__DATA__?.panels?.checklist?.items?.some(x=>x.id===id&&x.status==='done'))listNotice('已收进 Archive');
+    }
+   }
+  });
  });
 }
+
 
 // ── 日历总览（Archive 第一项，2026-09-18 落地）──
 //
@@ -4442,6 +4508,7 @@ function routeOf(){
 }
 
 function show(route, push){
+ document.body.classList.toggle('xh-list-page',route==='room/list');
   if(route==='room/music')ensureMusicView();
   updateMusicVisibility(route);
   const r = ROUTES[route] || ROUTES.board;
@@ -4843,6 +4910,7 @@ let _es = null, _esFrames = 0, _esSince = 0;
         否则 → 占位设 navH（滚到底刚好留出导航的空间）
    ═══════════════════════════════════════════════════════════════════ */
 function syncBottomSpacer(){
+ if(routeOf()==='room/list'&&matchMedia('(max-width:767px)').matches){document.documentElement.style.setProperty('--bottom-spacer','0px');document.documentElement.style.setProperty('--cl-nav-height',(document.getElementById('nav')?.getBoundingClientRect().height||76)+'px');return;}
   const root = document.documentElement;
   // 先清零，才好量"内容自然高度"
   root.style.setProperty('--bottom-spacer', '0px');
@@ -5386,6 +5454,7 @@ function detailKey(el){
  return (page?.id||'')+'|'+(el.dataset.at||el.dataset.activityId||el.dataset.workId||el.querySelector('summary .jdate')?.textContent||el.querySelector('summary')?.textContent.trim().slice(0,160)||'');
 }
 function applyFresh(d){
+ if(_listFinishing){if(!_listDeferred||Number(d?.sync?.projected_at||0)>=Number(_listDeferred.sync?.projected_at||0))_listDeferred=d;return;}
  if(!d||!d.panels)throw Error('invalid_snapshot');
  const revision=d.sync?.revision||d.generated_at_iso||d.generated_at;
  const at=Number(d.sync?.projected_at||0);
