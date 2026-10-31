@@ -5685,7 +5685,7 @@ window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivit
  const message=()=>`${state.authExpired?'<div class="se-message error" role="alert">登录已过期，修改仍保留。<a href="/xiaohua/login" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">在新窗口重新登录</a></div>':''}${state.error?`<div class="se-message error" role="alert">${esc(state.error)}</div>`:''}${state.notice?`<div class="se-message" role="status">${esc(state.notice)}</div>`:''}`;
  async function api(path,body){
    const r=await fetch(_api('/settings/'+path),{method:body?'POST':'GET',cache:'no-store',headers:{..._hdr(),...(body?{'Content-Type':'application/json'}:{})},...(body?{body:JSON.stringify(body)}:{})});
-   const d=await r.json().catch(()=>({}));if(!r.ok){const e=Error(d.detail==='settings_busy'?'busy':r.status===409?'conflict':r.status===401?'auth':d.detail==='invalid_key_pattern'?'pattern':d.detail==='constant_budget_exceeded'?'constant-capacity':'failed');e.code=r.status;throw e;}return d;
+   const d=await r.json().catch(()=>({}));if(!r.ok){const e=Error(d.detail==='settings_busy'?'busy':r.status===409?'conflict':r.status===401?'auth':d.detail==='invalid_key_pattern'?'pattern':d.detail==='constant_budget_exceeded'?'constant-capacity':d.detail==='trigger_keys_required'?'keys-required':'failed');e.code=r.status;throw e;}return d;
  }
  async function ensure(kind,reload=false){
    if(kind==='worldbook'&&state.book&&!reload)return;
@@ -5775,7 +5775,7 @@ window.addEventListener('hashchange',refreshActivity);setInterval(refreshActivit
      await ensure(kind,true);const saved=kind==='worldbook'?state.book.entries.find(e=>e.id===(id||state.selected)):state.docs[kind];
      if(!saved||Object.entries(patch).some(([k,v])=>JSON.stringify(saved[k])!==JSON.stringify(v))||kind==='worldbook'&&category(saved)!==state.draft.display_category)throw Error('readback');
      if(id)state.selected=id;resetEditor();state.authExpired=false;state.history=null;state.notice=isPreview()?'已在本地预览保存 · 正式设定未改变':'已保存到后端，并已读回核对。修改前版本已备份；当前聊天是否采用尚未核实。';
-   }catch(e){state.conflict=e.message==='conflict';state.error=e.message==='busy'?'另一处正在保存，请稍后重试。你的修改仍保留。':e.message==='constant-capacity'?'常驻内容已超过容量，本次未保存。请缩短常驻原则，或把具体示例拆为触发条目。':e.message==='pattern'?'有一个正则触发词格式不正确，请返回检查。修改仍保留。':e.message==='conflict'?'后端已有新版本，本次没有覆盖。你的修改仍保留，请先读取新版对比，再决定如何合并。':e.message==='auth'?'登录已过期，修改仍保留。请在新窗口重新登录后，再回这里保存。':'保存或保存后核对未完成，修改仍保留。请重试；暂不显示保存成功。';}
+   }catch(e){state.conflict=e.message==='conflict';state.error=e.message==='busy'?'另一处正在保存，请稍后重试。你的修改仍保留。':e.message==='keys-required'?'启用的触发条目需要明确触发词。若内容一直适用，请选择常驻；本次没有保存。':e.message==='constant-capacity'?'常驻内容已超过容量，本次未保存。请缩短常驻原则，或把具体示例拆为触发条目。':e.message==='pattern'?'有一个正则触发词格式不正确，请返回检查。修改仍保留。':e.message==='conflict'?'后端已有新版本，本次没有覆盖。你的修改仍保留，请先读取新版对比，再决定如何合并。':e.message==='auth'?'登录已过期，修改仍保留。请在新窗口重新登录后，再回这里保存。':'保存或保存后核对未完成，修改仍保留。请重试；暂不显示保存成功。';}
    finally{state.saving=false;paint();}
  }
  function askDiscard(action){
