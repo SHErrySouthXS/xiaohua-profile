@@ -1906,7 +1906,74 @@ select{appearance:none;-webkit-appearance:none}
 .item>div:not(.ic){min-width:0}
 .rhythm-hour span{background:linear-gradient(0deg,var(--pink-deep),var(--pink))}
 </style><style id="worldbook-v2-labels">.se .se-mode.constant{background:rgba(109,131,180,.16);color:var(--text);border:1px solid rgba(109,131,180,.25)}.se .se-mode.trigger{background:rgba(160,139,106,.13);color:var(--text);border:1px solid rgba(160,139,106,.25)}.se .se-card-title>.se-row{gap:6px;flex-shrink:0}.se .se-filter{flex-wrap:wrap;gap:12px}.se .se-filter>.se-row{flex-wrap:wrap}.se .se-advanced .se-read{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:480px){.se .se-card-title{align-items:flex-start;gap:8px}.se .se-card-title>span:first-child{min-width:0}.se .se-filter>.se-row{width:100%}.se .se-filter select{min-width:0;flex:1}.se .se-card-title>.se-row{flex-wrap:wrap;justify-content:flex-end}}</style>
-</head>
+<style id="xh-call-v2-style">.xh-call{--bg-center:#2a2731;--bg-mid:#25222c;--bg-edge:#1e1b24;--pink:#ff9fc5;--pink-deep:#e07bab;--pink-hot:#ffb6d3}
+.xh-call,.xh-call *{box-sizing:border-box}
+.xh-call{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:center;overflow:hidden;width:100%;height:100%;min-height:600px;color:#f5f0f3;background:radial-gradient(ellipse at 50% 38%,var(--bg-center),var(--bg-mid) 55%,var(--bg-edge));font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;-webkit-tap-highlight-color:transparent}
+.xh-call::before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(ellipse at 49% 52%,rgba(255,159,197,.075),transparent 47%),radial-gradient(ellipse at 80% 110%,rgba(224,123,171,.16),transparent 65%);pointer-events:none}
+.xh-call::after{content:"";position:absolute;z-index:-1;inset:0;opacity:.12;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.83' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' opacity='.3' d='M0 0h180v180H0z'/%3E%3C/svg%3E")}
+.xh-call-heading{text-align:center;padding-top:max(65px,calc(env(safe-area-inset-top) + 7.8vh));flex-shrink:0}
+.xh-call-name{font-family:"Songti SC","STSong","Noto Serif CJK SC",serif;font-size:39px;font-weight:500;letter-spacing:.22em;padding-left:.22em;margin:0 0 18px;line-height:1.35;text-shadow:0 2px 20px #ffffff12}
+.xh-call-eyebrow{margin:0;color:#e5d6de99;font:italic 10px/1.5 Georgia,"Times New Roman",serif;letter-spacing:.36em;padding-left:.36em}
+.xh-call-sky{position:relative;flex:1;min-height:180px;width:100%;display:grid;place-items:center}
+.xh-call-sky::before{content:"";width:150px;height:170px;position:absolute;border-radius:50%;background:radial-gradient(ellipse,#ffdeeb14,transparent 70%);filter:blur(12px);transition:opacity 1s;opacity:.45}
+.xh-call[data-state="speaking"] .xh-call-sky::before{opacity:1}
+.xh-call canvas{width:100%;height:100%;position:absolute;inset:0;pointer-events:none}
+.xh-call-copy{width:100%;padding:0 32px;text-align:center;flex-shrink:0}
+.xh-call-clock{font:italic 27px/1.2 Georgia,"Times New Roman",serif;letter-spacing:.13em;padding-left:.13em;color:#eee1e8;font-variant-numeric:tabular-nums;margin:0 0 16px}
+.xh-call-presence{font-size:11px;letter-spacing:.14em;color:#dfcbd7a6;margin:0 0 22px;min-height:17px}
+.xh-call-caption{font-size:16px;font-weight:300;line-height:1.95;letter-spacing:.035em;min-height:94px;max-height:125px;overflow:auto;scrollbar-width:none;max-width:310px;margin:0 auto;text-wrap:pretty;white-space:pre-line;mask-image:linear-gradient(transparent,#000 10px,#000);padding-top:8px}
+.xh-call-caption:empty::after{content:"这一刻，慢慢说。";font-size:13px;color:#d4bdcd75;letter-spacing:.15em}
+.xh-call-caption span{animation:xh-word-in .25s ease both}
+.xh-call-actions{padding:34px 0 max(36px,calc(env(safe-area-inset-bottom) + 27px));display:flex;flex-direction:column;align-items:center;gap:14px;flex-shrink:0}
+.xh-call-action{display:grid;place-items:center;width:73px;height:73px;border:1px solid #f7e6f333;border-top-color:#fff6;border-radius:50%;color:#fff0f7;background:linear-gradient(155deg,#f7dbeb17,#f7dbeb08);box-shadow:0 12px 26px #100b1529,inset 0 1px 0 #fff1;cursor:pointer;touch-action:manipulation;transition:background .3s,transform .25s,box-shadow .3s}
+.xh-call-action:hover{background:linear-gradient(155deg,#f7dbeb25,#f7dbeb0d)}
+.xh-call-action:active{transform:scale(.94)}
+.xh-call-action:focus-visible{outline:2px solid var(--pink-hot);outline-offset:7px}
+.xh-call-action svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;transition:transform .6s}
+.xh-call[data-state="idle"] .xh-call-action svg,.xh-call[data-state="ended"] .xh-call-action svg,.xh-call[data-state="error"] .xh-call-action svg{transform:rotate(-135deg)}
+.xh-call-action-label{font-size:10px;letter-spacing:.24em;color:#e5d6de99;margin:0;padding-left:.24em}
+.xh-call-note{position:absolute;left:25px;right:25px;bottom:11px;text-align:center;font-size:10px;line-height:1.5;color:#e4d0dc80;margin:0}
+@keyframes xh-word-in{from{opacity:.15;filter:blur(2px)}to{opacity:1;filter:blur(0)}}
+@media(max-height:740px){.xh-call{min-height:520px}.xh-call-heading{padding-top:48px}.xh-call-name{font-size:34px;margin-bottom:12px}.xh-call-caption{min-height:76px;font-size:15px;max-height:100px}.xh-call-actions{padding-top:22px;padding-bottom:27px}.xh-call-sky{min-height:160px}.xh-call-presence{margin-bottom:10px}.xh-call-clock{font-size:25px;margin-bottom:10px}.xh-call-action{width:66px;height:66px}}
+@media(prefers-reduced-motion:reduce){.xh-call *, .xh-call *::before{animation:none!important;transition:none!important}}
+
+nav#nav .tab[data-r="call"]{display:none}
+html[data-xh-phone="1"] nav#nav .tab[data-r="call"]{display:block}
+body.xh-call-page{height:var(--call-vh,100dvh);min-height:0;overflow:hidden;padding:0;overscroll-behavior:none}
+body.xh-call-page .xh-scene,body.xh-call-page footer,body.xh-call-page .bottom-spacer,body.xh-call-page #musicDock,body.xh-call-page #liveBadge{display:none!important}
+body.xh-call-page #page14{position:fixed;inset:0 0 auto;width:100%;max-width:none;margin:0;padding:0;height:calc(var(--call-vh,100dvh) - var(--call-nav-h,76px));z-index:12;overflow:hidden}
+body.xh-call-page #page14[hidden]{display:none}
+body.xh-call-page .xh-call{height:100%;min-height:0;max-height:none;border:0;box-shadow:none}
+body.xh-call-page .xh-call-heading{padding-top:max(calc(env(safe-area-inset-top) + 18px),4.5dvh)}
+body.xh-call-page .xh-call-actions{padding-bottom:22px}
+body.xh-call-page nav#nav{z-index:1000;background:#1e1b24;backdrop-filter:none;-webkit-backdrop-filter:none}
+body.xh-call-page .xh-call-action:disabled{opacity:.4;cursor:wait}
+@media(max-height:620px){body.xh-call-page .xh-call-heading{padding-top:max(env(safe-area-inset-top),16px)}body.xh-call-page .xh-call-name{font-size:29px;margin-bottom:6px}body.xh-call-page .xh-call-sky{min-height:72px}body.xh-call-page .xh-call-caption{min-height:50px;max-height:70px}body.xh-call-page .xh-call-actions{padding:16px 0 20px;gap:10px}body.xh-call-page .xh-call-action{width:56px;height:56px}}
+@media(max-height:450px){body.xh-call-page .xh-call-heading{padding-top:8px}body.xh-call-page .xh-call-name{font-size:24px}.xh-call-page .xh-call-eyebrow{display:none}body.xh-call-page .xh-call-sky{min-height:35px}body.xh-call-page .xh-call-clock{font-size:20px;margin-bottom:5px}body.xh-call-page .xh-call-presence{margin-bottom:2px}body.xh-call-page .xh-call-caption{min-height:38px;max-height:45px;font-size:14px;line-height:1.5}body.xh-call-page .xh-call-actions{padding:8px 0 14px;gap:5px}body.xh-call-page .xh-call-action{width:46px;height:46px}}
+</style><script id="xh-call-v2-host">// This adapter stays small; desktop never imports the media SDK or mounts Call.
+function isPhoneCall(){return (navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches)&&Math.min(screen.width||innerWidth,screen.height||innerHeight)<768}
+document.documentElement.dataset.xhPhone=isPhoneCall()?'1':'0';
+let _xhCallView=null,_xhCallLoad=null,_xhCallEpoch=0;
+function callViewport(){
+  if(!isPhoneCall())return;
+  document.documentElement.style.setProperty('--call-vh',(window.visualViewport?.height||innerHeight)+'px');
+  const nav=document.getElementById('nav');if(nav)document.documentElement.style.setProperty('--call-nav-h',nav.getBoundingClientRect().height+'px');
+}
+async function ensureCallScene(){
+  if(!isPhoneCall()||!document.body.classList.contains('xh-call-page')||_xhCallView||_xhCallLoad)return;
+  const epoch=++_xhCallEpoch,host=document.getElementById('page14');
+  host.textContent='正在载入通话…';host.setAttribute('aria-busy','true');callViewport();
+  _xhCallLoad=import('./call-client-81404f1cb8d4.js');
+  try{const module=await _xhCallLoad;if(epoch!==_xhCallEpoch||!document.body.classList.contains('xh-call-page'))return;_xhCallView=module.mount(host)}
+  catch{if(epoch===_xhCallEpoch)host.textContent='通话页面暂时未能载入，请离开后重新进入。'}
+  finally{host.removeAttribute('aria-busy');_xhCallLoad=null;if(epoch!==_xhCallEpoch&&document.body.classList.contains('xh-call-page'))void ensureCallScene()}
+}
+function disposeCallScene(){_xhCallEpoch++;_xhCallView?.destroy();_xhCallView=null;const host=document.getElementById('page14');if(host)host.replaceChildren()}
+if(isPhoneCall()){
+  window.addEventListener('resize',callViewport);window.visualViewport?.addEventListener('resize',callViewport);
+  window.addEventListener('pageshow',callViewport);
+}
+</script></head>
 <body>
 <div class="xh-scene" aria-hidden="true"><div class="xh-landscape"><img src="/portal-assets/xiaohua-autumn-ddd1901b1689.webp" alt="" fetchpriority="high"></div></div>
 
@@ -3628,226 +3695,12 @@ function renderPanels(d){
   put('page8', hCin);     // Cinema
   put('page9', hSand);    // Sandbox
 
-  // ── ★ 2026-10-05：Call 一级页（第三格）—— 真通话界面 ──
-  //   原文（03 章）：「双向发起的实时通话；语音输入、转写、流式语音合成、双栏对话卡。
-  //                 通话记录回到主时间线，不建立第二份事实」
-  //
-  //   实现要点（与原文逐条对齐）：
-  //     · 语音输入 = 浏览器 SpeechRecognition（音频不进服务器，零算力）
-  //     · 转写文本 → POST /call/voice → 进**微信那条 session**（同一本账！）
-  //     · 回复文字 → POST /call/tts → 豆包 2.0 出 mp3 → 播放（流式 TTS 的一半）
-  //     · 通话事件（拨/接/挂/拒/未接/掉线）→ POST /call/event → 落回主时间线
-  //     · 双栏对话卡：她的转写 | 小华的回复
-  //
-  //   ⚠️ 判据（能验红）：把 /call/voice 的 session 换成新号 → 微信里翻不到 → 红。
-  const hCall = sec('Call','', `
-    <div class="pnote">对着手机说话，小华用声音回你。挂断后在微信里也翻得到。</div>
-
-    <div class="vmbox" id="voiceMailbox" hidden>
-      <div class="vmbox-h">
-        <span id="vmboxTitle">语音留言</span>
-      </div>
-      <div class="vmbox-list" id="vmboxList"></div>
-    </div>
-
-    <div class="call-wrap">
-      <div class="call-status" id="callStatus">
-        <span class="call-dot" id="callDot"></span>
-        <span id="callStatusText">未接通</span>
-        <span class="call-timer" id="callTimer"></span>
-      </div>
-
-      <div class="call-cols" id="callCols">
-        <div class="call-col">
-          <div class="call-col-b" id="callLog"></div>
-        </div>
-      </div>
-
-      <div class="call-bar">
-        <button class="call-btn call-dial" id="callDialBtn">拨 号</button>
-        <button class="call-btn call-ptt" id="callPttBtn" hidden>按住说话</button>
-        <button class="call-btn call-hang" id="callHangBtn" hidden>挂 断</button>
-      </div>
-
-      <div class="call-hint" id="callHint"></div>
-      <div class="call-fallback" id="callFallback">
-        <input id="callTypeIn" placeholder="打字也可以…">
-        <button id="callTypeSend">发</button>
-      </div>
-    </div>
-
-    <!-- 他打过来的来电卡（2026-10-06）—— 盖住整屏，电话就该盖住别的 -->
-    <div class="inc-call" id="incCall" hidden>
-      <div class="inc-who">来电</div>
-      <div class="inc-ring">📞</div>
-      <div class="inc-name">小华</div>
-      <div class="inc-status" id="incStatus"></div>
-      <div class="inc-btns">
-        <button class="inc-b inc-drop" id="incDrop"><i>✕</i>拒接</button>
-        <button class="inc-b inc-pick" id="incPick"><i>✓</i>接听</button>
-      </div>
-    </div>`);
-  if(!document.getElementById('callStatus')){put('page14', hCall);bindCall();bindIncoming();}
-
   // ★ 清单块的勾选交互 —— 绑在渲染之后（DOM 已就位才绑得上）。
   bindChecklistToggle();
   // ★ 2026-10-10：星河的点点交互（Memory 在 page4，渲染后才绑得上）。
   bindGalaxy();
   bindDensityMonth();
 }
-
-// ── ★ 2026-10-05：Call 页交互（原文 §8.1 实时通话）──
-//
-//  状态机：idle → dialing → connected → ended
-//    · 拨号 = 开始一轮通话（落 dial 事件）
-//    · 接通 = 可以按住说话
-//    · 挂断 = 落 hangup 事件
-//    · 拒接/未接/掉线 → 服务端触发 agent 回合（原文铁律二，前端只负责报事件）
-//
-//  ⚠️ 浏览器转写（SpeechRecognition）不是所有环境都有 —— 没有就显示打字兜底。
-//
-//  ── ★ 2026-10-05：语音留言箱（绑在同一个 Call 页上）──
-//   「心跳想说话、微信发不出去」→ 变成语音存到服务端 → 这里渲染成未读语音条。
-//   **点开就播，点开即已读**；播完那条从列表消失。
-//   ⚠️ 判据（能验红）：服务端 voice_mailbox 里有未读 → 这里必须出现 ≥1 条语音条。
-function bindCall(){
-  const $ = (id)=>document.getElementById(id);
-  const statusEl=$('callStatusText'), dotEl=$('callDot'), timerEl=$('callTimer');
-  const logEl=$('callLog'), hintEl=$('callHint');
-  const dialBtn=$('callDialBtn'), pttBtn=$('callPttBtn'), hangBtn=$('callHangBtn');
-  const fallbackEl=$('callFallback'), typeIn=$('callTypeIn'), typeSend=$('callTypeSend');
-  if(!dialBtn) return;   // 页面没渲染出来就退出
-
-  bindVoiceMailbox();    // ← 留言箱（独立于通话状态机）
-
-  let state='idle', t0=0, timer=null, recog=null, pttActive=false;
-
-  const setState=(s,txt)=>{
-    state=s;
-    statusEl.textContent = txt;
-    dotEl.className = 'call-dot' + (s==='connected'?' on':'');
-    dialBtn.hidden = (s!=='idle');
-    // 语音不可用时那个按钮始终不显示（她只用打字）
-    pttBtn.hidden  = (s!=='connected') || pttBtn.dataset.unavailable==='1';
-    hangBtn.hidden = (s==='idle');
-  };
-  const fmt=(ms)=>{ const s=Math.floor(ms/1000); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
-  const startTimer=()=>{ t0=Date.now(); timerEl.textContent='00:00';
-    timer=setInterval(()=>{ timerEl.textContent=fmt(Date.now()-t0); },1000); };
-  const stopTimer=()=>{ if(timer) clearInterval(timer); timer=null; };
-
-  // ★ 2026-10-05 改：单栏聊天流 —— 她右、他左。
-  const bubble=(col, who, text)=>{
-    const box = logEl;
-    const d=document.createElement('div');
-    d.className='call-msg call-'+who;
-    d.textContent=text;
-    box.appendChild(d); box.scrollTop=box.scrollHeight;
-  };
-
-  // 通话事件上报（落回主时间线）
-  const sendEvent=(kind)=>{
-    try{
-      fetch(_api('/call/event'), { method:'POST',
-        headers:{ ..._hdr(), 'Content-Type':'application/json' },
-        body: JSON.stringify({ kind }) }).catch(()=>{});
-    }catch(e){}
-  };
-
-  // 播放小华的声音（mp3 字节 → blob → audio）
-  const playAudioB64=(b64)=>{
-    try{
-      const bin=atob(b64); const arr=new Uint8Array(bin.length);
-      for(let i=0;i<bin.length;i++) arr[i]=bin.charCodeAt(i);
-      const url=URL.createObjectURL(new Blob([arr],{type:'audio/mpeg'}));
-      const a=new Audio(url); a.onended=()=>URL.revokeObjectURL(url); a.play().catch(()=>{});
-    }catch(e){}
-  };
-
-  // 她说了一句话（转写结果或打字）→ 送进管线
-  const say=(text)=>{
-    if(!text || !text.trim()) return;
-    bubble('her','her',text);
-    hintEl.textContent='小华在想…';
-    fetch(_api('/call/voice'), { method:'POST',
-      headers:{ ..._hdr(), 'Content-Type':'application/json' },
-      body: JSON.stringify({ text, with_tts:true }) })
-      .then(r=>r.json())
-      .catch(()=>({ok:false, error:'网络'}))
-      .then(res=>{
-        if(res && res.ok){
-          bubble('him','him',res.reply||'（没说话）');
-          if(res.audio_b64) playAudioB64(res.audio_b64);
-          hintEl.textContent = '';
-        }else{
-          hintEl.textContent = '刚才没送出去，再试一次。';
-        }
-      });
-  };
-
-  // ── 语音识别（浏览器转写）──
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if(SR){
-    try{
-      recog = new SR();
-      recog.lang='zh-CN'; recog.continuous=false; recog.interimResults=false;
-      recog.onresult=(e)=>{ const t=e.results[0][0].transcript; say(t); };
-      recog.onerror=(e)=>{ hintEl.textContent='没听清，再说一次？'; pttActive=false; pttBtn.classList.remove('rec'); };
-      recog.onend=()=>{ pttActive=false; pttBtn.classList.remove('rec'); };
-    }catch(e){ recog=null; }
-  }
-  if(!recog){
-    // 没有语音识别 → 不显示那个按钮（免得按了没反应），直接用打字
-    pttBtn.dataset.unavailable='1';
-    pttBtn.hidden = true;
-    hintEl.textContent='直接打字也行。';
-  }
-
-  // ── 按钮绑定 ──
-  dialBtn.addEventListener('click', ()=>{
-    sendEvent('dial');
-    setState('connected','已接通');
-    startTimer();
-    hintEl.textContent = (recog ? '按住下面说话' : '打字也可以');
-  });
-
-  hangBtn.addEventListener('click', ()=>{
-    sendEvent('hangup');
-    setState('idle','未接通');
-    stopTimer(); timerEl.textContent='';
-    hintEl.textContent='挂断了。';
-  });
-
-  // 按住说话（touch + mouse 都支持）
-  const pttStart=(ev)=>{
-    if(state!=='connected'||!recog||pttActive) return;
-    ev.preventDefault();
-    pttActive=true; pttBtn.classList.add('rec');
-    hintEl.textContent='听着呢…';
-    try{ recog.start(); }catch(e){}
-  };
-  const pttEnd=(ev)=>{
-    if(!pttActive) return;
-    if(ev) ev.preventDefault();
-    try{ recog.stop(); }catch(e){}
-    pttActive=false;
-  };
-  pttBtn.addEventListener('touchstart', pttStart, {passive:false});
-  pttBtn.addEventListener('touchend', pttEnd);
-  pttBtn.addEventListener('mousedown', pttStart);
-  pttBtn.addEventListener('mouseup', pttEnd);
-  pttBtn.addEventListener('mouseleave', pttEnd);
-
-  // 打字兜底
-  if(typeSend){
-    const send=()=>{ const v=typeIn.value; typeIn.value=''; if(state!=='connected'){ setState('connected','已接通'); startTimer(); } say(v); };
-    typeSend.addEventListener('click', send);
-    typeIn.addEventListener('keydown', (e)=>{ if(e.key==='Enter') send(); });
-  }
-
-  setState('idle','未接通');
-}
-
 
 // Defer background renders while saving/animating so SSE cannot erase feedback.
 let _listFinishing=false,_listDeferred=null,_listNotice='';
@@ -4563,6 +4416,9 @@ function routeOf(){
 }
 
 function show(route, push){
+  if(route==='call'&&!isPhoneCall()){route='board';history.replaceState(history.state,'','#/board')}
+  document.body.classList.toggle('xh-call-page',route==='call');
+  if(route==='call'){callViewport();void ensureCallScene()}else disposeCallScene();
  document.body.classList.toggle('xh-list-page',route==='room/list');
   if(route==='room/music')ensureMusicView();
   updateMusicVisibility(route);
@@ -4588,7 +4444,7 @@ function show(route, push){
 
   // 每个视图顶部注入吸顶页头（左对齐大字 + 小副标题）
   const host=document.getElementById(r.el);
-  if(host){
+  if(host&&route!=='call'){
     const old=host.querySelector(':scope > .topbar');
     if(old) old.remove();
     const oldbar=host.querySelector(':scope > .backbar');
@@ -4732,203 +4588,6 @@ const __LIVE__ = {enabled: true, base: './'};
 function _api(path) { return __LIVE__.base + String(path).replace(/^\/+/, ''); }
 function _hdr() { return {}; }
 
-// ── ★ 2026-10-05：语音留言箱 ──
-//
-//  「心跳想说话、微信发不出去」的那些话 → 变成语音存服务端 → 这里渲染成语音条。
-//  规则（大小姐定案）：
-//    · **留言常驻**——不是一次性的，随时可以重播（点几次都行）
-//    · 点开 → 播放 + 标记已读；已读只是「未读小圆点」消失，条目不消失
-//    · 标题角标 = 未读数
-//
-//  ⚠️ 判据（能验红）：服务端有未读 → 这里必须出 ≥1 条带小圆点；
-//     点开 → 未读数 -1，但条目还在、还能再点、还能再响。
-function bindVoiceMailbox(){
-  const boxEl = document.getElementById('voiceMailbox');
-  const listEl = document.getElementById('vmboxList');
-  const titleEl = document.getElementById('vmboxTitle');
-  if(!boxEl || !listEl) return;
-
-  let audio = null;          // 当前播放的 <audio>（全局只留一个）
-
-  const fmtTime = (ts)=>{
-    try{
-      const d = new Date(ts*1000);
-      const p = (n)=>String(n).padStart(2,'0');
-      return p(d.getMonth()+1)+'-'+p(d.getDate())+' '+p(d.getHours())+':'+p(d.getMinutes());
-    }catch(e){ return ''; }
-  };
-
-  const render = (items)=>{
-    if(!items || !items.length){ boxEl.hidden = true; listEl.innerHTML=''; return; }
-    boxEl.hidden = false;
-    const unread = items.filter(x=>!x.read).length;
-    titleEl.textContent = unread > 0 ? ('语音留言 · ' + unread + ' 条未读') : '语音留言';
-    listEl.innerHTML = '';
-    items.forEach((it)=>{
-      const d = document.createElement('div');
-      // 已读的也留着（语音条是常驻的，能反复听）
-      d.className = 'vmitem' + (it.read ? ' read' : '');
-      d.dataset.id = it.id;
-      d.innerHTML = '<span class="vm-dot"></span>'
-        + '<span class="vm-bars"><i></i><i></i><i></i><i></i><i></i></span>'
-        + '<span class="vm-meta">' + fmtTime(it.ts) + '</span>';
-      d.addEventListener('click', ()=> play(it, d));
-      listEl.appendChild(d);
-    });
-  };
-
-  const play = (it, el)=>{
-    if(el.classList.contains('playing')) return;
-    // 只留一个播放器
-    if(audio){ try{ audio.pause(); }catch(e){} audio = null; }
-    document.querySelectorAll('.vmitem.playing').forEach(x=>x.classList.remove('playing'));
-    el.classList.add('playing');
-
-    audio = new Audio(_api(it.url));
-    audio.addEventListener('ended', ()=>{ if(audio) audio=null; el.classList.remove('playing'); });
-    audio.play().catch(()=>{ el.classList.remove('playing'); });
-
-    // 点开即已读（不等播完）—— 但条目**不消失**，以后随时能重播
-    if(!el.classList.contains('read')){
-      el.classList.add('read');
-      const badge = titleEl;
-      // 未读数 -1（就地更新角标，不整表重刷）
-      const m = /(\d+)\s*条未读/.exec(badge.textContent || '');
-      if(m){
-        const left = Math.max(0, parseInt(m[1], 10) - 1);
-        badge.textContent = left > 0 ? ('语音留言 · ' + left + ' 条未读') : '语音留言';
-      }
-      fetch(_api('/call/mailbox/' + it.id + '/read'), { method:'POST', headers:_hdr() })
-        .catch(()=>{});
-    }
-  };
-
-  const load = ()=>{
-    fetch(_api('/call/mailbox'), { headers:_hdr() })
-      .then(r=> r.json())
-      .then(d=>{ if(d && d.ok) render(d.items); })
-      .catch(()=>{});
-  };
-
-  load();
-  // 进页面时再拉一次（通话中可能刚好有新留言落到服务端）
-  setTimeout(load, 1200);
-}
-
-/* ── ★ 2026-10-06：他打过来的来电（原文 §3「双向发起」）──
- *
- *  她拨给他那条路早通了；这条是他拨给她 —— 原文「双向」的另一半。
- *
- *  ⚠️ 为什么轮询而不是挂 /stream：
- *     /stream 是账本投影（15s 粒度、断了就没了）。来电是**实时事件**，
- *     漏一通电话比漏一帧数据严重得多。独立轮询（4s）断线也不丢。
- *
- *  ⚠️ 只在「通讯录页」活着的时候轮询（避免后台一直打服务端）。
- */
-let __incTimer = null;
-
-function bindIncoming(){
-  const card = document.getElementById('incCall');
-  if(!card) return;
-  const statusEl = document.getElementById('incStatus');
-  const pickBtn = document.getElementById('incPick');
-  const dropBtn = document.getElementById('incDrop');
-
-  let curId = null;          // 当前这通来电的 id
-  let ringing = false;
-
-  const show = (id)=>{
-    curId = id; ringing = true;
-    card.hidden = false;
-    statusEl.textContent = '';
-  };
-  const hide = ()=>{
-    curId = null; ringing = false;
-    card.hidden = true;
-  };
-
-  const poll = ()=>{
-    if(ringing) return;                 // 已经在来电中，别重复弹
-    fetch(_api('/call/incoming'), { headers:_hdr() })
-      .then(r=> r.json())
-      .then(d=>{
-        if(!d || !d.ok || !d.ringing) return;
-        show(d.id);
-        // 倒计时（他打过来是有时限的 —— 过了当没接）
-        if(d.deadline_in > 0){
-          statusEl.textContent = '响铃中…';
-          let left = d.deadline_in;
-          const t = setInterval(()=>{
-            left -= 1;
-            if(!ringing || left <= 0){ clearInterval(t); return; }
-            statusEl.textContent = '响铃中… ' + left + ' 秒';
-          }, 1000);
-        }
-      })
-      .catch(()=>{});
-  };
-
-  const playB64 = (b64)=>{
-    try{
-      const bin = atob(b64); const arr = new Uint8Array(bin.length);
-      for(let i=0;i<bin.length;i++) arr[i] = bin.charCodeAt(i);
-      const url = URL.createObjectURL(new Blob([arr], {type:'audio/mpeg'}));
-      const a = new Audio(url);
-      a.onended = ()=>URL.revokeObjectURL(url);
-      a.play().catch(()=>{});
-    }catch(e){}
-  };
-
-  pickBtn.addEventListener('click', ()=>{
-    if(!curId) return;
-    const id = curId;
-    statusEl.textContent = '接通了';
-    fetch(_api('/call/incoming/' + id + '/answer'), {
-      method:'POST', headers:_hdr() })
-      .then(r=> r.json())
-      .then(d=>{
-        if(d && d.ok){
-          // 他接通后说的第一句 —— 落到 Call 页的对话流里 + 出声
-          const logEl = document.getElementById('callLog');
-          if(logEl && d.text){
-            const el = document.createElement('div');
-            el.className = 'call-msg call-him';
-            el.textContent = d.text;
-            logEl.appendChild(el); logEl.scrollTop = logEl.scrollHeight;
-          }
-          if(d.audio_b64) playB64(d.audio_b64);
-          setTimeout(hide, 600);
-        }else{
-          statusEl.textContent = '这通已经断了';
-          setTimeout(hide, 1200);
-        }
-      })
-      .catch(()=>{ statusEl.textContent = '没接上，再试一次'; });
-  });
-
-  dropBtn.addEventListener('click', ()=>{
-    const id = curId;
-    hide();
-    if(!id) return;
-    fetch(_api('/call/incoming/' + id + '/reject'), {
-      method:'POST', headers:_hdr() }).catch(()=>{});
-  });
-
-  // 有来电才轮询；页面切走时停掉（省电、也省服务端）
-  const start = ()=>{ if(!__incTimer) __incTimer = setInterval(poll, 4000); poll(); };
-  const stop = ()=>{ if(__incTimer){ clearInterval(__incTimer); __incTimer = null; } };
-
-  document.addEventListener('visibilitychange', ()=>{
-    if(document.hidden) stop(); else start();
-  });
-  // 切到 Call 页才开轮询
-  window.addEventListener('hashchange', ()=>{
-    if((location.hash || '').indexOf('page14') >= 0
-       || (location.hash || '').indexOf('/call') >= 0) start();
-  });
-  if(!document.hidden) start();
-}
-
 /* ③ 前端上报（原文 §15.3：window error / unhandledrejection / 渲染崩溃 → POST 回服务端） */
 function reportToServer(kind, detail){
   if(!__LIVE__.enabled || !__LIVE__.base) return;
@@ -4965,6 +4624,7 @@ let _es = null, _esFrames = 0, _esSince = 0;
         否则 → 占位设 navH（滚到底刚好留出导航的空间）
    ═══════════════════════════════════════════════════════════════════ */
 function syncBottomSpacer(){
+ if(document.body.classList.contains('xh-call-page')){callViewport();document.documentElement.style.setProperty('--bottom-spacer','0px');return;}
  if(routeOf()==='room/list'&&matchMedia('(max-width:767px)').matches){document.documentElement.style.setProperty('--bottom-spacer','0px');document.documentElement.style.setProperty('--cl-nav-height',(document.getElementById('nav')?.getBoundingClientRect().height||76)+'px');return;}
   const root = document.documentElement;
   // 先清零，才好量"内容自然高度"
