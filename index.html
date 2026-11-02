@@ -1937,6 +1937,9 @@ select{appearance:none;-webkit-appearance:none}
 @media(max-height:740px){.xh-call{min-height:520px}.xh-call-heading{padding-top:48px}.xh-call-name{font-size:34px;margin-bottom:12px}.xh-call-caption{min-height:76px;font-size:15px;max-height:100px}.xh-call-actions{padding-top:22px;padding-bottom:27px}.xh-call-sky{min-height:160px}.xh-call-presence{margin-bottom:10px}.xh-call-clock{font-size:25px;margin-bottom:10px}.xh-call-action{width:66px;height:66px}}
 @media(prefers-reduced-motion:reduce){.xh-call *, .xh-call *::before{animation:none!important;transition:none!important}}
 
+.xh-call[data-clock-mode="waiting"] .xh-call-caption:empty::after{content:"接通后，就可以说话了。"}
+.xh-call[data-clock-mode="waiting"] .xh-call-clock::before{content:"等待接听";display:block;font:10px/1.4 -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;letter-spacing:.15em;margin-bottom:7px;color:#dfcbd78c}
+
 nav#nav .tab[data-r="call"]{display:none}
 html[data-xh-phone="1"] nav#nav .tab[data-r="call"]{display:block}
 body.xh-call-page{height:var(--call-vh,100dvh);min-height:0;overflow:hidden;padding:0;overscroll-behavior:none}
@@ -1950,6 +1953,11 @@ body.xh-call-page nav#nav{z-index:1000;background:#1e1b24;backdrop-filter:none;-
 body.xh-call-page .xh-call-action:disabled{opacity:.4;cursor:wait}
 @media(max-height:620px){body.xh-call-page .xh-call-heading{padding-top:max(env(safe-area-inset-top),16px)}body.xh-call-page .xh-call-name{font-size:29px;margin-bottom:6px}body.xh-call-page .xh-call-sky{min-height:72px}body.xh-call-page .xh-call-caption{min-height:50px;max-height:70px}body.xh-call-page .xh-call-actions{padding:16px 0 20px;gap:10px}body.xh-call-page .xh-call-action{width:56px;height:56px}}
 @media(max-height:450px){body.xh-call-page .xh-call-heading{padding-top:8px}body.xh-call-page .xh-call-name{font-size:24px}.xh-call-page .xh-call-eyebrow{display:none}body.xh-call-page .xh-call-sky{min-height:35px}body.xh-call-page .xh-call-clock{font-size:20px;margin-bottom:5px}body.xh-call-page .xh-call-presence{margin-bottom:2px}body.xh-call-page .xh-call-caption{min-height:38px;max-height:45px;font-size:14px;line-height:1.5}body.xh-call-page .xh-call-actions{padding:8px 0 14px;gap:5px}body.xh-call-page .xh-call-action{width:46px;height:46px}}
+body.xh-call-page .xh-call:has(.xh-call-note:not(:empty)) .xh-call-actions{padding-bottom:52px}
+body.xh-call-page .xh-call-note{font-size:12px;line-height:1.5;color:#e5d6decc}
+/* The available panel can be much shorter than the window in Safari/PWA.
+   Give the star the remaining space so call controls and feedback never clip. */
+body.xh-call-page .xh-call-sky{min-height:0}
 </style><script id="xh-call-v2-host">// This adapter stays small; desktop never imports the media SDK or mounts Call.
 function isPhoneCall(){return (navigator.maxTouchPoints>0||matchMedia('(pointer:coarse)').matches)&&Math.min(screen.width||innerWidth,screen.height||innerHeight)<768}
 document.documentElement.dataset.xhPhone=isPhoneCall()?'1':'0';
@@ -1963,7 +1971,7 @@ async function ensureCallScene(){
   if(!isPhoneCall()||!document.body.classList.contains('xh-call-page')||_xhCallView||_xhCallLoad)return;
   const epoch=++_xhCallEpoch,host=document.getElementById('page14');
   host.textContent='正在载入通话…';host.setAttribute('aria-busy','true');callViewport();
-  _xhCallLoad=import('./call-client-81404f1cb8d4.js');
+  _xhCallLoad=import('./call-client-873893d57ff6.js');
   try{const module=await _xhCallLoad;if(epoch!==_xhCallEpoch||!document.body.classList.contains('xh-call-page'))return;_xhCallView=module.mount(host)}
   catch{if(epoch===_xhCallEpoch)host.textContent='通话页面暂时未能载入，请离开后重新进入。'}
   finally{host.removeAttribute('aria-busy');_xhCallLoad=null;if(epoch!==_xhCallEpoch&&document.body.classList.contains('xh-call-page'))void ensureCallScene()}
