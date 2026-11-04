@@ -1971,7 +1971,7 @@ async function ensureCallScene(){
   if(!isPhoneCall()||!document.body.classList.contains('xh-call-page')||_xhCallView||_xhCallLoad)return;
   const epoch=++_xhCallEpoch,host=document.getElementById('page14');
   host.textContent='正在载入通话…';host.setAttribute('aria-busy','true');callViewport();
-  _xhCallLoad=import('./call-client-873893d57ff6.js');
+  _xhCallLoad=import('./call-client-2f1f24ab6210.js');
   try{const module=await _xhCallLoad;if(epoch!==_xhCallEpoch||!document.body.classList.contains('xh-call-page'))return;_xhCallView=module.mount(host)}
   catch{if(epoch===_xhCallEpoch)host.textContent='通话页面暂时未能载入，请离开后重新进入。'}
   finally{host.removeAttribute('aria-busy');_xhCallLoad=null;if(epoch!==_xhCallEpoch&&document.body.classList.contains('xh-call-page'))void ensureCallScene()}
